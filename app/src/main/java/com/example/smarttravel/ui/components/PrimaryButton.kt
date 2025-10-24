@@ -28,7 +28,7 @@ fun PrimaryButton(
         onClick = onClick,
         shape = RoundedCornerShape(10.dp), // Bo góc
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary, // Màu xanh
+            containerColor = Color(0xFF037CAC), // Màu xanh
             contentColor = Color.White
         ),
         modifier = modifier
