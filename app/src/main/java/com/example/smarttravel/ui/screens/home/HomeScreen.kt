@@ -321,7 +321,7 @@ fun LargeDestinationCard(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 1f)),
                             startY = 600f
                         )
                     )

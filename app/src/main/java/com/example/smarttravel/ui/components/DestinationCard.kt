@@ -36,7 +36,7 @@ fun DestinationCard(
         modifier = modifier.width(220.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
 

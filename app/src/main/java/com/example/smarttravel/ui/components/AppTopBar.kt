@@ -26,7 +26,7 @@ fun AppTopBar(
 ) {
     Box(
         modifier = modifier
-            .size(56.dp) // kích thước đúng với UI mẫu
+            .size(46.dp)
             .background(color = containerColor, shape = CircleShape)
             .clickable { onBackClick() },
         contentAlignment = Alignment.Center
@@ -35,7 +35,7 @@ fun AppTopBar(
             painter = painterResource(id = R.drawable.back_icon),
             contentDescription = "Back",
             tint = iconTint,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(10.dp)
         )
     }
 }
