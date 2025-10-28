@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.smarttravel"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -50,9 +50,11 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("com.maxkeppeler.sheets-compose-dialogs:calendar:1.3.0")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.compose.foundation:foundation:1.7.0")
+    implementation("com.kizitonwose.calendar:compose:2.0.4")
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.compose.foundation)
     testImplementation(libs.junit)
