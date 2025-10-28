@@ -47,7 +47,7 @@ fun AppTextField(
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         placeholder = { Text(text = placeholder) },
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(15.dp),
         colors = TextFieldDefaults.colors(
             unfocusedContainerColor = Color(0xFFE0E0E0),
             focusedContainerColor = Color(0xFFE0E0E0),

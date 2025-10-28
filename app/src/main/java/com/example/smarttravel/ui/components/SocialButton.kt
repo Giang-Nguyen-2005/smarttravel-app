@@ -32,7 +32,7 @@ fun SocialButton(
         onClick = onClick,
         shape = CircleShape,
         modifier = modifier
-            .size(50.dp)
+            .size(65.dp)
             .border(1.dp, Color.LightGray.copy(alpha = 0.5f), CircleShape),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White,
