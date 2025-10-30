@@ -37,7 +37,15 @@ fun ConfirmOTPScreen(
             .fillMaxSize()
             .padding(horizontal = 24.dp)
     ) {
-        AppTopBar(onBackClick = onBackClick)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 40.dp)
+        ) {
+            // 🔙 Nút Back đặt ở góc trên trái
+            AppTopBar(onBackClick = onBackClick)
+        }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,

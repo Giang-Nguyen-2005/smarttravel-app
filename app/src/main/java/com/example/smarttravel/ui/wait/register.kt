@@ -43,8 +43,15 @@ fun register(
             .fillMaxSize()
             .padding(horizontal = 24.dp)
     ) {
-        // 🔙 Nút Back đặt ở góc trên trái
-        AppTopBar(onBackClick = onBackClick)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 40.dp)
+        ) {
+            // 🔙 Nút Back đặt ở góc trên trái
+            AppTopBar(onBackClick = onBackClick)
+        }
 
         // 📄 Nội dung chính
         Column(

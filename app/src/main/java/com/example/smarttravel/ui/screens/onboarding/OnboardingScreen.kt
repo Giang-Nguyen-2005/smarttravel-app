@@ -1,14 +1,12 @@
-package com.example.smarttravel.ui.wait
+package com.example.smarttravel.ui.screens.onboarding
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -24,8 +22,7 @@ fun MNHNhCh() {
     // Màn hình chính (bo góc như Figma)
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .clip(RoundedCornerShape(30.dp)) // Bo góc như path trong vector
+            .fillMaxSize() // Bo góc như path trong vector
             .background(Color(0xFF037CAC)),  // Màu nền xanh (#037CAC)
         contentAlignment = Alignment.Center
     ) {

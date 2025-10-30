@@ -1,4 +1,4 @@
-package com.example.smarttravel.ui.wait
+package com.example.smarttravel.ui.screens.splash
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

@@ -1,4 +1,4 @@
-package com.example.smarttravel.ui.wait
+package com.example.smarttravel.ui.screens.splash
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,7 +26,7 @@ import com.example.smarttravel.ui.components.PrimaryButton
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun MHHNhCh1(
+fun MHHNhCh2(
     onSkip: () -> Unit = {},
     onStartClick: () -> Unit = {}
 ) {
@@ -50,7 +50,7 @@ fun MHHNhCh1(
                     .clip(RoundedCornerShape(bottomStart = 30.dp, bottomEnd = 30.dp))
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.onboard_boat),
+                    painter = painterResource(id = R.drawable.onboard_boat1),
                     contentDescription = "Hình minh họa du lịch",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -73,7 +73,7 @@ fun MHHNhCh1(
             // Phần text ở giữa
             Column(
                 modifier = Modifier
-                    .padding(horizontal = 40.dp)
+                    .padding(horizontal = 15.dp)
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -85,32 +85,32 @@ fun MHHNhCh1(
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                        ) { append("Cuộc đời ngắn ngủi, thế giới thì ") }
+                        ) { append("Thế giới rộng lớn ngoài kia, hãy lên đường ") }
                         withStyle(
                             style = SpanStyle(
                                 color = Color(0xFFFF7C1E),
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                        ) { append("bao la") }
+                        ) { append("khám phá") }
                     },
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
 
-                Spacer(modifier = Modifier.height(35.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = "Du Lịch Thông Minh giúp bạn khám phá những hành trình độc đáo, đáng tin cậy đến mọi miền.",
+                    text = "Để tận hưởng chuyến phiêu lưu tuyệt vời, hãy đến những nơi bạn yêu thích. Chúng tôi đang chờ bạn!",
                     color = Color(0xFF7C838D),
                     fontSize = 16.sp,
-                    lineHeight = 27.sp,
-                    letterSpacing = 1.sp,
+                    lineHeight = 25.sp,
+                    letterSpacing = 1.5.sp,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 5.dp)
+                    modifier = Modifier.padding(horizontal = 10.dp)
                 )
 
-                Spacer(modifier = Modifier.height(35.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Indicator
                 Row(
@@ -120,18 +120,18 @@ fun MHHNhCh1(
                 ) {
                     Box(
                         modifier = Modifier
-                            .width(35.dp)
+                            .width(7.dp)
                             .height(7.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF0D6EFD))
+                            .background(Color(0xFFCAE9FF))
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
-                            .width(13.dp)
+                            .width(35.dp)
                             .height(7.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFCAE9FF))
+                            .background(Color(0xFF0D6EFD))
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
@@ -148,7 +148,7 @@ fun MHHNhCh1(
         }
 
         PrimaryButton(
-            text = "Bắt đầu",
+            text = "Tiếp Tục",
             onClick = onStartClick,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
