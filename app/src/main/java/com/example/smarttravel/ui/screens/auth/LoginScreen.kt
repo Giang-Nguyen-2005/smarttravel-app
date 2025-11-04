@@ -1,8 +1,11 @@
-package com.example.smarttravel.ui.wait
+package com.example.smarttravel.ui.screens.auth
 
-import android.R.attr.name
+import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -11,6 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -19,86 +24,103 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel // <-- Cần cho hiltViewModel()
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.smarttravel.R
+import com.example.smarttravel.navigation.Screen // Đảm bảo đường dẫn này đúng
 import com.example.smarttravel.ui.components.AppTextField
+import com.example.smarttravel.ui.components.AppTopBar
 import com.example.smarttravel.ui.components.PrimaryButton
 import com.example.smarttravel.ui.components.SocialButton
-import com.example.smarttravel.ui.components.AppTopBar
+import com.example.smarttravel.ui.theme.SmarttravelTheme
+import com.example.smarttravel.ui.viewmodel.AuthViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Preview(showBackground = true, showSystemUi = true)
+// Xóa @OptIn(ExperimentalMaterial3Api::class) nếu không cần thiết
 @Composable
-fun register(
-    onBackClick: () -> Unit = {},
-    onLoginClick: () -> Unit = {},
-    onForgotPassword: () -> Unit = {},
-    onSignUpClick: () -> Unit = {},
-) { var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+fun LoginScreen(navController: NavController) { // Đổi lại thành nhận NavController
+
+    val authViewModel: AuthViewModel = hiltViewModel() // Sử dụng HiltViewModel
+    val authState = authViewModel.authState
+    val context = LocalContext.current
+
+    // Cần LaunchedEffect để xử lý các sự kiện từ ViewModel
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthViewModel.AuthState.Success -> {
+                Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                navController.navigate(Screen.Home.route) { // Chuyển đến Home Screen
+                    popUpTo(Screen.Login.route) { inclusive = true }
+                    launchSingleTop = true
+                }
+                authViewModel.resetAuthState()
+            }
+            is AuthViewModel.AuthState.Error -> {
+                Toast.makeText(context, authState.message, Toast.LENGTH_SHORT).show()
+                authViewModel.resetAuthState()
+            }
+            else -> {} // Do nothing for Idle or Loading
+        }
+    }
+
+    // Lấy giá trị từ ViewModel (được quản lý bởi mutableStateOf bên trong ViewModel)
+    val email = authViewModel.email
+    val password = authViewModel.password
     var passwordVisible by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp)
+            .verticalScroll(rememberScrollState()) // Đảm bảo có thể cuộn
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 40.dp)
-        ) {
-            // 🔙 Nút Back đặt ở góc trên trái
-            AppTopBar(onBackClick = onBackClick)
+        )
+        {
+            AppTopBar(onBackClick = { navController.popBackStack() })
         }
-
-        // 📄 Nội dung chính
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 140.dp) // ✅ đẩy toàn bộ nội dung xuống dưới
+                .padding(top = 120.dp) // Điều chỉnh top padding cho cả Column
         ) {
+            Spacer(modifier = Modifier.height(16.dp)) // Thêm khoảng cách
+
             Text(
-                text = "Đăng Ký",
+                text = "Đăng nhập",
                 fontWeight = FontWeight.Bold,
                 fontSize = 30.sp
-
             )
             Text(
-                text = "Vui lòng điền thông tin tin để tạo tài khoản",
+                text = "Vui lòng đăng nhập để tiếp tục khám phá",
                 color = Color.Gray,
                 fontSize = 18.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 20.dp, bottom = 40.dp)
             )
-            // name
+
+            // Email
             AppTextField(
-                value = name,
-                onValueChange = { name = it },
-                placeholder = "Nguyen Van A",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                value = email,
+                onValueChange = { authViewModel.email = it }, // Cập nhật ViewModel
+                placeholder = "NguyenVanA@example.com",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(65.dp)
             )
-            Spacer(modifier = Modifier.height(20.dp))
-            // ✉️ Email=
-            AppTextField(
-                value = email,
-                onValueChange = { email = it },
-                placeholder = "NguyenVanA@example.com",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth().height(65.dp)
-            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 🔒 Mật khẩu
+            // Mật khẩu
             AppTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { authViewModel.password = it }, // Cập nhật ViewModel
                 placeholder = "********",
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -110,7 +132,9 @@ fun register(
                         Icon(imageVector = icon, contentDescription = null)
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(65.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(65.dp)
             )
 
             Box(
@@ -119,7 +143,7 @@ fun register(
                     .padding(top = 4.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
-                TextButton(onClick = onForgotPassword) {
+                TextButton(onClick = { /* TODO: Navigate to Forgot Password */ }) {
                     Text("Quên mật khẩu?", color = Color(0xFF1E88E5), fontSize = 18.sp)
                 }
             }
@@ -127,28 +151,32 @@ fun register(
             Spacer(modifier = Modifier.height(20.dp))
 
             PrimaryButton(
-                text = "Đăng nhập",
-                onClick = onLoginClick,
+                text = if (authState is AuthViewModel.AuthState.Loading) "Đang đăng nhập..." else "Đăng nhập",
+                onClick = { authViewModel.loginUser() }, // Gọi hàm đăng nhập của ViewModel
+                enabled = authState !is AuthViewModel.AuthState.Loading, // Vô hiệu hóa nút khi đang tải
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp)
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Chưa có tài khoản? ", color = Color.Gray, fontSize = 18.sp)
-                TextButton(onClick = onSignUpClick, contentPadding = PaddingValues(0.dp)) {
+                TextButton(
+                    onClick = { navController.navigate(Screen.Register.route) }, // Chuyển đến màn hình đăng ký
+                    contentPadding = PaddingValues(0.dp)
+                ) {
                     Text("Đăng Ký", color = Color(0xFF1E88E5 ), fontSize = 20.sp)
                 }
             }
 
-            Spacer(modifier = Modifier.height(5.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Text("Hoặc đăng nhập với", color = Color.Gray, fontSize = 18.sp)
-            Spacer(modifier = Modifier.height(1.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             Row(
                 modifier = Modifier
@@ -163,5 +191,13 @@ fun register(
                 SocialButton(iconRes = R.drawable.icon_facebook, onClick = {})
             }
         }
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun LoginScreenPreview() {
+    SmarttravelTheme {
+        LoginScreen(navController = rememberNavController())
     }
 }

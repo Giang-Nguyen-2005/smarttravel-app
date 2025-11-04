@@ -104,6 +104,14 @@ fun HomeScreen(navController: NavController) {
             )
         }
 
+        item {
+            Text(
+                text = "Điểm địa gợi ý",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
         // 3. Hàng cuộn ngang (Sử dụng DestinationCard của bạn)
         // (Không có tiêu đề "Gợi ý" trong ảnh, nên tôi bỏ qua)
         item {

@@ -1,4 +1,4 @@
-package com.example.smarttravel.ui.screens.splash
+package com.example.smarttravel.ui.screens.onboarding
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,7 +26,7 @@ import com.example.smarttravel.ui.components.PrimaryButton
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun MHHNhCh3(
+fun OnboardingScreen01(
     onSkip: () -> Unit = {},
     onStartClick: () -> Unit = {}
 ) {
@@ -50,7 +50,7 @@ fun MHHNhCh3(
                     .clip(RoundedCornerShape(bottomStart = 30.dp, bottomEnd = 30.dp))
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.onboard_boat2),
+                    painter = painterResource(id = R.drawable.onboard_boat),
                     contentDescription = "Hình minh họa du lịch",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -73,7 +73,7 @@ fun MHHNhCh3(
             // Phần text ở giữa
             Column(
                 modifier = Modifier
-                    .padding(horizontal = 15.dp)
+                    .padding(horizontal = 40.dp)
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -85,32 +85,34 @@ fun MHHNhCh3(
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                        ) { append("Người đi không chọn chuyến, chuyến đi chọn ") }
+                        ) { append("Cuộc đời ngắn ngủi, thế giới thì ") }
                         withStyle(
                             style = SpanStyle(
                                 color = Color(0xFFFF7C1E),
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                        ) { append("người") }
+                        ) { append("bao la") }
                     },
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 12.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    lineHeight = 40.sp
+
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(35.dp))
 
                 Text(
-                    text = "Để có chuyến phiêu lưu tuyệt vời, chỉ cần lên đường đến nơi bạn muốn. Chúng tôi đang chờ bạn!",
+                    text = "Du Lịch Thông Minh giúp bạn khám phá những hành trình độc đáo, đáng tin cậy đến mọi miền.",
                     color = Color(0xFF7C838D),
                     fontSize = 16.sp,
-                    lineHeight = 25.sp,
-                    letterSpacing = 1.5.sp,
+                    lineHeight = 27.sp,
+                    letterSpacing = 1.sp,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 10.dp)
+                    modifier = Modifier.padding(horizontal = 5.dp)
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(35.dp))
 
                 // Indicator
                 Row(
@@ -120,10 +122,10 @@ fun MHHNhCh3(
                 ) {
                     Box(
                         modifier = Modifier
-                            .width(7.dp)
+                            .width(35.dp)
                             .height(7.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFCAE9FF))
+                            .background(Color(0xFF0D6EFD))
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
@@ -136,10 +138,10 @@ fun MHHNhCh3(
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
-                            .width(35.dp)
+                            .width(7.dp)
                             .height(7.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF0D6EFD))
+                            .background(Color(0xFFCAE9FF))
                     )
                 }
             }
@@ -148,7 +150,7 @@ fun MHHNhCh3(
         }
 
         PrimaryButton(
-            text = "Tiếp Tục",
+            text = "Bắt đầu",
             onClick = onStartClick,
             modifier = Modifier
                 .align(Alignment.BottomCenter)

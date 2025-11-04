@@ -1,4 +1,4 @@
-package com.example.smarttravel.ui.wait
+package com.example.smarttravel.ui.screens.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

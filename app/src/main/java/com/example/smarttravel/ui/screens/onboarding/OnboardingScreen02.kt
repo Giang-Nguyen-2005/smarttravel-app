@@ -1,4 +1,4 @@
-package com.example.smarttravel.ui.screens.splash
+package com.example.smarttravel.ui.screens.onboarding
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,7 +26,7 @@ import com.example.smarttravel.ui.components.PrimaryButton
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun MHHNhCh2(
+fun OnboardingScreen02(
     onSkip: () -> Unit = {},
     onStartClick: () -> Unit = {}
 ) {
@@ -95,7 +95,8 @@ fun MHHNhCh2(
                         ) { append("khám phá") }
                     },
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 12.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    lineHeight = 40.sp
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))

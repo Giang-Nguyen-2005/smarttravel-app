@@ -1,54 +1,60 @@
 package com.example.smarttravel.ui.screens.onboarding
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.smarttravel.R
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.navigation.NavController
+import com.example.smarttravel.navigation.Screen
+import kotlinx.coroutines.launch
 
-@Preview(showBackground = true, showSystemUi = true )
+@OptIn(ExperimentalFoundationApi::class) // Cần cho HorizontalPager
 @Composable
-fun MNHNhCh() {
-    // Màn hình chính (bo góc như Figma)
-    Box(
-        modifier = Modifier
-            .fillMaxSize() // Bo góc như path trong vector
-            .background(Color(0xFF037CAC)),  // Màu nền xanh (#037CAC)
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = 24.dp)
-        ) {
-            // --- Tiêu đề ---
-            Text(
-                text = "Smart Travel",
-                color = Color.White,
-                fontSize = 42.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+fun OnboardingScreen(navController: NavController) {
+
+    // Pager state cho 3 trang
+    val pagerState = rememberPagerState(initialPage = 0) {
+        3
+    }
+    val scope = rememberCoroutineScope()
+
+    // Hàm chung để điều hướng đến Login (khi nhấn Skip hoặc nút cuối)
+    val navigateToLogin = {
+        navController.navigate(Screen.Login.route) {
+            // Xóa Onboarding khỏi back stack
+            popUpTo(Screen.Onboarding.route) {
+                inclusive = true
+            }
+        }
+    }
+
+    HorizontalPager(state = pagerState) { page ->
+        when (page) {
+            // Trang 1
+            0 -> OnboardingScreen01(
+                onSkip = navigateToLogin,
+                onStartClick = {
+                    // Chuyển sang trang 2
+                    scope.launch {
+                        pagerState.animateScrollToPage(1)
+                    }
+                }
             )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // --- Ảnh minh họa ---
-            Image(
-                painter = painterResource(id = R.drawable.travel_bus),
-                contentDescription = "Logo Smart Travel",
-                modifier = Modifier
-                    .size(250.dp)
-                    .padding(4.dp)
+            // Trang 2
+            1 -> OnboardingScreen02(
+                onSkip = navigateToLogin,
+                onStartClick = {
+                    // Chuyển sang trang 3
+                    scope.launch {
+                        pagerState.animateScrollToPage(2)
+                    }
+                }
+            )
+            // Trang 3
+            2 -> OnboardingScreen03(
+                onSkip = navigateToLogin,
+                onStartClick = navigateToLogin // Nút cuối cùng, chuyển đến Login
             )
         }
     }

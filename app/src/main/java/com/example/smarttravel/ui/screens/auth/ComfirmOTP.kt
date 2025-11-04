@@ -1,4 +1,4 @@
-package com.example.smarttravel.ui.wait
+package com.example.smarttravel.ui.screens.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.sp
 import com.example.smarttravel.ui.components.AppTopBar
 import com.example.smarttravel.ui.components.PrimaryButton
 import com.example.smarttravel.ui.components.OtpTextField
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +28,7 @@ fun ConfirmOTPScreen(
     // ⏳ Giả lập đếm ngược thời gian
     LaunchedEffect(Unit) {
         while (timer > 0) {
-            kotlinx.coroutines.delay(1000)
+            delay(1000)
             timer--
         }
     }
