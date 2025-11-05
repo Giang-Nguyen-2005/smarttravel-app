@@ -12,7 +12,20 @@
           "package_name": "com.example.smarttravel"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "8590004585-5onf42evlredehg9u8a9kevqtmc787fj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.smarttravel",
+            "certificate_hash": "7d49daff52deb8f1a8e56ab9a5bac8f9b6d0be62"
+          }
+        },
+        {
+          "client_id": "8590004585-psfan5jmo91vog9g11t5i8h756erhv4g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDQCdJWde4ZkaLkiTjey-CGdYy7hFmlEhg"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "8590004585-psfan5jmo91vog9g11t5i8h756erhv4g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -13,6 +13,7 @@ import com.example.smarttravel.ui.screens.splash.SplashScreen
 import com.example.smarttravel.ui.screens.auth.LoginScreen
 import com.example.smarttravel.ui.screens.auth.RegisterScreen
 import com.example.smarttravel.ui.screens.home.HomeScreen
+import com.example.smarttravel.ui.screens.auth.ResetPasswordScreen
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
@@ -39,6 +40,10 @@ fun AppNavigation(navController: NavHostController) {
         // Màn hình Register
         composable(Screen.Register.route) {
             RegisterScreen(navController = navController)
+        }
+        // Màn hình restpassword
+        composable(Screen.ResetPassword.route) {
+            ResetPasswordScreen(navController = navController)
         }
 
         // Màn hình Home (sau khi đăng nhập)

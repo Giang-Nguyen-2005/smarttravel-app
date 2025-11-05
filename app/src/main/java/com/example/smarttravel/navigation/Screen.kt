@@ -6,6 +6,8 @@ sealed class Screen(val route: String) {
     object Login : Screen("login_screen")
     object Register : Screen("register_screen")
 
+    object ResetPassword : Screen("reset_password_screen")
+
     // 4 Màn hình chính trên thanh Nav
     object Home : Screen("home_screen")
     object Calendar : Screen("schedule_screen")

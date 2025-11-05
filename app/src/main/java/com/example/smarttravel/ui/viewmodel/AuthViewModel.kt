@@ -6,20 +6,25 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.smarttravel.data.repository.AuthRepository
-import dagger.hilt.android.lifecycle.HiltViewModel // <-- THÊM DÒNG NÀY
+import com.google.firebase.auth.FirebaseUser
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject // <-- THÊM DÒNG NÀY
+import javax.inject.Inject
 
-// Đánh dấu ViewModel này để Hilt tự động tạo và cung cấp nó
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository // Hilt sẽ tự động cung cấp AuthRepositoryImpl
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
+    // (Các biến state cho form)
     var email by mutableStateOf("")
     var password by mutableStateOf("")
     var confirmPassword by mutableStateOf("")
 
+    // (State cho kết quả của hành động: Lỗi, Thành công, v.v.)
     var authState by mutableStateOf<AuthState>(AuthState.Idle)
         private set
 
@@ -30,6 +35,31 @@ class AuthViewModel @Inject constructor(
         data class Error(val message: String) : AuthState()
     }
 
+    // (State để kiểm tra khi khởi động app - dùng cho SplashScreen)
+    sealed class AuthCheckState {
+        object Loading : AuthCheckState()
+        data class LoggedIn(val user: FirebaseUser) : AuthCheckState()
+        object LoggedOut : AuthCheckState()
+    }
+
+    private val _authCheckState = MutableStateFlow<AuthCheckState>(AuthCheckState.Loading)
+    val authCheckState: StateFlow<AuthCheckState> = _authCheckState.asStateFlow()
+
+    init {
+        // Lắng nghe trạng thái đăng nhập
+        viewModelScope.launch {
+            authRepository.getAuthState().collect { user ->
+                _authCheckState.value = if (user != null) {
+                    AuthCheckState.LoggedIn(user)
+                } else {
+                    AuthCheckState.LoggedOut
+                }
+            }
+        }
+    }
+
+    // --- CÁC HÀM HÀNH ĐỘNG (ACTION) ---
+
     fun registerUser() {
         if (password != confirmPassword) {
             authState = AuthState.Error("Mật khẩu xác nhận không khớp.")
@@ -38,10 +68,10 @@ class AuthViewModel @Inject constructor(
         authState = AuthState.Loading
         viewModelScope.launch {
             val result = authRepository.registerUser(email, password)
-            if (result.isSuccess) {
-                authState = AuthState.Success
+            authState = if (result.isSuccess) {
+                AuthState.Success
             } else {
-                authState = AuthState.Error(result.exceptionOrNull()?.message ?: "Đăng ký thất bại.")
+                AuthState.Error(result.exceptionOrNull()?.message ?: "Đăng ký thất bại.")
             }
         }
     }
@@ -50,10 +80,39 @@ class AuthViewModel @Inject constructor(
         authState = AuthState.Loading
         viewModelScope.launch {
             val result = authRepository.loginUser(email, password)
-            if (result.isSuccess) {
-                authState = AuthState.Success
+            authState = if (result.isSuccess) {
+                AuthState.Success
             } else {
-                authState = AuthState.Error(result.exceptionOrNull()?.message ?: "Đăng nhập thất bại.")
+                AuthState.Error(result.exceptionOrNull()?.message ?: "Đăng nhập thất bại.")
+            }
+        }
+    }
+
+    fun signInWithGoogle(idToken: String, email: String) {
+        authState = AuthState.Loading
+        viewModelScope.launch {
+            val result = authRepository.signInWithGoogle(idToken, email)
+            authState = if (result.isSuccess) {
+                AuthState.Success
+            } else {
+                AuthState.Error(result.exceptionOrNull()?.message ?: "Đăng nhập Google thất bại.")
+            }
+        }
+    }
+
+    fun sendPasswordResetEmail() {
+        if (email.isBlank()) {
+            authState = AuthState.Error("Vui lòng nhập email.")
+            return
+        }
+        authState = AuthState.Loading
+        viewModelScope.launch {
+            val result = authRepository.sendPasswordResetEmail(email)
+            authState = if (result.isSuccess) {
+                // Bạn có thể muốn một state riêng cho 'ResetEmailSent'
+                AuthState.Success
+            } else {
+                AuthState.Error(result.exceptionOrNull()?.message ?: "Gửi email thất bại.")
             }
         }
     }
@@ -61,10 +120,6 @@ class AuthViewModel @Inject constructor(
     fun logout() {
         authRepository.logout()
         authState = AuthState.Idle
-    }
-
-    fun isUserLoggedIn(): Boolean {
-        return authRepository.getCurrentUser() != null
     }
 
     fun resetAuthState() {

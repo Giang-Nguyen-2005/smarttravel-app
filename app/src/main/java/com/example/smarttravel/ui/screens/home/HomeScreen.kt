@@ -25,6 +25,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button // <-- THÊM IMPORT
+import androidx.compose.material3.ButtonDefaults // <-- THÊM IMPORT
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +60,13 @@ import com.example.smarttravel.R
 import com.example.smarttravel.ui.components.DestinationCard
 import com.example.smarttravel.ui.theme.SmarttravelTheme
 
+// --- THÊM CÁC IMPORT NÀY ---
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.smarttravel.navigation.Screen
+import com.example.smarttravel.ui.viewmodel.AuthViewModel
+// --- KẾT THÚC THÊM IMPORT ---
+
+// (Data classes và Dữ liệu giả giữ nguyên)
 data class Category(val name: String, val iconRes: Int)
 data class Destination(val id: Int, val name: String, val location: String, val rating: Double, val price: Int, val imageUrl: String)
 data class LargeDestination(val id: Int, val name: String, val rating: Double, val imageUrl: String)
@@ -68,36 +77,36 @@ val dummyCategories = listOf(
     Category("Núi", R.drawable.icon_mountain),
     Category("Rừng", R.drawable.icon_forest)
 )
-
 val dummyDestinations = listOf(
-    Destination(1, "Hồ Lắk", "Idaho", 4.5, 40, "ha_long"), // Tên file ảnh trong drawable
+    Destination(1, "Hồ Lắk", "Idaho", 4.5, 40, "ha_long"),
     Destination(2, "Putang inomo", "Canada", 4.5, 40, "ha_long"),
     Destination(3, "Ba Vì", "Canada", 4.7, 50, "ha_long")
 )
-
 val dummyLargeDestinations = listOf(
-    LargeDestination(1, "Vịnh Hạ Long", 4.8, "avatar"), // Tên file ảnh trong drawable
+    LargeDestination(1, "Vịnh Hạ Long", 4.8, "avatar"),
     LargeDestination(2, "Ba Vi", 4.6, "ha_long")
 )
-// --- Kết thúc Dữ liệu giả ---
 
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel = hiltViewModel() // <-- LẤY VIEWMODEL
+) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White) // Nền trắng cho toàn màn hình
+            .background(Color.White)
     ) {
-        // 1. Top Bar Tùy Chỉnh (Nguyễn Văn A & Chuông)
+        // 1. Top Bar Tùy Chỉnh
         item {
             HomeTopBar(
-                userName = "Nguyễn Văn A",
+                userName = "Nguyễn Văn A", // TODO: Lấy userName từ authViewModel
                 onNotificationClick = {}
             )
         }
 
-        // 2. Danh Mục (Hồ, Biển, Núi...)
+        // 2. Danh Mục
         item {
             CategorySection(
                 categories = dummyCategories
@@ -112,8 +121,7 @@ fun HomeScreen(navController: NavController) {
                 modifier = Modifier.padding(16.dp)
             )
         }
-        // 3. Hàng cuộn ngang (Sử dụng DestinationCard của bạn)
-        // (Không có tiêu đề "Gợi ý" trong ảnh, nên tôi bỏ qua)
+        // 3. Hàng cuộn ngang (Gợi ý)
         item {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
@@ -140,22 +148,44 @@ fun HomeScreen(navController: NavController) {
             )
         }
 
-        // 5. Hàng cuộn ngang cho Card Lớn
+        // 5. Hàng cuộn ngang (Card Lớn)
         item {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(dummyLargeDestinations) { destination ->
-
                     LargeDestinationCard(destination = destination)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
+
+        // --- BẮT ĐẦU: THÊM NÚT LOGOUT (TEST) ---
+        item {
+            Button(
+                onClick = {
+                    authViewModel.logout()
+                    // Quay về Splash, nó sẽ tự điều hướng về Login
+                    navController.navigate(Screen.Splash.route) {
+                        popUpTo(navController.graph.id) {
+                            inclusive = true
+                        }
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text("ĐĂNG XUẤT (TEST)")
+            }
+        }
+        // --- KẾT THÚC: THÊM NÚT LOGOUT (TEST) ---
     }
 }
 
+// (Các Composable HomeTopBar, CategorySection, CategoryChip, LargeDestinationCard giữ nguyên)
 @Composable
 fun HomeTopBar(
     userName: String,
@@ -298,7 +328,7 @@ fun LargeDestinationCard(
         shape = RoundedCornerShape(20.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Logic tải ảnh giống hệt DestinationCard.kt [cite: 42-52]
+            // Logic tải ảnh
             val imageUrl = destination.imageUrl
             val isNetworkImage = imageUrl.startsWith("http") || imageUrl.startsWith("https://")
 
@@ -323,7 +353,7 @@ fun LargeDestinationCard(
                 )
             }
 
-            // Lớp phủ Gradient mờ ở dưới
+            // Lớp phủ Gradient
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -349,7 +379,7 @@ fun LargeDestinationCard(
                 )
             }
 
-            // Text nội dung ở dưới
+            // Text nội dung
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
