@@ -25,15 +25,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button // <-- THÊM IMPORT
-import androidx.compose.material3.ButtonDefaults // <-- THÊM IMPORT
+import androidx.compose.material3.Button // <-- GIỮ NGUYÊN
+import androidx.compose.material3.ButtonDefaults // <-- GIỮ NGUYÊN
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator // <-- THÊM MỚI
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState // <-- THÊM MỚI
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,46 +61,31 @@ import com.example.smarttravel.R
 // TÁI SỬ DỤNG COMPONENT
 import com.example.smarttravel.ui.components.DestinationCard
 import com.example.smarttravel.ui.theme.SmarttravelTheme
-
 // --- THÊM CÁC IMPORT NÀY ---
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.smarttravel.model.Category // <-- THÊM MODEL MỚI
 import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.viewmodel.AuthViewModel
-// --- KẾT THÚC THÊM IMPORT ---
+import com.example.smarttravel.ui.viewmodel.HomeViewModel // <-- THÊM VIEWMODEL MỚI
 
-// (Data classes và Dữ liệu giả giữ nguyên)
-data class Category(val name: String, val iconRes: Int)
-data class Destination(val id: Int, val name: String, val location: String, val rating: Double, val price: Int, val imageUrl: String)
-data class LargeDestination(val id: Int, val name: String, val rating: Double, val imageUrl: String)
-
-val dummyCategories = listOf(
-    Category("Hồ", R.drawable.icon_lake),
-    Category("Biển", R.drawable.icon_beach),
-    Category("Núi", R.drawable.icon_mountain),
-    Category("Rừng", R.drawable.icon_forest)
-)
-val dummyDestinations = listOf(
-    Destination(1, "Hồ Lắk", "Idaho", 4.5, 40, "ha_long"),
-    Destination(2, "Putang inomo", "Canada", 4.5, 40, "ha_long"),
-    Destination(3, "Ba Vì", "Canada", 4.7, 50, "ha_long")
-)
-val dummyLargeDestinations = listOf(
-    LargeDestination(1, "Vịnh Hạ Long", 4.8, "avatar"),
-    LargeDestination(2, "Ba Vi", 4.6, "ha_long")
-)
-
+// --- TOÀN BỘ DATA GIẢ ĐÃ BỊ XÓA ---
 
 @Composable
 fun HomeScreen(
     navController: NavController,
-    authViewModel: AuthViewModel = hiltViewModel() // <-- LẤY VIEWMODEL
+    authViewModel: AuthViewModel = hiltViewModel(),
+    homeViewModel: HomeViewModel = hiltViewModel() // <-- LẤY VIEWMODEL
 ) {
+    // Lắng nghe trạng thái từ ViewModel
+    val destinationState by homeViewModel.destinationUiState.collectAsState()
+    val categoryState by homeViewModel.categoryUiState.collectAsState()
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
-        // 1. Top Bar Tùy Chỉnh
+        // 1. Top Bar Tùy Chỉnh (Giữ nguyên)
         item {
             HomeTopBar(
                 userName = "Nguyễn Văn A", // TODO: Lấy userName từ authViewModel
@@ -108,9 +95,23 @@ fun HomeScreen(
 
         // 2. Danh Mục
         item {
-            CategorySection(
-                categories = dummyCategories
-            )
+            // Xử lý trạng thái Loading/Error/Success cho Category
+            when {
+                categoryState.isLoading -> {
+                    Box(modifier = Modifier.fillMaxWidth().height(50.dp).padding(16.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+                categoryState.error != null -> {
+                    Text("Lỗi tải danh mục: ${categoryState.error}", modifier = Modifier.padding(16.dp), color = Color.Red)
+                }
+                else -> {
+                    // Truyền dữ liệu thật vào
+                    CategorySection(
+                        categories = categoryState.categories
+                    )
+                }
+            }
         }
 
         item {
@@ -121,19 +122,36 @@ fun HomeScreen(
                 modifier = Modifier.padding(16.dp)
             )
         }
+
         // 3. Hàng cuộn ngang (Gợi ý)
         item {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(dummyDestinations) { destination ->
-                    DestinationCard(
-                        imageUrl = destination.imageUrl,
-                        title = destination.name,
-                        location = destination.location,
-                        rating = destination.rating
-                    )
+            // Xử lý trạng thái Loading/Error/Success cho Destination
+            when {
+                destinationState.isLoading -> {
+                    Box(modifier = Modifier.fillMaxWidth().height(220.dp).padding(16.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                destinationState.error != null -> {
+                    Text("Lỗi tải địa điểm: ${destinationState.error}", modifier = Modifier.padding(16.dp), color = Color.Red)
+                }
+                else -> {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Dùng dữ liệu thật
+                        items(destinationState.destinations) { destination ->
+                            DestinationCard(
+                                // Lấy ảnh đầu tiên trong mảng, nếu rỗng thì dùng fallback
+                                imageUrl = destination.images.firstOrNull() ?: "ha_long",
+                                title = destination.name,
+                                location = destination.location_name,
+                                // TODO: Thêm trường rating vào Firestore và Destination model
+                                rating = 4.8
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -150,18 +168,26 @@ fun HomeScreen(
 
         // 5. Hàng cuộn ngang (Card Lớn)
         item {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(dummyLargeDestinations) { destination ->
-                    LargeDestinationCard(destination = destination)
+            // Cũng dùng destinationState, chỉ khác là dùng LargeDestinationCard
+            if (!destinationState.isLoading && destinationState.error == null) {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(destinationState.destinations) { destination ->
+                        LargeDestinationCard(
+                            name = destination.name,
+                            // TODO: Thêm trường rating vào Firestore và Destination model
+                            rating = 4.8,
+                            imageUrl = destination.images.firstOrNull() ?: "ha_long"
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // --- BẮT ĐẦU: THÊM NÚT LOGOUT (TEST) ---
+        // --- THÊM NÚT LOGOUT (TEST) ---
         item {
             Button(
                 onClick = {
@@ -185,7 +211,7 @@ fun HomeScreen(
     }
 }
 
-// (Các Composable HomeTopBar, CategorySection, CategoryChip, LargeDestinationCard giữ nguyên)
+// (HomeTopBar giữ nguyên)
 @Composable
 fun HomeTopBar(
     userName: String,
@@ -198,7 +224,6 @@ fun HomeTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
@@ -209,7 +234,9 @@ fun HomeTopBar(
             Image(
                 painter = painterResource(id = R.drawable.avatar), // Thay avatar
                 contentDescription = "Avatar",
-                modifier = Modifier.size(32.dp).clip(CircleShape)
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -218,7 +245,6 @@ fun HomeTopBar(
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-
         // Nút chuông
         IconButton(
             onClick = onNotificationClick,
@@ -236,11 +262,27 @@ fun HomeTopBar(
     }
 }
 
+/**
+ * Hàm helper để map category ID (ví dụ: "nui") sang icon (ví dụ: R.drawable.icon_mountain)
+ */
+@Composable
+fun getIconForCategory(categoryId: String): Int {
+    return when (categoryId) {
+        "nui" -> R.drawable.icon_mountain
+        "bien" -> R.drawable.icon_beach
+        "ho" -> R.drawable.icon_lake
+        "rung" -> R.drawable.icon_forest
+        // Icon mặc định nếu không khớp
+        else -> R.drawable.ic_launcher_foreground
+    }
+}
+
 @Composable
 fun CategorySection(
-    categories: List<Category>
+    categories: List<Category> // <-- SỬ DỤNG MODEL MỚI
 ) {
-    var selectedCategory by remember { mutableStateOf(categories.first().name) }
+    // Lấy id của category đầu tiên làm mục được chọn mặc định
+    var selectedCategory by remember { mutableStateOf(categories.firstOrNull()?.id ?: "") }
 
     Column(modifier = Modifier.padding(bottom = 16.dp)) {
         Text(
@@ -257,9 +299,10 @@ fun CategorySection(
             items(categories) { category ->
                 // DÙNG COMPONENT MỚI CHO CATEGORY
                 CategoryChip(
-                    category = category,
-                    isSelected = category.name == selectedCategory,
-                    onClick = { selectedCategory = category.name }
+                    categoryName = category.name, // <-- Dùng tên thật
+                    categoryIconRes = getIconForCategory(category.id), // <-- Dùng icon đã map
+                    isSelected = category.id == selectedCategory,
+                    onClick = { selectedCategory = category.id }
                 )
             }
         }
@@ -268,14 +311,14 @@ fun CategorySection(
 
 @Composable
 fun CategoryChip(
-    category: Category,
+    categoryName: String, // <-- Sửa tham số
+    categoryIconRes: Int, // <-- Sửa tham số
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     val backgroundColor = if (isSelected) Color.White else Color(0xFFF5F5F5)
     val contentColor = if (isSelected) Color(0xFF037CAC) else Color(0xFF00838F)
     val borderColor = if (isSelected) Color(0xFF037CAC) else Color(0xFFEEEEEE)
-
     Surface(
         modifier = Modifier
             .height(50.dp)
@@ -298,8 +341,8 @@ fun CategoryChip(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    painter = painterResource(id = category.iconRes),
-                    contentDescription = category.name,
+                    painter = painterResource(id = categoryIconRes), // <-- Dùng icon đã map
+                    contentDescription = categoryName,
                     tint = if (isSelected) Color.White else contentColor,
                     modifier = Modifier.size(18.dp)
                 )
@@ -307,7 +350,7 @@ fun CategoryChip(
             Spacer(modifier = Modifier.width(8.dp))
             // Text
             Text(
-                text = category.name,
+                text = categoryName, // <-- Dùng tên thật
                 color = Color.Black, // Text luôn là màu đen
                 fontWeight = FontWeight.Medium,
                 fontSize = 16.sp
@@ -318,7 +361,10 @@ fun CategoryChip(
 
 @Composable
 fun LargeDestinationCard(
-    destination: LargeDestination
+    // Sửa lại tham số để nhận dữ liệu thật
+    name: String,
+    rating: Double,
+    imageUrl: String
 ) {
     // Card lớn cho "Điểm đến tốt nhất" (Vịnh Hạ Long)
     Card(
@@ -329,14 +375,12 @@ fun LargeDestinationCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Logic tải ảnh
-            val imageUrl = destination.imageUrl
             val isNetworkImage = imageUrl.startsWith("http") || imageUrl.startsWith("https://")
-
             if (isNetworkImage) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(imageUrl).crossfade(true).build(),
-                    contentDescription = destination.name,
+                    contentDescription = name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -344,15 +388,13 @@ fun LargeDestinationCard(
                 val context = LocalContext.current
                 val resId = context.resources.getIdentifier(imageUrl, "drawable", context.packageName)
                 val painter = if (resId != 0) painterResource(id = resId) else painterResource(id = R.drawable.ic_launcher_foreground)
-
                 Image(
                     painter = painter,
-                    contentDescription = destination.name,
+                    contentDescription = name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
             }
-
             // Lớp phủ Gradient
             Box(
                 modifier = Modifier
@@ -364,9 +406,8 @@ fun LargeDestinationCard(
                         )
                     )
             )
-
             IconButton(
-                onClick = { /*TODO*/ },
+                onClick = { /* TODO */ },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
@@ -378,7 +419,6 @@ fun LargeDestinationCard(
                     tint = Color.White
                 )
             }
-
             // Text nội dung
             Column(
                 modifier = Modifier
@@ -386,7 +426,7 @@ fun LargeDestinationCard(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = destination.name,
+                    text = name,
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
@@ -403,7 +443,7 @@ fun LargeDestinationCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${destination.rating}",
+                        text = "$rating",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
@@ -413,7 +453,6 @@ fun LargeDestinationCard(
         }
     }
 }
-
 
 // --- PREVIEW ---
 @Preview(showBackground = true)

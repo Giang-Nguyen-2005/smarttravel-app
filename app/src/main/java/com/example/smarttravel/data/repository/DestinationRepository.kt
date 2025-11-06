@@ -1,4 +1,13 @@
 package com.example.smarttravel.data.repository
 
+import com.example.smarttravel.model.Destination
+import com.example.smarttravel.model.Category
+import kotlinx.coroutines.flow.Flow
+
 interface DestinationRepository {
+    fun getCategories(): Flow<Result<List<Category>>>
+    fun getDestinations(): Flow<Result<List<Destination>>>
+
+    // (Sẽ làm sau)
+    // fun getDestinationById(id: String): Flow<Result<Destination>>
 }
