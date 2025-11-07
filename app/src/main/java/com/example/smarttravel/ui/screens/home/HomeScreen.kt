@@ -4,18 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -23,23 +12,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button // <-- GIỮ NGUYÊN
-import androidx.compose.material3.ButtonDefaults // <-- GIỮ NGUYÊN
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator // <-- THÊM MỚI
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState // <-- THÊM MỚI
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,164 +34,175 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.smarttravel.R
-// TÁI SỬ DỤNG COMPONENT
+import com.example.smarttravel.model.Category
+import com.example.smarttravel.navigation.Screen
+import com.example.smarttravel.ui.components.AppBottomBar
 import com.example.smarttravel.ui.components.DestinationCard
 import com.example.smarttravel.ui.theme.SmarttravelTheme
-// --- THÊM CÁC IMPORT NÀY ---
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.smarttravel.model.Category // <-- THÊM MODEL MỚI
-import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.viewmodel.AuthViewModel
-import com.example.smarttravel.ui.viewmodel.HomeViewModel // <-- THÊM VIEWMODEL MỚI
-
-// --- TOÀN BỘ DATA GIẢ ĐÃ BỊ XÓA ---
+import com.example.smarttravel.ui.viewmodel.HomeViewModel
 
 @Composable
 fun HomeScreen(
     navController: NavController,
     authViewModel: AuthViewModel = hiltViewModel(),
-    homeViewModel: HomeViewModel = hiltViewModel() // <-- LẤY VIEWMODEL
+    homeViewModel: HomeViewModel = hiltViewModel()
 ) {
-    // Lắng nghe trạng thái từ ViewModel
+    // Lắng nghe các trạng thái từ ViewModel
     val destinationState by homeViewModel.destinationUiState.collectAsState()
     val categoryState by homeViewModel.categoryUiState.collectAsState()
+    val selectedCategory by homeViewModel.selectedCategory.collectAsState()
+    val userProfile by homeViewModel.userProfile.collectAsState()
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        // 1. Top Bar Tùy Chỉnh (Giữ nguyên)
-        item {
-            HomeTopBar(
-                userName = "Nguyễn Văn A", // TODO: Lấy userName từ authViewModel
-                onNotificationClick = {}
-            )
+    // Sử dụng Scaffold để chứa AppBottomBar
+    Scaffold(
+        bottomBar = {
+            AppBottomBar(navController = navController, currentRoute = Screen.Home.route)
         }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(paddingValues), // Tránh nội dung bị BottomBar che khuất
+            contentPadding = PaddingValues(bottom = 16.dp)
+        ) {
+            // 1. Top Bar
+            item {
+                HomeTopBar(
+                    userName = userProfile?.displayName ?: "Khách",
+                    avatarUrl = userProfile?.avatarUrl ?: "",
+                    onNotificationClick = {}
+                )
+            }
 
-        // 2. Danh Mục
-        item {
-            // Xử lý trạng thái Loading/Error/Success cho Category
-            when {
-                categoryState.isLoading -> {
-                    Box(modifier = Modifier.fillMaxWidth().height(50.dp).padding(16.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    }
-                }
-                categoryState.error != null -> {
-                    Text("Lỗi tải danh mục: ${categoryState.error}", modifier = Modifier.padding(16.dp), color = Color.Red)
-                }
-                else -> {
-                    // Truyền dữ liệu thật vào
+            // 2. Danh Mục (Filter)
+            item {
+                if (!categoryState.isLoading && categoryState.error == null) {
                     CategorySection(
-                        categories = categoryState.categories
+                        categories = categoryState.categories,
+                        selectedCategory = selectedCategory,
+                        onCategoryClick = { categoryId ->
+                            homeViewModel.onCategorySelected(categoryId)
+                        }
                     )
                 }
             }
-        }
 
-        item {
-            Text(
-                text = "Điểm địa gợi ý",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
-            )
-        }
+            // 3. Khối "Gợi ý AI" nổi bật (MỚI)
+            item {
+                AiSuggestionCard(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    onClick = { /* TODO: Mở màn hình chi tiết gợi ý AI */ }
+                )
+            }
 
-        // 3. Hàng cuộn ngang (Gợi ý)
-        item {
-            // Xử lý trạng thái Loading/Error/Success cho Destination
-            when {
-                destinationState.isLoading -> {
-                    Box(modifier = Modifier.fillMaxWidth().height(220.dp).padding(16.dp), contentAlignment = Alignment.Center) {
+            // 4. Tiêu đề "Khám phá"
+            item {
+                Text(
+                    text = "Khám phá",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                )
+            }
+
+            // 5. Danh sách địa điểm (LazyRow - đã được lọc bởi ViewModel)
+            item {
+                if (destinationState.isLoading) {
+                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
-                }
-                destinationState.error != null -> {
-                    Text("Lỗi tải địa điểm: ${destinationState.error}", modifier = Modifier.padding(16.dp), color = Color.Red)
-                }
-                else -> {
+                } else if (destinationState.error != null) {
+                    Text("Lỗi: ${destinationState.error}", modifier = Modifier.padding(16.dp), color = Color.Red)
+                } else if (destinationState.destinations.isEmpty()) {
+                    Text("Không tìm thấy địa điểm phù hợp.", modifier = Modifier.padding(16.dp), color = Color.Gray)
+                } else {
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Dùng dữ liệu thật
                         items(destinationState.destinations) { destination ->
                             DestinationCard(
-                                // Lấy ảnh đầu tiên trong mảng, nếu rỗng thì dùng fallback
+                                modifier = Modifier.clickable {
+                                    navController.navigate(Screen.Detail.createRoute(destination.id))
+                                },
                                 imageUrl = destination.images.firstOrNull() ?: "ha_long",
                                 title = destination.name,
                                 location = destination.location_name,
-                                // TODO: Thêm trường rating vào Firestore và Destination model
-                                rating = 4.8
+                                rating = destination.rating
                             )
                         }
                     }
                 }
             }
-        }
 
-        // 4. Tiêu đề "Điểm đến tốt nhất"
-        item {
-            Text(
-                text = "Điểm đến tốt nhất",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-
-        // 5. Hàng cuộn ngang (Card Lớn)
-        item {
-            // Cũng dùng destinationState, chỉ khác là dùng LargeDestinationCard
-            if (!destinationState.isLoading && destinationState.error == null) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(destinationState.destinations) { destination ->
-                        LargeDestinationCard(
-                            name = destination.name,
-                            // TODO: Thêm trường rating vào Firestore và Destination model
-                            rating = 4.8,
-                            imageUrl = destination.images.firstOrNull() ?: "ha_long"
-                        )
-                    }
-                }
+            // 6. Khối "Kế hoạch gần đây" (MỚI)
+            item {
+                RecentPlanSection(onClick = { navController.navigate(Screen.Calendar.route) })
             }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
 
-        // --- THÊM NÚT LOGOUT (TEST) ---
-        item {
-            Button(
-                onClick = {
-                    authViewModel.logout()
-                    // Quay về Splash, nó sẽ tự điều hướng về Login
-                    navController.navigate(Screen.Splash.route) {
-                        popUpTo(navController.graph.id) {
-                            inclusive = true
+            // 7. Tiêu đề "Đang thịnh hành"
+            item {
+                Text(
+                    text = "Đang thịnh hành",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 16.dp)
+                )
+            }
+
+            // 8. Danh sách thịnh hành (Card Lớn)
+            item {
+                // Tạm thời hiển thị top 5 địa điểm đầu tiên
+                if (!destinationState.isLoading && destinationState.destinations.isNotEmpty()) {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(destinationState.destinations.take(5)) { destination ->
+                            LargeDestinationCard(
+                                modifier = Modifier.clickable {
+                                    navController.navigate(Screen.Detail.createRoute(destination.id))
+                                },
+                                name = destination.name,
+                                rating = destination.rating,
+                                imageUrl = destination.images.firstOrNull() ?: "ha_long"
+                            )
                         }
                     }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text("ĐĂNG XUẤT (TEST)")
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+            item {
+                Button(
+                    onClick = {
+                        authViewModel.logout()
+                        // Điều hướng về màn hình Login và xóa Home khỏi stack
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error), // Màu đỏ để dễ thấy
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp)
+                ) {
+                    Text("Đăng xuất (Test)")
+                }
             }
         }
-        // --- KẾT THÚC: THÊM NÚT LOGOUT (TEST) ---
     }
 }
 
-// (HomeTopBar giữ nguyên)
+// ======================= CÁC COMPONENT CON =======================
+
 @Composable
 fun HomeTopBar(
     userName: String,
+    avatarUrl: String,
     onNotificationClick: () -> Unit
 ) {
     Row(
@@ -227,17 +215,28 @@ fun HomeTopBar(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
-                .background(Color(0xFFD9D9D9).copy(alpha = 0.5f)) // Màu hồng nhạt
+                .background(Color(0xFFD9D9D9).copy(alpha = 0.5f))
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.avatar), // Thay avatar
-                contentDescription = "Avatar",
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-            )
+            if (avatarUrl.isNotEmpty()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(avatarUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Avatar",
+                    modifier = Modifier.size(32.dp).clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.avatar), // Ảnh mặc định
+                    contentDescription = "Avatar",
+                    modifier = Modifier.size(32.dp).clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = userName,
@@ -245,13 +244,12 @@ fun HomeTopBar(
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-        // Nút chuông
         IconButton(
             onClick = onNotificationClick,
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFEEEEEE).copy(alpha = 0.8f)) // Nền xám nhạt
+                .background(Color(0xFFEEEEEE).copy(alpha = 0.8f))
         ) {
             Icon(
                 imageVector = Icons.Default.NotificationsNone,
@@ -262,28 +260,24 @@ fun HomeTopBar(
     }
 }
 
-/**
- * Hàm helper để map category ID (ví dụ: "nui") sang icon (ví dụ: R.drawable.icon_mountain)
- */
 @Composable
 fun getIconForCategory(categoryId: String): Int {
     return when (categoryId) {
+        "all" -> R.drawable.icon_all
         "nui" -> R.drawable.icon_mountain
         "bien" -> R.drawable.icon_beach
         "ho" -> R.drawable.icon_lake
         "rung" -> R.drawable.icon_forest
-        // Icon mặc định nếu không khớp
         else -> R.drawable.ic_launcher_foreground
     }
 }
 
 @Composable
 fun CategorySection(
-    categories: List<Category> // <-- SỬ DỤNG MODEL MỚI
+    categories: List<Category>,
+    selectedCategory: String,
+    onCategoryClick: (String) -> Unit
 ) {
-    // Lấy id của category đầu tiên làm mục được chọn mặc định
-    var selectedCategory by remember { mutableStateOf(categories.firstOrNull()?.id ?: "") }
-
     Column(modifier = Modifier.padding(bottom = 16.dp)) {
         Text(
             text = "Danh Mục",
@@ -297,12 +291,11 @@ fun CategorySection(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(categories) { category ->
-                // DÙNG COMPONENT MỚI CHO CATEGORY
                 CategoryChip(
-                    categoryName = category.name, // <-- Dùng tên thật
-                    categoryIconRes = getIconForCategory(category.id), // <-- Dùng icon đã map
+                    categoryName = category.name,
+                    categoryIconRes = getIconForCategory(category.id),
                     isSelected = category.id == selectedCategory,
-                    onClick = { selectedCategory = category.id }
+                    onClick = { onCategoryClick(category.id) }
                 )
             }
         }
@@ -311,8 +304,8 @@ fun CategorySection(
 
 @Composable
 fun CategoryChip(
-    categoryName: String, // <-- Sửa tham số
-    categoryIconRes: Int, // <-- Sửa tham số
+    categoryName: String,
+    categoryIconRes: Int,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -332,7 +325,6 @@ fun CategoryChip(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
-            // Icon
             Box(
                 modifier = Modifier
                     .size(30.dp)
@@ -341,17 +333,16 @@ fun CategoryChip(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    painter = painterResource(id = categoryIconRes), // <-- Dùng icon đã map
+                    painter = painterResource(id = categoryIconRes),
                     contentDescription = categoryName,
                     tint = if (isSelected) Color.White else contentColor,
                     modifier = Modifier.size(18.dp)
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            // Text
             Text(
-                text = categoryName, // <-- Dùng tên thật
-                color = Color.Black, // Text luôn là màu đen
+                text = categoryName,
+                color = Color.Black,
                 fontWeight = FontWeight.Medium,
                 fontSize = 16.sp
             )
@@ -360,21 +351,143 @@ fun CategoryChip(
 }
 
 @Composable
+fun AiSuggestionCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(150.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        // Sử dụng màu gradient hoặc màu nổi bật cho AI
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFEDF7FF))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Gợi ý hôm nay ✨",
+                    color = Color(0xFF037CAC),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Dựa trên sở thích của bạn: Khám phá Sa Pa mùa lúa chín!",
+                    color = Color.Black,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "Xem chi tiết →",
+                    color = Color(0xFF037CAC),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            // Ảnh minh họa cho AI (có thể thay bằng robot hoặc icon phù hợp)
+            Icon(
+                painter = painterResource(id = R.drawable.icon_chat), // Tạm dùng icon chat
+                contentDescription = "AI Suggestion",
+                tint = Color(0xFF037CAC).copy(alpha = 0.8f),
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(Color.White, CircleShape)
+                    .padding(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun RecentPlanSection(onClick: () -> Unit) {
+    Column(modifier = Modifier.padding(top = 24.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Tiếp tục kế hoạch",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Xem tất cả",
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.clickable { onClick() }
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        // Card kế hoạch gần đây (giả lập)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .clickable { onClick() },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(50.dp)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarMonth,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Chuyến đi Vịnh Hạ Long",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "22/11 - 24/11/2025 • Sắp diễn ra",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun LargeDestinationCard(
-    // Sửa lại tham số để nhận dữ liệu thật
     name: String,
     rating: Double,
-    imageUrl: String
+    imageUrl: String,
+    modifier: Modifier = Modifier
 ) {
-    // Card lớn cho "Điểm đến tốt nhất" (Vịnh Hạ Long)
     Card(
-        modifier = Modifier
+        modifier = modifier
             .width(250.dp)
             .height(320.dp),
         shape = RoundedCornerShape(20.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Logic tải ảnh
             val isNetworkImage = imageUrl.startsWith("http") || imageUrl.startsWith("https://")
             if (isNetworkImage) {
                 AsyncImage(
@@ -395,14 +508,13 @@ fun LargeDestinationCard(
                     modifier = Modifier.fillMaxSize()
                 )
             }
-            // Lớp phủ Gradient
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 1f)),
-                            startY = 600f
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                            startY = 500f
                         )
                     )
             )
@@ -419,7 +531,6 @@ fun LargeDestinationCard(
                     tint = Color.White
                 )
             }
-            // Text nội dung
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -428,24 +539,24 @@ fun LargeDestinationCard(
                 Text(
                     text = name,
                     color = Color.White,
-                    fontSize = 20.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = "Rating",
                         tint = Color(0xFFFFC107),
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "$rating",
                         color = Color.White,
-                        fontSize = 14.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -454,12 +565,10 @@ fun LargeDestinationCard(
     }
 }
 
-// --- PREVIEW ---
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
     SmarttravelTheme {
-        val navController = rememberNavController()
-        HomeScreen(navController = navController)
+        // Preview cần mock ViewModel hoặc chạy trên máy ảo/thiết bị thật
     }
 }

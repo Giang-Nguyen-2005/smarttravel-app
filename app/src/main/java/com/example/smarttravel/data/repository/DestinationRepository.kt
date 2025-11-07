@@ -8,6 +8,5 @@ interface DestinationRepository {
     fun getCategories(): Flow<Result<List<Category>>>
     fun getDestinations(): Flow<Result<List<Destination>>>
 
-    // (Sẽ làm sau)
-    // fun getDestinationById(id: String): Flow<Result<Destination>>
+    fun getDestinationById(id: String): Flow<Result<Destination>>
 }

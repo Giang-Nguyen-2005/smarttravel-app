@@ -62,10 +62,10 @@ fun PlanScreen(navController: NavController) {
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
             item {
-                HomeTopBar(
-                    userName = "Nguyễn Văn A",
-                    onNotificationClick = {}
-                )
+                //HomeTopBar(
+                    //userName = "Nguyễn Văn A",
+                    //onNotificationClick = {}
+                //)
             }
 
             // Lịch dạng tuần (horizontal)

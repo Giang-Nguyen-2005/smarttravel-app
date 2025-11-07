@@ -11,8 +11,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.smarttravel.data.repository.AuthRepository
+import com.example.smarttravel.model.UserProfile
 
-// Trạng thái cho UI (Loading, Success, Error)
+// --- GIỮ NGUYÊN CÁC DATA CLASS STATE ---
 data class DestinationUiState(
     val destinations: List<Destination> = emptyList(),
     val isLoading: Boolean = true,
@@ -27,57 +29,100 @@ data class CategoryUiState(
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val destinationRepository: DestinationRepository // Hilt tự inject
+    private val destinationRepository: DestinationRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    // State cho Destinations
+    // --- STATE ---
+    // 1. Danh sách gốc (Tất cả địa điểm, không bị lọc)
+    private var allDestinations: List<Destination> = emptyList()
+
+    // 2. State cho UI (Danh sách đã được lọc để hiển thị)
     private val _destinationUiState = MutableStateFlow(DestinationUiState())
     val destinationUiState: StateFlow<DestinationUiState> = _destinationUiState.asStateFlow()
 
-    // State cho Categories
     private val _categoryUiState = MutableStateFlow(CategoryUiState())
     val categoryUiState: StateFlow<CategoryUiState> = _categoryUiState.asStateFlow()
 
+    // 3. Category đang được chọn (Mặc định là "all" - Tất cả)
+    private val _selectedCategory = MutableStateFlow("all")
+    val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
+
+    private val _userProfile = MutableStateFlow<UserProfile?>(null)
+    val userProfile: StateFlow<UserProfile?> = _userProfile.asStateFlow()
+
     init {
-        // Tự động tải dữ liệu khi ViewModel được tạo
-        loadDestinations()
         loadCategories()
+        loadDestinations()
+        loadUserProfile()
     }
 
-    private fun loadDestinations() {
+    // --- HÀM LOAD DỮ LIỆU ---
+    private fun loadCategories() {
         viewModelScope.launch {
-            _destinationUiState.value = DestinationUiState(isLoading = true) // Báo UI là đang load
-            destinationRepository.getDestinations().collect { result ->
+            _categoryUiState.value = CategoryUiState(isLoading = true)
+            destinationRepository.getCategories().collect { result ->
                 if (result.isSuccess) {
-                    _destinationUiState.value = DestinationUiState(
-                        destinations = result.getOrNull() ?: emptyList(),
-                        isLoading = false // Load xong
+                    val categories = result.getOrNull() ?: emptyList()
+                    // THÊM MỤC "TẤT CẢ" VÀO ĐẦU DANH SÁCH
+                    val allCategory = Category(id = "all", name = "Tất cả")
+                    _categoryUiState.value = CategoryUiState(
+                        categories = listOf(allCategory) + categories,
+                        isLoading = false
                     )
                 } else {
-                    _destinationUiState.value = DestinationUiState(
-                        isLoading = false, // Load lỗi
-                        error = result.exceptionOrNull()?.message ?: "Lỗi không xác định"
+                    _categoryUiState.value = CategoryUiState(
+                        isLoading = false,
+                        error = result.exceptionOrNull()?.message
                     )
                 }
             }
         }
     }
 
-    private fun loadCategories() {
+    private fun loadDestinations() {
         viewModelScope.launch {
-            _categoryUiState.value = CategoryUiState(isLoading = true)
-            destinationRepository.getCategories().collect { result ->
+            _destinationUiState.value = DestinationUiState(isLoading = true)
+            destinationRepository.getDestinations().collect { result ->
                 if (result.isSuccess) {
-                    _categoryUiState.value = CategoryUiState(
-                        categories = result.getOrNull() ?: emptyList(),
-                        isLoading = false
-                    )
+                    // Lưu danh sách gốc
+                    allDestinations = result.getOrNull() ?: emptyList()
+                    // Lọc lần đầu (mặc định là "all" nên sẽ hiện hết)
+                    filterDestinations(_selectedCategory.value)
                 } else {
-                    _categoryUiState.value = CategoryUiState(
+                    _destinationUiState.value = DestinationUiState(
                         isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Lỗi không xác định"
+                        error = result.exceptionOrNull()?.message
                     )
                 }
+            }
+        }
+    }
+
+    // --- HÀM LỌC (GỌI TỪ UI) ---
+    fun onCategorySelected(categoryId: String) {
+        _selectedCategory.value = categoryId
+        filterDestinations(categoryId)
+    }
+
+    private fun filterDestinations(categoryId: String) {
+        val filteredList = if (categoryId == "all") {
+            allDestinations // Nếu chọn "Tất cả", hiển thị danh sách gốc
+        } else {
+            // Nếu chọn category khác, lọc theo category_id
+            allDestinations.filter { it.category_id == categoryId }
+        }
+        // Cập nhật state cho UI
+        _destinationUiState.value = DestinationUiState(
+            destinations = filteredList,
+            isLoading = false
+        )
+    }
+
+    private fun loadUserProfile() {
+        viewModelScope.launch {
+            authRepository.getUserProfile().collect { profile ->
+                _userProfile.value = profile
             }
         }
     }

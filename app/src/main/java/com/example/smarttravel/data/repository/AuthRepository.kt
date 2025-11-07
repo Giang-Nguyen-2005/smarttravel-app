@@ -1,5 +1,6 @@
 package com.example.smarttravel.data.repository
 
+import com.example.smarttravel.model.UserProfile
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.Flow
 
@@ -25,4 +26,6 @@ interface AuthRepository {
 
     //Đăng xuất.
     fun logout()
+
+    fun getUserProfile(): Flow<UserProfile?>
 }

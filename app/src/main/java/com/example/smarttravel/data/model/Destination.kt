@@ -17,10 +17,14 @@ data class Destination(
 
     @get:PropertyName("category_id")
     @set:PropertyName("category_id")
-    var category_id: String = "", // Sẽ là "nui", "bien", "ho"...
+    var category_id: String = "",
 
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
+
+    @get:PropertyName("rating")
+    @set:PropertyName("rating")
+    var rating: Double = 0.0,
 
     val images: List<String> = emptyList()
 )
