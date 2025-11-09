@@ -9,4 +9,6 @@ interface DestinationRepository {
     fun getDestinations(): Flow<Result<List<Destination>>>
 
     fun getDestinationById(id: String): Flow<Result<Destination>>
+
+    fun searchDestinations(query: String): Flow<Result<List<Destination>>>
 }

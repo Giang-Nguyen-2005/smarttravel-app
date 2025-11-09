@@ -18,6 +18,8 @@ import com.example.smarttravel.ui.screens.auth.LoginScreen
 import com.example.smarttravel.ui.screens.auth.RegisterScreen
 import com.example.smarttravel.ui.screens.home.HomeScreen
 import com.example.smarttravel.ui.screens.auth.ResetPasswordScreen
+import com.example.smarttravel.ui.screens.chat.ChatScreen
+import com.example.smarttravel.ui.screens.search.SearchScreen
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
@@ -94,6 +96,6 @@ fun AppNavigation(navController: NavHostController) {
         // composable(Screen.Calendar.route) { CalendarScreen(navController = navController) }
         // composable(Screen.Chat.route) { ChatScreen(navController = navController) }
         // composable(Screen.Profile.route) { ProfileScreen(navController = navController) }
-        // composable(Screen.Search.route) { SearchScreen(navController = navController) }
+         composable(Screen.Search.route) { SearchScreen(navController = navController) }
     }
 }

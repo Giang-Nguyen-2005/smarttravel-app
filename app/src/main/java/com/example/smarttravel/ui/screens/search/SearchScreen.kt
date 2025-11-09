@@ -1,166 +1,343 @@
 package com.example.smarttravel.ui.screens.search
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.smarttravel.R
-import com.example.smarttravel.ui.components.AppTopBar
+import com.example.smarttravel.navigation.Screen
+import com.example.smarttravel.ui.components.AppBottomBar
 import com.example.smarttravel.ui.components.DestinationCard
-import com.example.smarttravel.ui.theme.SmarttravelTheme
-
-// --- Dữ liệu giả - Cập nhật để có Rating ---
-data class SearchItem(
-    val id: Int,
-    val name: String,
-    val location: String,
-    val rating: Double, // <-- Thêm Rating
-    val imageUrl: String
-)
-
-val dummySearchItems = listOf(
-    SearchItem(1, "Vịnh Hạ Long", "Quảng ninh", 4.2, "ha_long"),
-    SearchItem(2, "Hạ Long", "Việt Nam", 4.8, "avatar"),
-    SearchItem(3, "Địa điểm 3", "3", 3.9, "ha_long"),
-    SearchItem(4, "Địa điểm 4", "4", 4.5, "avatar"),
-    SearchItem(5, "Địa điểm 5", "4", 4.5, "travel_bus"),
-)
-// --- Kết thúc dữ liệu giả ---
+import com.example.smarttravel.ui.viewmodel.SearchViewModel
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.material.icons.filled.Done
 
 @Composable
-fun SearchScreen(navController: NavController) {
-    var searchText by remember { mutableStateOf("") }
+fun SearchScreen(
+    navController: NavController,
+    viewModel: SearchViewModel = hiltViewModel()
+) {
+    val searchText by viewModel.searchText.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+    val trendingDestinations by viewModel.trendingDestinations.collectAsState()
+    val searchHistory by viewModel.searchHistory.collectAsState() // [MỚI] Lấy lịch sử thật
+    val isLoading by viewModel.isLoading.collectAsState()
+    val focusManager = LocalFocusManager.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(horizontal = 16.dp)
-    ) {
-        // 1. Top Bar
-        SearchTopBar(
-            onBackClick = { navController.popBackStack() },
-            onCancelClick = { /* ... */ }
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 2. Thanh tìm kiếm
-        SearchBar(
-            searchText = searchText,
-            onSearchChanged = { searchText = it }
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 3. Tiêu đề
-        Text(
-            text = "Địa Điểm",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 4. Lưới kết quả (Dùng LazyVerticalGrid)
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2), // 2 cột
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 16.dp)
+    Scaffold(
+        bottomBar = {
+            // [SỬA LỖI] Luôn hiển thị AppBottomBar, không dùng điều kiện if nữa
+            AppBottomBar(navController = navController, currentRoute = Screen.Search.route)
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(paddingValues)
         ) {
-            items(dummySearchItems) { item ->
-                // --- TÁI SỬ DỤNG Ở ĐÂY ---
-                DestinationCard(
-                    // Không truyền modifier width để Grid tự xử lý
-                    imageUrl = item.imageUrl,
-                    title = item.name,
-                    location = item.location,
-                    rating = item.rating // Truyền rating
-                )
-                // --- KẾT THÚC TÁI SỬ DỤNG ---
+            // 1. Thanh tìm kiếm
+            ModernSearchBar(
+                searchText = searchText,
+                onSearchChanged = { viewModel.onSearchTextChanged(it) },
+                onBackClick = {
+                    if (searchText.isNotEmpty()) {
+                        viewModel.onSearchTextChanged("")
+                    } else {
+                        // Nếu đang ở tab Search của BottomBar thì không cần popBackStack
+                        // trừ khi bạn muốn nó quay về Home
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                    }
+                },
+                onClearClick = { viewModel.onSearchTextChanged("") },
+                onSearchAction = {
+                    focusManager.clearFocus()
+                    viewModel.addToSearchHistory(searchText) // Lưu lịch sử khi bấm Enter
+                },
+                modifier = Modifier.padding(16.dp)
+            )
+
+            // 2. Nội dung chính
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (searchText.isBlank()) {
+                    // --- TRẠNG THÁI 1: CHƯA NHẬP GÌ ---
+                    PreSearchContent(
+                        searchHistory = searchHistory,
+                        trendingDestinations = trendingDestinations,
+                        onHistoryClick = { query -> viewModel.onSearchTextChanged(query) },
+                        onClearHistory = { viewModel.clearHistory() }, // [MỚI] Nút xóa lịch sử
+                        onDestinationClick = { id -> navController.navigate(Screen.Detail.createRoute(id)) }
+                    )
+                } else {
+                    // --- TRẠNG THÁI 2: ĐANG TÌM KIẾM ---
+                    SearchResultsContent(
+                        isLoading = isLoading,
+                        searchResults = searchResults,
+                        onItemClick = { destination ->
+                            // [MỚI] Lưu tên địa điểm vào lịch sử khi click chọn
+                            viewModel.addToSearchHistory(destination.name)
+                            navController.navigate(Screen.Detail.createRoute(destination.id))
+                        }
+                    )
+                }
             }
         }
     }
 }
 
-// --- CÁC COMPONENT CON (TopBar, SearchBar - Giữ nguyên) ---
-@Composable
-private fun SearchTopBar(
-    onBackClick: () -> Unit,
-    onCancelClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        AppTopBar(onBackClick = onBackClick)
-        Text(
-            text = "Tìm kiếm",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
+// ================== CÁC COMPONENT CON ==================
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SearchBar(
+fun ModernSearchBar(
     searchText: String,
-    onSearchChanged: (String) -> Unit
+    onSearchChanged: (String) -> Unit,
+    onBackClick: () -> Unit,
+    onClearClick: () -> Unit,
+    onSearchAction: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     TextField(
         value = searchText,
         onValueChange = onSearchChanged,
-        placeholder = { Text("Tìm kiếm địa điểm", color = Color.Gray) },
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = TextFieldDefaults.colors(
-            unfocusedContainerColor = Color(0xFFF5F5F5),
-            focusedContainerColor = Color(0xFFF5F5F5),
-            unfocusedIndicatorColor = Color.Transparent,
-            focusedIndicatorColor = Color.Transparent,
-        ),
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search Icon",
-                tint = Color.Gray
-            )
+        placeholder = {
+            Text("Tìm địa điểm du lịch", color = Color.Gray, fontSize = 16.sp)
         },
+        leadingIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.DarkGray
+                )
+            }
+        },
+        trailingIcon = {
+            if (searchText.isNotEmpty()) {
+                IconButton(onClick = onClearClick) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear",
+                        tint = Color.Gray
+                    )
+                }
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search Icon",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFF5F5F5),
+            unfocusedContainerColor = Color(0xFFF5F5F5),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            cursorColor = MaterialTheme.colorScheme.primary
+        ),
+        shape = RoundedCornerShape(24.dp),
         singleLine = true,
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { onSearchAction() }),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .shadow(elevation = 1.dp, shape = RoundedCornerShape(24.dp))
     )
 }
 
-
-// --- PREVIEW ---
-@Preview(showBackground = true)
 @Composable
-fun SearchScreenPreview() {
-    SmarttravelTheme {
-        val navController = rememberNavController()
-        SearchScreen(navController = navController)
+fun PreSearchContent(
+    searchHistory: List<String>,
+    trendingDestinations: List<com.example.smarttravel.model.Destination>,
+    onHistoryClick: (String) -> Unit,
+    onClearHistory: () -> Unit,
+    onDestinationClick: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 8.dp)
+    ) {
+        // --- PHẦN 1: Lịch sử tìm kiếm (Nằm ngoài Grid) ---
+        if (searchHistory.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Tìm kiếm gần đây",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(onClick = onClearHistory, modifier = Modifier.size(24.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Clear History",
+                        tint = Color.Gray
+                    )
+                }
+            }
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp), // Padding trong cho LazyRow
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(searchHistory) { query ->
+                    SuggestionChip(
+                        onClick = { onHistoryClick(query) },
+                        label = { Text(query) },
+                        icon = {
+                            Icon(
+                                Icons.Default.History,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = Color.Gray
+                            )
+                        },
+                        shape = CircleShape,
+                        colors = SuggestionChipDefaults.suggestionChipColors(
+                            containerColor = Color(0xFFF0F0F0)
+                        ),
+                        border = null
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // --- PHẦN 2: Địa điểm phổ biến (Header) ---
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Icon(
+                Icons.Default.TrendingUp,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Địa điểm phổ biến",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // --- PHẦN 3: Lưới địa điểm (Chiếm hết không gian còn lại) ---
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f), // Quan trọng: Để nó chiếm hết phần dưới và cho phép cuộn nếu dài
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp,top=0.dp, bottom = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(trendingDestinations) { destination ->
+                DestinationCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onDestinationClick(destination.id) },
+                    imageUrl = destination.images.firstOrNull() ?: "ha_long",
+                    title = destination.name,
+                    location = destination.location_name,
+                    rating = destination.rating
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SearchResultsContent(
+    isLoading: Boolean,
+    searchResults: List<com.example.smarttravel.model.Destination>,
+    onItemClick: (com.example.smarttravel.model.Destination) -> Unit
+) {
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            CircularProgressIndicator(modifier = Modifier.padding(top = 32.dp))
+        }
+    } else if (searchResults.isEmpty()) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = null,
+                tint = Color.LightGray,
+                modifier = Modifier.size(80.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Không tìm thấy kết quả nào.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Gray
+            )
+        }
+    } else {
+        Column {
+            Text(
+                text = "Kết quả (${searchResults.size})",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(searchResults) { destination ->
+                    DestinationCard(
+                        modifier = Modifier.clickable { onItemClick(destination) },
+                        imageUrl = destination.images.firstOrNull() ?: "ha_long",
+                        title = destination.name,
+                        location = destination.location_name,
+                        rating = destination.rating
+                    )
+                }
+            }
+        }
     }
 }

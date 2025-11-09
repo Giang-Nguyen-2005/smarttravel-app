@@ -74,4 +74,35 @@ class DestinationRepositoryImpl @Inject constructor(
         }
         awaitClose { listener.remove() }
     }
+
+    override fun searchDestinations(query: String): Flow<Result<List<Destination>>> = callbackFlow {
+        // Cách đơn giản: Lấy tất cả về rồi lọc (Client-side filtering).
+        // Phù hợp khi dữ liệu chưa quá lớn (dưới vài nghìn địa điểm).
+        val snapshotListener = firestore.collection("destinations")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    trySend(Result.failure(e))
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val allDestinations = snapshot.toObjects(Destination::class.java)
+                    // Gán ID
+                    val destinationsWithIds = allDestinations.mapIndexed { index, dest ->
+                        dest.copy(id = snapshot.documents[index].id)
+                    }
+
+                    // LOGIC LỌC: Tìm theo tên HOẶC địa điểm (không phân biệt hoa thường)
+                    val filteredList = if (query.isBlank()) {
+                        emptyList() // Nếu không nhập gì thì trả về rỗng (hoặc trả về tất cả tùy bạn)
+                    } else {
+                        destinationsWithIds.filter {
+                            it.name.contains(query, ignoreCase = true) ||
+                                    it.location_name.contains(query, ignoreCase = true)
+                        }
+                    }
+                    trySend(Result.success(filteredList))
+                }
+            }
+        awaitClose { snapshotListener.remove() }
+    }
 }
