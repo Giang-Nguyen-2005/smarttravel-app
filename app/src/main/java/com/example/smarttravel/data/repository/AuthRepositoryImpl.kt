@@ -13,18 +13,18 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.example.smarttravel.model.UserProfile
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val firestore: FirebaseFirestore
 ) : AuthRepository {
+
     private suspend fun ensureUserExistInFirestore(user: FirebaseUser) {
         val userDocRef = firestore.collection("users").document(user.uid)
         val snapshot = userDocRef.get().await()
-
         if (!snapshot.exists()) {
-            // Nếu chưa có document -> Tạo mới với ĐẦY ĐỦ các trường
             val userMap = hashMapOf(
                 "email" to (user.email ?: ""),
                 "display_name" to (user.displayName ?: user.email?.substringBefore("@") ?: "User"),
@@ -37,14 +37,10 @@ class AuthRepositoryImpl @Inject constructor(
             )
             userDocRef.set(userMap).await()
         } else {
-            // (Tùy chọn) Nếu đã có -> Cập nhật thông tin mới nhất từ Google (nếu cần)
             val updates = hashMapOf<String, Any>()
             if (!user.displayName.isNullOrEmpty()) updates["display_name"] = user.displayName!!
             if (user.photoUrl != null) updates["avatar_url"] = user.photoUrl.toString()
-
-            if (updates.isNotEmpty()) {
-                userDocRef.set(updates, SetOptions.merge()).await()
-            }
+            if (updates.isNotEmpty()) userDocRef.set(updates, SetOptions.merge()).await()
         }
     }
 
@@ -53,27 +49,19 @@ class AuthRepositoryImpl @Inject constructor(
             trySend(auth.currentUser)
         }
         firebaseAuth.addAuthStateListener(authStateListener)
-        awaitClose {
-            firebaseAuth.removeAuthStateListener(authStateListener)
-        }
+        awaitClose { firebaseAuth.removeAuthStateListener(authStateListener) }
     }
 
     override suspend fun registerUser(email: String, password: String): Result<Unit> {
         return try {
             val currentUser = firebaseAuth.currentUser
-
             if (currentUser != null) {
-                // LIÊN KẾT (User đã đăng nhập trước đó, nên đã có Firestore doc)
                 val credential = EmailAuthProvider.getCredential(email, password)
                 currentUser.linkWithCredential(credential).await()
-                // Vẫn gọi ensure để chắc chắn cập nhật data nếu cần
                 ensureUserExistInFirestore(currentUser)
                 Result.success(Unit)
             } else {
-                // TẠO MỚI
-                val authResult =
-                    firebaseAuth.createUserWithEmailAndPassword(email, password).await()
-                // [MỚI] Tạo document bên Firestore ngay sau khi đăng ký thành công
+                val authResult = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
                 authResult.user?.let { ensureUserExistInFirestore(it) }
                 Result.success(Unit)
             }
@@ -85,7 +73,6 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun loginUser(email: String, password: String): Result<Unit> {
         return try {
             val authResult = firebaseAuth.signInWithEmailAndPassword(email, password).await()
-            // [MỚI] Kiểm tra và tạo doc nếu thiếu ngay sau khi đăng nhập
             authResult.user?.let { ensureUserExistInFirestore(it) }
             Result.success(Unit)
         } catch (e: Exception) {
@@ -96,36 +83,58 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun signInWithGoogle(idToken: String, email: String): Result<Unit> {
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
-            val currentUser = firebaseAuth.currentUser
+            val fetchResult = firebaseAuth.fetchSignInMethodsForEmail(email).await()
+            val signInMethods = fetchResult.signInMethods ?: emptyList()
 
-            if (currentUser != null) {
-                // LIÊN KẾT
-                try {
+            if ("password" in signInMethods) {
+                val currentUser = firebaseAuth.currentUser
+                if (currentUser == null) {
+                    Result.failure(Exception(
+                        "Email này đã có mật khẩu, vui lòng đăng nhập bằng email trước để liên kết Google."
+                    ))
+                } else {
                     currentUser.linkWithCredential(credential).await()
-                    ensureUserExistInFirestore(currentUser) // [MỚI] Đảm bảo đồng bộ
+                    ensureUserExistInFirestore(currentUser)
                     Result.success(Unit)
-                } catch (e: Exception) {
-                    if (e.message?.contains("already linked") == true ||
-                        e.message?.contains("already been linked") == true
-                    ) {
-                        ensureUserExistInFirestore(currentUser) // [MỚI]
-                        Result.success(Unit)
-                    } else {
-                        Result.failure(e)
-                    }
                 }
             } else {
-                // ĐĂNG NHẬP / TẠO MỚI BẰNG GOOGLE
-                val methods = firebaseAuth.fetchSignInMethodsForEmail(email).await().signInMethods
-                if (methods!!.contains("password")) {
-                    Result.failure(Exception("Email này đã có mật khẩu. Vui lòng đăng nhập bằng mật khẩu, rồi vào Profile để liên kết Google."))
-                } else {
-                    val authResult = firebaseAuth.signInWithCredential(credential).await()
-                    // [MỚI] Quan trọng: Tạo document Firestore cho user Google
-                    authResult.user?.let { ensureUserExistInFirestore(it) }
-                    Result.success(Unit)
-                }
+                val result = firebaseAuth.signInWithCredential(credential).await()
+                result.user?.let { ensureUserExistInFirestore(it) }
+                Result.success(Unit)
             }
+        } catch (e: FirebaseAuthUserCollisionException) {
+            Result.failure(Exception(
+                "Email này đã có mật khẩu, vui lòng đăng nhập bằng email trước để liên kết Google."
+            ))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // --- Link Google ---
+    override suspend fun linkGoogleAccount(idToken: String): Result<Unit> {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val currentUser = firebaseAuth.currentUser
+                ?: return Result.failure(Exception("Không có người dùng hiện tại để liên kết."))
+            currentUser.linkWithCredential(credential).await()
+            ensureUserExistInFirestore(currentUser)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // --- Link Email/Password ---
+    override suspend fun linkEmailPasswordAccount(email: String, password: String): Result<Unit> {
+        return try {
+            val credential = EmailAuthProvider.getCredential(email, password)
+            val currentUser = firebaseAuth.currentUser
+                ?: return Result.failure(Exception("Không có người dùng hiện tại để liên kết."))
+
+            currentUser.linkWithCredential(credential).await()
+            ensureUserExistInFirestore(currentUser)
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -140,13 +149,9 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getCurrentUser(): FirebaseUser? {
-        return firebaseAuth.currentUser
-    }
+    override fun getCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
 
-    override fun logout() {
-        firebaseAuth.signOut()
-    }
+    override fun logout() = firebaseAuth.signOut()
 
     override fun getUserProfile(): Flow<UserProfile?> = callbackFlow {
         val currentUser = firebaseAuth.currentUser
@@ -158,10 +163,7 @@ class AuthRepositoryImpl @Inject constructor(
 
         val docRef = firestore.collection("users").document(currentUser.uid)
         val listener = docRef.addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                // Xử lý lỗi nếu cần
-                return@addSnapshotListener
-            }
+            if (error != null) return@addSnapshotListener
             if (snapshot != null && snapshot.exists()) {
                 val userProfile = snapshot.toObject(UserProfile::class.java)
                 trySend(userProfile)

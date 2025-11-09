@@ -28,4 +28,7 @@ interface AuthRepository {
     fun logout()
 
     fun getUserProfile(): Flow<UserProfile?>
+    suspend fun linkGoogleAccount(idToken: String): Result<Unit>
+    suspend fun linkEmailPasswordAccount(email: String, password: String): Result<Unit>
+
 }

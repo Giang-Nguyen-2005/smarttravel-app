@@ -106,7 +106,7 @@ fun ResetPasswordScreen(navController: NavController) {
             PrimaryButton(
                 text = if (authState is AuthViewModel.AuthState.Loading) "Đang gửi..." else "Gửi",
                 onClick = {
-                    authViewModel.sendPasswordResetEmail() // Gọi ViewModel
+//                    authViewModel.sendPasswordResetEmail() // Gọi ViewModel
                 },
                 enabled = authState !is AuthViewModel.AuthState.Loading,
                 modifier = Modifier

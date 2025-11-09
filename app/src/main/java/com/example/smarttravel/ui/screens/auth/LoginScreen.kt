@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -45,15 +44,23 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(navController: NavController) {
-
     val authViewModel: AuthViewModel = hiltViewModel()
     val authState = authViewModel.authState
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // --- CẤU HÌNH GOOGLE SIGN-IN ---
-    val webClientId = stringResource(R.string.default_web_client_id)
+    // 🔹 Dialog trạng thái
+    var showLinkDialog by remember { mutableStateOf(false) }
+    var showAddPasswordDialog by remember { mutableStateOf(false) }
 
+    // 🔹 Dữ liệu dialog
+    var linkEmail by remember { mutableStateOf("") }
+    var linkIdToken by remember { mutableStateOf("") }
+    var linkPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+
+    // --- Google Sign-In config ---
+    val webClientId = stringResource(R.string.default_web_client_id)
     val googleSignInClient = remember {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(webClientId)
@@ -62,62 +69,62 @@ fun LoginScreen(navController: NavController) {
         GoogleSignIn.getClient(context, gso)
     }
 
-    // --- BẮT ĐẦU: SỬA LOGIC LAUNCHER ---
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
-                // Đăng nhập Google thành công
                 val account = task.getResult(ApiException::class.java)!!
                 val idToken = account.idToken
-                val email = account.email // <-- LẤY EMAIL TỪ ACCOUNT
-
-                // Kiểm tra cả 2 không null
+                val email = account.email
                 if (idToken != null && email != null) {
-                    // GỌI HÀM MỚI VỚI 2 THAM SỐ
                     authViewModel.signInWithGoogle(idToken, email)
                 } else {
-                    Toast.makeText(context, "Không thể lấy thông tin (Token/Email) từ Google.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Không thể lấy thông tin Google.", Toast.LENGTH_SHORT).show()
                 }
-
             } catch (e: ApiException) {
-                // Đăng nhập Google thất bại
                 Toast.makeText(context, "Đăng nhập Google thất bại: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-        } else {
-            // Người dùng hủy (nhấn back), không cần thông báo
         }
     }
-    // --- KẾT THÚC: SỬA LOGIC LAUNCHER ---
-    // --- KẾT THÚC CẤU HÌNH GOOGLE SIGN-IN ---
 
-
-    // Xử lý trạng thái Auth
+    // --- Handle Auth state ---
     LaunchedEffect(authState) {
         when (authState) {
             is AuthViewModel.AuthState.Success -> {
-                Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Login.route) { inclusive = true }
-                    launchSingleTop = true
+                val currentUser = authViewModel.getCurrentUser()
+                if (currentUser != null && currentUser.providerData.none { it.providerId == "password" }) {
+                    // Nếu user Google chưa có password → hiển thị dialog
+                    showAddPasswordDialog = true
+                } else {
+                    Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                    authViewModel.resetAuthState()
                 }
+            }
+
+            is AuthViewModel.AuthState.Error -> {
+                Toast.makeText(context, authState.message, Toast.LENGTH_LONG).show()
                 authViewModel.resetAuthState()
             }
-            is AuthViewModel.AuthState.Error -> {
-                Toast.makeText(context, authState.message, Toast.LENGTH_LONG).show() // <-- Đổi sang LONG
-                authViewModel.resetAuthState() // <-- Reset để người dùng thử lại
+
+            is AuthViewModel.AuthState.NeedPasswordForLink -> {
+                showLinkDialog = true
+                linkEmail = authState.email
+                linkIdToken = authState.idToken
             }
-            else -> {} // Không làm gì cho Idle, Loading
+
+            else -> {}
         }
     }
 
     val email = authViewModel.email
     val password = authViewModel.password
     var passwordVisible by remember { mutableStateOf(false) }
-
-    // (Xóa bỏ Alert Dialog của code cũ)
 
     Box(
         modifier = Modifier
@@ -130,69 +137,51 @@ fun LoginScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 40.dp)
-        )
-        {
+        ) {
             AppTopBar(onBackClick = { navController.popBackStack() })
         }
+
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = 120.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
+            Text("Đăng nhập", fontWeight = FontWeight.Bold, fontSize = 30.sp)
             Text(
-                text = "Đăng nhập",
-                fontWeight = FontWeight.Bold,
-                fontSize = 30.sp
-            )
-            Text(
-                text = "Vui lòng đăng nhập để tiếp tục khám phá",
+                "Vui lòng đăng nhập để tiếp tục khám phá",
                 color = Color.Gray,
                 fontSize = 18.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 20.dp, bottom = 40.dp)
             )
 
-            // Email
             AppTextField(
                 value = email,
                 onValueChange = { authViewModel.email = it },
                 placeholder = "NguyenVanA@example.com",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(65.dp)
+                modifier = Modifier.fillMaxWidth().height(65.dp)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Mật khẩu
             AppTextField(
                 value = password,
                 onValueChange = { authViewModel.password = it },
                 placeholder = "********",
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
-                    val icon = if (passwordVisible)
-                        Icons.Default.VisibilityOff
-                    else
-                        Icons.Default.Visibility
+                    val icon = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(imageVector = icon, contentDescription = null)
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(65.dp)
+                modifier = Modifier.fillMaxWidth().height(65.dp)
             )
 
-            // Quên mật khẩu?
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 TextButton(onClick = { navController.navigate(Screen.ResetPassword.route) }) {
@@ -202,66 +191,118 @@ fun LoginScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Nút Đăng nhập
             PrimaryButton(
                 text = if (authState is AuthViewModel.AuthState.Loading) "Đang đăng nhập..." else "Đăng nhập",
                 onClick = { authViewModel.loginUser() },
                 enabled = authState !is AuthViewModel.AuthState.Loading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
+                modifier = Modifier.fillMaxWidth().height(60.dp)
             )
-
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            // Link Đăng Ký
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 Text("Chưa có tài khoản? ", color = Color.Gray, fontSize = 18.sp)
-                TextButton(
-                    onClick = { navController.navigate(Screen.Register.route) },
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Text("Đăng Ký", color = Color(0xFF1E88E5 ), fontSize = 20.sp)
+                TextButton(onClick = { navController.navigate(Screen.Register.route) }) {
+                    Text("Đăng Ký", color = Color(0xFF1E88E5), fontSize = 20.sp)
                 }
             }
-
 
             Spacer(modifier = Modifier.height(10.dp))
             Text("Hoặc đăng nhập với", color = Color.Gray, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(30.dp))
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 40.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
-                // Nút GOOGLE
                 SocialButton(
                     iconRes = R.drawable.icon_google,
                     onClick = {
-                        // Kiểm tra xem có đang loading không
                         if (authState is AuthViewModel.AuthState.Loading) return@SocialButton
-
                         coroutineScope.launch {
-                            // Đăng xuất khỏi Google client trước để luôn hiện cửa sổ chọn tài khoản
                             googleSignInClient.signOut().addOnCompleteListener {
                                 googleSignInLauncher.launch(googleSignInClient.signInIntent)
                             }
                         }
                     }
                 )
-
                 Spacer(modifier = Modifier.width(16.dp))
                 SocialButton(iconRes = R.drawable.icon_instagram, onClick = {})
                 Spacer(modifier = Modifier.width(16.dp))
                 SocialButton(iconRes = R.drawable.icon_facebook, onClick = {})
             }
         }
+    }
+
+    // 🔹 Dialog xác thực để liên kết Google ↔ Email
+    if (showLinkDialog) {
+        AlertDialog(
+            onDismissRequest = { showLinkDialog = false },
+            title = { Text("Xác thực tài khoản") },
+            text = {
+                Column {
+                    Text("Tài khoản Google này trùng với email đã có. Vui lòng nhập mật khẩu để liên kết.")
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = linkPassword,
+                        onValueChange = { linkPassword = it },
+                        placeholder = { Text("Nhập mật khẩu hiện tại") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLinkDialog = false
+                    authViewModel.linkGoogleWithPassword(linkIdToken, linkEmail, linkPassword)
+                }) {
+                    Text("Xác nhận")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLinkDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
+    // 🔹 Dialog thêm mật khẩu cho tài khoản Google
+    if (showAddPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddPasswordDialog = false },
+            title = { Text("Thêm mật khẩu cho tài khoản") },
+            text = {
+                Column {
+                    Text("Bạn đang đăng nhập Google. Hãy thêm mật khẩu để có thể đăng nhập lại bằng email hoặc google sau này.")
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        placeholder = { Text("Nhập mật khẩu mới") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showAddPasswordDialog = false
+                    authViewModel.linkEmailPasswordAccount(
+                        email = authViewModel.getCurrentUser()?.email ?: "",
+                        password = newPassword
+                    )
+                }) {
+                    Text("Lưu mật khẩu")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddPasswordDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
     }
 }
 
