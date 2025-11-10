@@ -26,11 +26,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.example.smarttravel.ui.components.PrimaryButton
 import androidx.compose.foundation.border
+import com.example.smarttravel.ui.viewmodel.PlanViewModel
 
 @Composable
-fun EconomyScreen(navController: NavController) {
-    var selectedOption by remember { mutableStateOf("Cân bằng") }
-
+fun EconomyScreen(navController: NavController,
+                  viewModel: PlanViewModel
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val selectedOption = uiState.budget
     Scaffold(
         bottomBar = {
             AppBottomBar(navController = navController, currentRoute = Screen.Profile.route)
@@ -99,15 +102,18 @@ fun EconomyScreen(navController: NavController) {
                     title = option.title,
                     emoji = option.emoji,
                     description = option.description,
-                    isSelected = selectedOption == option.title,
-                    onClick = { selectedOption = option.title }
+                    isSelected = selectedOption == option.title, // Đọc state
+                    onClick = { viewModel.setBudget(option.title) } // Ghi state
                 )
             }
 
             item {
                 PrimaryButton(
                     text = "Tiếp tục",
-                    onClick = { /* TODO: Navigate to next screen */ },
+                    onClick = {
+                        // Chuyển sang màn hình tiếp theo
+                        navController.navigate(Screen.Purpose.route)
+                    },
                     modifier = Modifier.padding(vertical = 24.dp)
                 )
             }
@@ -165,7 +171,10 @@ fun BudgetCard(
 fun EconomyScreenPreview() {
     SmarttravelTheme {
         val navController = rememberNavController()
-        EconomyScreen(navController = navController)
+        EconomyScreen(
+            navController = navController,
+            viewModel = TODO()
+        )
     }
 }
 

@@ -2,6 +2,7 @@ package com.example.smarttravel.ui.screens.planregister
 
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -26,8 +27,14 @@ import com.example.smarttravel.navigation.Screen
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.example.smarttravel.ui.components.PrimaryButton
+import com.example.smarttravel.ui.viewmodel.PlanViewModel
+
 @Composable
-fun GoWithScreen(navController: NavController) {
+fun GoWithScreen(
+    navController: NavController,
+    viewModel: PlanViewModel
+) {
+    val uiState by viewModel.uiState.collectAsState()
     Scaffold(
         bottomBar = {
             AppBottomBar(navController = navController, currentRoute = Screen.Profile.route)
@@ -85,25 +92,28 @@ fun GoWithScreen(navController: NavController) {
             item {
                 CompanionOption(
                     title = "Chỉ mình tôi",
-                    emoji = "🕺",
+                    emoji = "🚶",
                     description = "Du lịch một mình, chỉ có bạn.",
-                    onClick = { /* TODO */ }
+                    isSelected = uiState.companion == "Chỉ mình tôi", // Đọc state
+                    onClick = { viewModel.setCompanion("Chỉ mình tôi") } // Ghi state
                 )
             }
             item {
                 CompanionOption(
                     title = "Cặp đôi",
-                    emoji = "💕",
+                    emoji = "❤️",
                     description = "Kỳ nghỉ lãng mạn cho hai người.",
-                    onClick = { /* TODO */ }
+                    isSelected = uiState.companion == "Cặp đôi", // Đọc state
+                    onClick = { viewModel.setCompanion("Cặp đôi") } // Ghi state
                 )
             }
             item {
                 CompanionOption(
                     title = "Gia đình",
-                    emoji = "👨‍👩‍👧",
+                    emoji = "👨‍👩‍👧‍👦",
                     description = "Thời gian chất lượng cùng người thân yêu.",
-                    onClick = { /* TODO */ }
+                    isSelected = uiState.companion == "Gia đình", // Đọc state
+                    onClick = { viewModel.setCompanion("Gia đình") } // Ghi state
                 )
             }
             item {
@@ -111,7 +121,8 @@ fun GoWithScreen(navController: NavController) {
                     title = "Bạn bè",
                     emoji = "✨",
                     description = "Phiêu lưu cùng những người bạn thân thiết.",
-                    onClick = { /* TODO */ }
+                    isSelected = uiState.companion == "Bạn bè", // Đọc state
+                    onClick = { viewModel.setCompanion("Bạn bè") } // Ghi state
                 )
             }
             item {
@@ -119,13 +130,18 @@ fun GoWithScreen(navController: NavController) {
                     title = "Công việc",
                     emoji = "💼",
                     description = "Du lịch công tác hoặc doanh nghiệp.",
-                    onClick = { /* TODO */ }
+                    isSelected = uiState.companion == "Công việc", // Đọc state
+                    onClick = { viewModel.setCompanion("Công việc") } // Ghi state
                 )
             }
+
             item {
                 PrimaryButton(
                     text = "Tiếp tục",
-                    onClick = { /* TODO: Navigate to next screen */ },
+                    onClick = {
+                        // Chuyển sang màn hình tiếp theo trong luồng
+                        navController.navigate(Screen.Period.route)
+                    },
                     modifier = Modifier.padding(vertical = 24.dp)
                 )
             }
@@ -169,13 +185,40 @@ fun CompanionOption(
     }
 }
 
-
-@Preview(showBackground = true)
 @Composable
-fun GoWithScreenPreview() {
-    SmarttravelTheme {
-        val navController = rememberNavController()
-        GoWithScreen(navController = navController)
+fun CompanionOption(
+    title: String,
+    emoji: String,
+    description: String,
+    isSelected: Boolean, // Thêm
+    onClick: () -> Unit
+) {
+    // Thêm viền nếu được chọn
+    val borderColor = if (isSelected) Color(0xFF037CAC) else Color.Transparent
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFFF5F5F5))
+            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(12.dp)) // Thêm
+            .clickable { onClick() }
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "$title $emoji",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = description,
+            fontSize = 14.sp,
+            color = Color.Gray
+        )
     }
 }
+
 

@@ -22,9 +22,40 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.AppTopBar
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.LaunchedEffect
+import com.example.smarttravel.ui.screens.auth.RegisterScreen
+import com.example.smarttravel.ui.viewmodel.PlanViewModel
+import com.example.smarttravel.ui.viewmodel.SaveState
 
 @Composable
-fun RegisterScreen(navController: NavController) {
+fun RegisterScreen(
+    navController: NavController,
+    viewModel: PlanViewModel
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val saveState by viewModel.saveState.collectAsState()
+    val context = LocalContext.current
+    LaunchedEffect(saveState) {
+        when (val state = saveState) {
+            is SaveState.Success -> {
+                Toast.makeText(context, "Đã tạo kế hoạch!", Toast.LENGTH_SHORT).show()
+                viewModel.resetSaveState()
+                // Quay về Home (hoặc màn Kế hoạch) và xóa luồng này khỏi back stack
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.PlanRegisterFlow.route) { inclusive = true }
+                }
+            }
+            is SaveState.Error -> {
+                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                viewModel.resetSaveState()
+            }
+            else -> {}
+        }
+    }
     Scaffold(
         bottomBar = {
             AppBottomBar(navController = navController, currentRoute = Screen.Profile.route)
@@ -59,29 +90,49 @@ fun RegisterScreen(navController: NavController) {
             }
 
             item {
-                SummaryItem(label = "\uD83D\uDCCDĐịa điểm", value = "Vịnh Hạ Long, Quảng Ninh, Việt Nam")
+                SummaryItem(
+                    label = "📍Địa điểm",
+                    value = uiState.destinationName.ifEmpty { "Chưa chọn" }
+                )
             }
-
             item {
-                SummaryItem(label = "\uD83D\uDC65Người đồng hành", value = "Cặp đôi 💕")
+                SummaryItem(
+                    label = "👥Người đồng hành",
+                    value = uiState.companion
+                )
             }
-
             item {
-                SummaryItem(label = "\uD83D\uDDD3Thời gian", value = "12–14/10/2025")
+                // TODO: Cập nhật PeriodScreen để set ngày cho ViewModel
+                val dateText = if (uiState.startDate != null && uiState.endDate != null) {
+                    "${uiState.startDate} - ${uiState.endDate}"
+                } else "Chưa chọn ngày"
+                SummaryItem(
+                    label = "🗓️Thời gian",
+                    value = dateText
+                )
             }
-
             item {
-                SummaryItem(label = "❤\uFE0FSở thích", value = "Nghỉ dưỡng & Thư giãn 🐱, Du lịch Biển 🏄‍♂️")
+                SummaryItem(
+                    label = "❤️Sở thích",
+                    value = uiState.purposes.joinToString(", ").ifEmpty { "Chưa chọn" }
+                )
             }
-
             item {
-                SummaryItem(label = "\uD83D\uDCB0Ngân sách", value = "Cân bằng 📸")
+                SummaryItem(
+                    label = "💰Ngân sách",
+                    value = uiState.budget
+                )
             }
 
             item {
                 PrimaryButton(
-                    text = "Đăng kí hành trình",
-                    onClick = { /* TODO: Submit or navigate */ },
+                    text = if (saveState is SaveState.Loading) "Đang tạo..." else "Xác nhận hành trình",
+                    onClick = {
+                        if (saveState !is SaveState.Loading) {
+                            viewModel.savePlan() // Bắt đầu lưu
+                        }
+                    },
+                    enabled = saveState !is SaveState.Loading, // Vô hiệu hóa khi đang lưu
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp)

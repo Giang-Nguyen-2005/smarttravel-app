@@ -23,11 +23,14 @@ import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.theme.SmarttravelTheme
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
+import com.example.smarttravel.ui.viewmodel.PlanViewModel
 
 @Composable
-fun PurposeScreen(navController: NavController) {
-    val selectedPurposes = remember { mutableStateListOf<String>() }
-
+fun PurposeScreen(
+    navController: NavController,
+    viewModel: PlanViewModel
+) {
+    val selectedPurposes = viewModel.purposes
     val purposes = listOf(
         TravelPurpose("Nghỉ dưỡng & Thư giãn", "🐱"),
         TravelPurpose("Khám phá Thiên nhiên", "🌳"),
@@ -95,13 +98,14 @@ fun PurposeScreen(navController: NavController) {
 
             items(purposes.size) { index ->
                 val purpose = purposes[index]
-                val isSelected = selectedPurposes.contains(purpose.title)
+                val isSelected = selectedPurposes.contains(purpose.title) // Đọc state
 
                 PurposeCard(
                     title = purpose.title,
                     emoji = purpose.emoji,
                     isSelected = isSelected,
                     onClick = {
+                        // Ghi state
                         if (isSelected) {
                             selectedPurposes.remove(purpose.title)
                         } else {
@@ -114,7 +118,10 @@ fun PurposeScreen(navController: NavController) {
             item {
                 PrimaryButton(
                     text = "Tiếp tục",
-                    onClick = { /* TODO: Navigate to next screen */ },
+                    onClick = {
+                        // Chuyển sang màn hình cuối
+                        navController.navigate(Screen.PlanSummary.route)
+                    },
                     modifier = Modifier.padding(vertical = 24.dp)
                 )
             }
@@ -164,6 +171,9 @@ fun PurposeCard(
 fun PurposeScreenPreview() {
     SmarttravelTheme {
         val navController = rememberNavController()
-        PurposeScreen(navController = navController)
+        PurposeScreen(
+            navController = navController,
+            viewModel = TODO()
+        )
     }
 }

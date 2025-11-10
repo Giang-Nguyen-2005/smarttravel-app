@@ -1,6 +1,7 @@
 package com.example.smarttravel.ui.screens.planregister
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -15,38 +16,75 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.smarttravel.ui.components.AppTopBar
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.rememberNavController
-import com.example.smarttravel.ui.theme.SmarttravelTheme
-import com.example.smarttravel.ui.components.AppBottomBar
-import com.example.smarttravel.navigation.Screen
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
-import com.example.smarttravel.ui.components.PrimaryButton
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.ui.text.style.TextAlign
+import com.example.smarttravel.navigation.Screen
+import com.example.smarttravel.ui.components.PrimaryButton
+import com.example.smarttravel.ui.viewmodel.PlanViewModel
+import com.kizitonwose.calendar.compose.HorizontalCalendar
+import com.kizitonwose.calendar.compose.rememberCalendarState
+import com.kizitonwose.calendar.core.CalendarDay
+import com.kizitonwose.calendar.core.DayPosition
+import com.kizitonwose.calendar.core.daysOfWeek
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
 @Composable
-fun PeriodScreen(navController: NavController) {
+fun PeriodScreen(
+    navController: NavController,
+    viewModel: PlanViewModel
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    // --- State cho Lịch ---
+    // 1. State để lưu lựa chọn của người dùng (local)
+    var startDate by remember { mutableStateOf<LocalDate?>(uiState.startDate) }
+    var endDate by remember { mutableStateOf<LocalDate?>(uiState.endDate) }
+
+    // 2. State cho thư viện Kizitonwose
+    val currentMonth = remember { YearMonth.now() }
+    val startMonth = currentMonth
+    val endMonth = remember { currentMonth.plusMonths(12) } // Cho phép chọn trong 1 năm
+    val firstDayOfWeek = remember { DayOfWeek.MONDAY } // Bắt đầu bằng Thứ Hai
+
+    val calendarState = rememberCalendarState(
+        startMonth = startMonth,
+        endMonth = endMonth,
+        firstVisibleMonth = currentMonth,
+        firstDayOfWeek = firstDayOfWeek
+    )
+
+    // State để cập nhật tiêu đề "Tháng X, Năm YYYY"
+    var headerMonth by remember { mutableStateOf(currentMonth) }
+
+    LaunchedEffect(calendarState.firstVisibleMonth) {
+        headerMonth = calendarState.firstVisibleMonth.yearMonth
+    }
+    // --- Kết thúc State cho Lịch ---
+
     Scaffold(
-        bottomBar = {
-            AppBottomBar(navController = navController, currentRoute = Screen.Calendar.route)
-        }
+        // Bạn có thể ẩn BottomBar trong luồng này nếu muốn
+        // bottomBar = {
+        //    AppBottomBar(navController = navController, currentRoute = Screen.Calendar.route)
+        // }
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
                 .padding(horizontal = 24.dp)
-                .padding(paddingValues),
+                // Chỉ lấy padding dưới cùng từ Scaffold
+                .padding(bottom = paddingValues.calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                // 🔙 Nút quay lại + tiến trình
+                // Thanh Nút quay lại + tiến trình
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -54,11 +92,9 @@ fun PeriodScreen(navController: NavController) {
                         .padding(top = 60.dp)
                 ) {
                     AppTopBar(onBackClick = { navController.popBackStack() })
-
                     Spacer(modifier = Modifier.width(12.dp))
-
                     LinearProgressIndicator(
-                        progress = 0.50f,
+                        progress = { 0.4f }, // Cập nhật tiến trình
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp),
@@ -71,7 +107,7 @@ fun PeriodScreen(navController: NavController) {
 
             item {
                 Text(
-                    text = "Khi nào chuyến đi của bạn sẽ bắt đầu và kết thúc?📅",
+                    text = "Khi nào chuyến đi của bạn sẽ bắt đầu và kết thúc? 📅",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -86,61 +122,54 @@ fun PeriodScreen(navController: NavController) {
                 )
             }
 
-            // 📅 Khung lịch giả lập (có thể thay bằng calendar thực)
+            // --- LỊCH THẬT ---
             item {
-                Text(
-                    text = "12 Tháng 10, 2025 - 14 Tháng 10, 2025 ",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { day ->
-                        Text(
-                            text = day,
-                            modifier = Modifier.width(40.dp),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.Gray,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
-
-            item {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(7),
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(300.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(Color(0xFFF5F5F5))
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalArrangement = Arrangement.Center
+                        .padding(vertical = 16.dp)
                 ) {
-                    items(mockCalendarOctober) { date ->
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (date.isSelected) Color(0xFF4CAF50) else Color.Transparent),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = date.day.toString(),
-                                color = if (date.isSelected) Color.White else Color.Black,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium
+                    // 1. Tiêu đề (Tháng 11, 2025)
+                    CalendarHeader(month = headerMonth)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 2. Tên các ngày (T2, T3, T4...)
+                    DaysOfWeekHeader(firstDayOfWeek = firstDayOfWeek)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 3. Lịch
+                    HorizontalCalendar(
+                        state = calendarState,
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        dayContent = { day ->
+                            // --- Logic hiển thị ngày ---
+                            DayCell(
+                                day = day,
+                                startDate = startDate,
+                                endDate = endDate,
+                                onClick = { clickedDate ->
+                                    // --- Logic chọn khoảng ngày ---
+                                    if (startDate == null) {
+                                        startDate = clickedDate
+                                    } else if (endDate == null) {
+                                        if (clickedDate.isBefore(startDate)) {
+                                            // Nếu chọn ngày trước start -> reset
+                                            startDate = clickedDate
+                                        } else if (clickedDate.isAfter(startDate)) {
+                                            // Nếu chọn ngày sau start -> hoàn tất
+                                            endDate = clickedDate
+                                        }
+                                    } else {
+                                        // Nếu đã chọn cả 2 -> reset
+                                        startDate = clickedDate
+                                        endDate = null
+                                    }
+                                }
                             )
                         }
-                    }
+                    )
                 }
             }
 
@@ -148,7 +177,12 @@ fun PeriodScreen(navController: NavController) {
             item {
                 PrimaryButton(
                     text = "Tiếp tục",
-                    onClick = { /* TODO: Điều hướng tiếp theo */ },
+                    onClick = {
+                        // Lưu ngày đã chọn vào ViewModel
+                        viewModel.setDates(startDate!!, endDate!!)
+                        navController.navigate(Screen.Economy.route)
+                    },
+                    enabled = startDate != null && endDate != null, // Chỉ bật khi đã chọn đủ
                     modifier = Modifier.padding(vertical = 24.dp)
                 )
             }
@@ -159,56 +193,89 @@ fun PeriodScreen(navController: NavController) {
         }
     }
 }
-data class TravelDate(
-    val day: Int,           // ví dụ: 12
-    val date: String,       // "2025-10-12"
-    val dayOfWeek: String,  // "Chủ nhật"
-    val isSelected: Boolean = false
-)
 
-val mockCalendarOctober = listOf(
-    TravelDate(1, "2025-10-01", "Thứ tư"),
-    TravelDate(2, "2025-10-02", "Thứ năm"),
-    TravelDate(3, "2025-10-03", "Thứ sáu"),
-    TravelDate(4, "2025-10-04", "Thứ bảy"),
-    TravelDate(5, "2025-10-05", "Chủ nhật"),
-    TravelDate(6, "2025-10-06", "Thứ hai"),
-    TravelDate(7, "2025-10-07", "Thứ ba"),
-    TravelDate(8, "2025-10-08", "Thứ tư"),
-    TravelDate(9, "2025-10-09", "Thứ năm"),
-    TravelDate(10, "2025-10-10", "Thứ sáu"),
-    TravelDate(11, "2025-10-11", "Thứ bảy"),
-    TravelDate(12, "2025-10-12", "Chủ nhật", isSelected = true),
-    TravelDate(13, "2025-10-13", "Thứ hai", isSelected = true),
-    TravelDate(14, "2025-10-14", "Thứ ba", isSelected = true),
-    TravelDate(15, "2025-10-15", "Thứ tư"),
-    TravelDate(16, "2025-10-16", "Thứ năm"),
-    TravelDate(17, "2025-10-17", "Thứ sáu"),
-    TravelDate(18, "2025-10-18", "Thứ bảy"),
-    TravelDate(19, "2025-10-19", "Chủ nhật"),
-    TravelDate(20, "2025-10-20", "Thứ hai"),
-    TravelDate(21, "2025-10-21", "Thứ ba"),
-    TravelDate(22, "2025-10-22", "Thứ tư"),
-    TravelDate(23, "2025-10-23", "Thứ năm"),
-    TravelDate(24, "2025-10-24", "Thứ sáu"),
-    TravelDate(25, "2025-10-25", "Thứ bảy"),
-    TravelDate(26, "2025-10-26", "Chủ nhật"),
-    TravelDate(27, "2025-10-27", "Thứ hai"),
-    TravelDate(28, "2025-10-28", "Thứ ba"),
-    TravelDate(29, "2025-10-29", "Thứ tư"),
-    TravelDate(30, "2025-10-30", "Thứ năm"),
-    TravelDate(31, "2025-10-31", "Thứ sáu")
-)
+// --- CÁC COMPONENT PHỤ CHO LỊCH ---
 
-
-
-
-@Preview(showBackground = true)
 @Composable
-fun PeriodScreenPreview() {
-    SmarttravelTheme {
-        val navController = rememberNavController()
-        PeriodScreen(navController = navController)
+private fun CalendarHeader(month: YearMonth) {
+    val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("vi"))
+    Text(
+        text = month.format(formatter)
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
+        fontSize = 18.sp,
+        fontWeight = FontWeight.SemiBold,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    )
+}
+
+@Composable
+private fun DaysOfWeekHeader(firstDayOfWeek: DayOfWeek) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        val daysOfWeek = daysOfWeek(firstDayOfWeek)
+        daysOfWeek.forEach { dayOfWeek ->
+            Text(
+                text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("vi")),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(40.dp) // Đảm bảo các cột thẳng hàng
+            )
+        }
     }
 }
 
+@Composable
+private fun DayCell(
+    day: CalendarDay,
+    startDate: LocalDate?,
+    endDate: LocalDate?,
+    onClick: (LocalDate) -> Unit
+) {
+    val date = day.date
+    val isSelectable = day.position == DayPosition.MonthDate && date >= LocalDate.now()
+
+    val isStartDate = date == startDate
+    val isEndDate = date == endDate
+    val inRange = startDate != null && endDate != null && date > startDate && date < endDate
+
+    val backgroundColor = when {
+        isStartDate || isEndDate -> MaterialTheme.colorScheme.primary // Màu xanh đậm
+        inRange -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) // Màu xanh nhạt
+        else -> Color.Transparent
+    }
+
+    val textColor = when {
+        isStartDate || isEndDate -> Color.White // Chữ trắng
+        !isSelectable -> Color.Gray.copy(alpha = 0.5f) // Chữ mờ
+        else -> Color.Black
+    }
+
+    Box(
+        modifier = Modifier
+            .width(40.dp) // Đảm bảo vừa vặn
+            .aspectRatio(1f) // Làm cho ô vuông
+            .clip(RoundedCornerShape(8.dp))
+            .background(backgroundColor)
+            .clickable(
+                enabled = isSelectable,
+                onClick = { onClick(date) }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = day.date.dayOfMonth.toString(),
+            color = textColor,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}

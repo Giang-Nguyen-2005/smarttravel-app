@@ -82,8 +82,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.smarttravel.R
 import com.example.smarttravel.model.Destination
+import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.PrimaryButton
 import com.example.smarttravel.ui.viewmodel.DetailViewModel
+import java.net.URLEncoder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -123,6 +125,7 @@ fun DetailScreen(
                 if (uiState.destination != null) {
                     ContentSheet(
                         destination = uiState.destination!!,
+                        navController = navController, // <-- SỬA LỖI 1: TRUYỀN NAVCONTROLLER VÀO
                         // Khi click ảnh trong list, lưu lại vị trí (index)
                         onImageClick = { index -> selectedImageIndex = index }
                     )
@@ -359,7 +362,11 @@ fun TopControls(onBackClick: () -> Unit, onBookmarkClick: () -> Unit) {
 }
 
 @Composable
-fun ContentSheet(destination: Destination, onImageClick: (Int) -> Unit = {}) {
+fun ContentSheet(
+    destination: Destination,
+    navController: NavController, // <-- SỬA LỖI 2: THÊM NAVCONTROLLER VÀO CHỮ KÝ HÀM
+    onImageClick: (Int) -> Unit = {}
+) {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
 
@@ -442,7 +449,13 @@ fun ContentSheet(destination: Destination, onImageClick: (Int) -> Unit = {}) {
         ) {
             PrimaryButton(
                 text = "Xem Gợi Ý Hành Trình",
-                onClick = { /* TODO */ },
+                onClick = {
+                    // Cần encode tên địa điểm để truyền qua URL
+                    val encodedName = URLEncoder.encode(destination.name, "UTF-8")
+                    navController.navigate( // Giờ đã có thể dùng navController
+                        Screen.PlanRegisterFlow.createRoute(destination.id, encodedName)
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
         }

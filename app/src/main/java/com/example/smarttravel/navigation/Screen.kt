@@ -19,4 +19,14 @@ sealed class Screen(val route: String) {
     object Detail : Screen("detail_screen/{destinationId}") {
         fun createRoute(destinationId: String) = "detail_screen/$destinationId"
     }
+    object PlanRegisterFlow : Screen("plan_register_flow/{destinationId}/{destinationName}") {
+        fun createRoute(destinationId: String, destinationName: String) =
+            "plan_register_flow/$destinationId/$destinationName"
+    }
+
+    object GoWith : Screen("go_with_screen")
+    object Period : Screen("period_screen")
+    object Economy : Screen("economy_screen")
+    object Purpose : Screen("purpose_screen")
+    object PlanSummary : Screen("plan_summary_screen")
 }
