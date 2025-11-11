@@ -1,6 +1,5 @@
 package com.example.smarttravel.ui.viewmodel
 
-
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -22,10 +21,10 @@ import javax.inject.Inject
 data class PlanUiState(
     val destinationId: String = "",
     val destinationName: String = "",
-    val companion: String = "Chỉ mình tôi", // Giá trị mặc định
+    val companion: String = "", // Giá trị mặc định
     val startDate: LocalDate? = null,
     val endDate: LocalDate? = null,
-    val budget: String = "Cân bằng", // Giá trị mặc định
+    val budget: String = "", // Giá trị mặc định
     val purposes: List<String> = emptyList()
 )
 
@@ -49,9 +48,6 @@ class PlanViewModel @Inject constructor(
     private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
     val saveState = _saveState.asStateFlow()
 
-    // Danh sách sở thích (cho PurposeScreen)
-    val purposes = mutableStateListOf<String>()
-
     init {
         // Lấy dữ liệu (destinationId, destinationName) được truyền từ DetailScreen
         val destinationId: String = savedStateHandle.get("destinationId") ?: ""
@@ -60,7 +56,6 @@ class PlanViewModel @Inject constructor(
         } catch (e: Exception) {
             ""
         }
-
         _uiState.value = _uiState.value.copy(
             destinationId = destinationId,
             destinationName = destinationName
@@ -81,16 +76,26 @@ class PlanViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(budget = budget)
     }
 
-    // (PurposeScreen sẽ cập nhật trực tiếp vào `purposes` list)
+    // --- HÀM MỚI: Cập nhật sở thích ---
+    /**
+     * Thêm hoặc xóa một sở thích khỏi uiState
+     */
+    fun togglePurpose(purpose: String) {
+        val currentPurposes = _uiState.value.purposes.toMutableList()
+        if (currentPurposes.contains(purpose)) {
+            currentPurposes.remove(purpose)
+        } else {
+            currentPurposes.add(purpose)
+        }
+        // Cập nhật lại state
+        _uiState.value = _uiState.value.copy(purposes = currentPurposes)
+    }
+
 
     // --- Hàm lưu cuối cùng ---
-
     fun savePlan() {
         viewModelScope.launch {
             _saveState.value = SaveState.Loading
-
-            // Cập nhật state lần cuối từ list sở thích
-            _uiState.value = _uiState.value.copy(purposes = purposes.toList())
 
             val currentState = _uiState.value
 
@@ -105,7 +110,7 @@ class PlanViewModel @Inject constructor(
             val newPlan = TravelPlan(
                 destinationId = currentState.destinationId,
                 title = "Chuyến đi đến ${currentState.destinationName}",
-                // TODO: Lấy ảnh từ destination (cần DestinationRepository)
+                //  TODO: Lấy ảnh từ destination (cần DestinationRepository)
                 // coverImageUrl = ...
                 companion = currentState.companion,
                 budget = currentState.budget,

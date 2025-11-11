@@ -86,6 +86,8 @@ import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.PrimaryButton
 import com.example.smarttravel.ui.viewmodel.DetailViewModel
 import java.net.URLEncoder
+// --- THÊM IMPORT NÀY ---
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,27 +98,22 @@ fun DetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedImageIndex by remember { mutableIntStateOf(-1) }
-
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberStandardBottomSheetState(
             initialValue = SheetValue.PartiallyExpanded,
             skipHiddenState = false
         )
     )
-
     // Tự động back khi kéo hết tờ giấy xuống
     LaunchedEffect(scaffoldState.bottomSheetState.currentValue) {
         if (scaffoldState.bottomSheetState.currentValue == SheetValue.Hidden) {
             navController.popBackStack()
         }
     }
-
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val peekHeight = screenHeight * 0.65f
-
     Box(modifier = Modifier.fillMaxSize()) {
-
         BottomSheetScaffold(
             scaffoldState = scaffoldState,
             sheetPeekHeight = peekHeight,
@@ -167,7 +164,6 @@ fun DetailScreen(
                 )
             }
         }
-
         // Dùng AnimatedVisibility để hiện ra mượt mà
         AnimatedVisibility(
             visible = selectedImageIndex != -1 && uiState.destination != null,
@@ -187,7 +183,6 @@ fun DetailScreen(
 }
 
 // ================== CÁC COMPONENT CON ==================
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GalleryImageViewer(
@@ -199,7 +194,6 @@ fun GalleryImageViewer(
         initialPage = initialIndex,
         pageCount = { images.size }
     )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -218,7 +212,6 @@ fun GalleryImageViewer(
         ) { page ->
             val imageUrl = images[page]
             val isNetworkImage = imageUrl.startsWith("http") || imageUrl.startsWith("https://")
-
             // Hiển thị 1 ảnh trong pager
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -256,7 +249,6 @@ fun GalleryImageViewer(
                 }
             }
         }
-
         // Nút đóng (X) ở góc trên phải
         IconButton(
             onClick = onDismiss,
@@ -272,7 +264,6 @@ fun GalleryImageViewer(
                 tint = Color.White
             )
         }
-
         // Chỉ báo số trang (ví dụ: 1/5) ở dưới đáy
         Text(
             text = "${pagerState.currentPage + 1} / ${images.size}",
@@ -364,12 +355,11 @@ fun TopControls(onBackClick: () -> Unit, onBookmarkClick: () -> Unit) {
 @Composable
 fun ContentSheet(
     destination: Destination,
-    navController: NavController, // <-- SỬA LỖI 2: THÊM NAVCONTROLLER VÀO CHỮ KÝ HÀM
+    navController: NavController,
     onImageClick: (Int) -> Unit = {}
 ) {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -379,7 +369,7 @@ fun ContentSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 80.dp)
+                .padding(bottom = 80.dp) // Tạo khoảng trống cho nút (hardcoded)
         ) {
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Text(
@@ -404,10 +394,8 @@ fun ContentSheet(
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-
             InfoRow(destination = destination)
             Spacer(modifier = Modifier.height(24.dp))
-
             if (destination.images.size > 1) {
                 Text(
                     text = "Ảnh khác",
@@ -419,7 +407,6 @@ fun ContentSheet(
                 GalleryRow(galleryUrls = destination.images, onImageClick = onImageClick)
                 Spacer(modifier = Modifier.height(24.dp))
             }
-
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Text(
                     text = "Mô tả",
@@ -433,11 +420,11 @@ fun ContentSheet(
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
-
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
+                .navigationBarsPadding() // Tự động thêm padding để né thanh điều hướng
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(Color.White.copy(alpha = 0f), Color.White, Color.White),
@@ -533,7 +520,6 @@ fun ExpandableText(
     val isCollapsed by remember(isExpanded, isClickable) {
         derivedStateOf { !isExpanded && isClickable }
     }
-
     Column(modifier = modifier) {
         Text(
             text = text,

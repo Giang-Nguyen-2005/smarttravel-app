@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,9 +21,6 @@ import com.example.smarttravel.ui.components.AppBottomBar
 import com.example.smarttravel.ui.components.AppTopBar
 import com.example.smarttravel.ui.components.PrimaryButton
 import com.example.smarttravel.navigation.Screen
-import com.example.smarttravel.ui.theme.SmarttravelTheme
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.rememberNavController
 import com.example.smarttravel.ui.viewmodel.PlanViewModel
 
 @Composable
@@ -30,7 +28,9 @@ fun PurposeScreen(
     navController: NavController,
     viewModel: PlanViewModel
 ) {
-    val selectedPurposes = viewModel.purposes
+    val uiState by viewModel.uiState.collectAsState()
+    val selectedPurposes = uiState.purposes // Đọc từ uiState
+
     val purposes = listOf(
         TravelPurpose("Nghỉ dưỡng & Thư giãn", "🐱"),
         TravelPurpose("Khám phá Thiên nhiên", "🌳"),
@@ -39,7 +39,15 @@ fun PurposeScreen(
         TravelPurpose("Khám phá Ẩm thực", "🍜"),
         TravelPurpose("Thành phố - Sôi động", "🎉"),
         TravelPurpose("Dành cho Gia đình", "👨‍👩‍👧‍👦"),
-        TravelPurpose("Phiêu lưu", "🧗")
+        TravelPurpose("Phiêu lưu", "🧗"),
+        TravelPurpose("Mua sắm", "🛍️"),
+        TravelPurpose("Sức khỏe & Yoga", "🧘"),
+        TravelPurpose("Du lịch Bụi (Backpacking)", "🎒"),
+        TravelPurpose("Nhiếp ảnh", "📸"),
+        TravelPurpose("Tâm linh & Chùa chiền", "🙏"),
+        TravelPurpose("Nightlife", "💃"),
+        TravelPurpose("Thể thao", "⛷️"),
+        TravelPurpose("Sự kiện & Âm nhạc", "🎶"),
     )
 
     Scaffold(
@@ -56,7 +64,7 @@ fun PurposeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                // 🔙 Nút quay lại + tiến trình
+                //  🔙  Nút quay lại + tiến trình
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -64,11 +72,9 @@ fun PurposeScreen(
                         .padding(top = 60.dp)
                 ) {
                     AppTopBar(onBackClick = { navController.popBackStack() })
-
                     Spacer(modifier = Modifier.width(12.dp))
-
                     LinearProgressIndicator(
-                        progress = 1f,
+                        progress = { 1f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp),
@@ -78,7 +84,6 @@ fun PurposeScreen(
                     )
                 }
             }
-
             item {
                 Text(
                     text = "Chuyến đi này mang màu sắc của bạn ✨",
@@ -87,7 +92,6 @@ fun PurposeScreen(
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
-
             item {
                 Text(
                     text = "Hãy chọn những loại hình du lịch bạn yêu thích để AI có thể gợi ý lịch trình phù hợp nhất.",
@@ -96,21 +100,14 @@ fun PurposeScreen(
                 )
             }
 
-            items(purposes.size) { index ->
-                val purpose = purposes[index]
-                val isSelected = selectedPurposes.contains(purpose.title) // Đọc state
-
+            items(items = purposes, key = { it.title }) { purpose ->
+                val isSelected = selectedPurposes.contains(purpose.title)
                 PurposeCard(
                     title = purpose.title,
                     emoji = purpose.emoji,
                     isSelected = isSelected,
                     onClick = {
-                        // Ghi state
-                        if (isSelected) {
-                            selectedPurposes.remove(purpose.title)
-                        } else {
-                            selectedPurposes.add(purpose.title)
-                        }
+                        viewModel.togglePurpose(purpose.title)
                     }
                 )
             }
@@ -146,7 +143,6 @@ fun PurposeCard(
     onClick: () -> Unit
 ) {
     val borderColor = if (isSelected) Color(0xFF037CAC) else Color.Transparent
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -163,17 +159,5 @@ fun PurposeCard(
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(4.dp))
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PurposeScreenPreview() {
-    SmarttravelTheme {
-        val navController = rememberNavController()
-        PurposeScreen(
-            navController = navController,
-            viewModel = TODO()
-        )
     }
 }

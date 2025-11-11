@@ -67,7 +67,8 @@ fun RegisterScreen(
                 .background(Color.White)
                 .padding(horizontal = 24.dp)
                 .padding(paddingValues),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            // Giảm khoảng cách chung do đã có divider
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
                 Row(
@@ -78,7 +79,7 @@ fun RegisterScreen(
                 ) {
                     AppTopBar(onBackClick = { navController.popBackStack() })
 
-                    Spacer(modifier = Modifier.width(40.dp))
+                    Spacer(modifier = Modifier.width(50.dp))
 
                     Text(
                         text = "Tóm tắt đánh giá",
@@ -89,19 +90,39 @@ fun RegisterScreen(
                 }
             }
 
+            // --- Cụm 1: Địa điểm ---
             item {
+                Spacer(modifier = Modifier.height(8.dp)) // Thêm khoảng cách ở trên
                 SummaryItem(
                     label = "📍Địa điểm",
                     value = uiState.destinationName.ifEmpty { "Chưa chọn" }
                 )
+                Spacer(modifier = Modifier.height(8.dp)) // Thêm khoảng cách ở dưới
             }
+
+            // --- Divider ---
             item {
+                CenteredDivider()
+            }
+
+            // --- Cụm 2: Người đồng hành ---
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
                 SummaryItem(
                     label = "👥Người đồng hành",
                     value = uiState.companion
                 )
+                Spacer(modifier = Modifier.height(8.dp))
             }
+
+            // --- Divider ---
             item {
+                CenteredDivider()
+            }
+
+            // --- Cụm 3: Thời gian ---
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
                 // TODO: Cập nhật PeriodScreen để set ngày cho ViewModel
                 val dateText = if (uiState.startDate != null && uiState.endDate != null) {
                     "${uiState.startDate} - ${uiState.endDate}"
@@ -110,21 +131,42 @@ fun RegisterScreen(
                     label = "🗓️Thời gian",
                     value = dateText
                 )
+                Spacer(modifier = Modifier.height(8.dp))
             }
+
+            // --- Divider ---
             item {
+                CenteredDivider()
+            }
+
+            // --- Cụm 4: Sở thích ---
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
                 SummaryItem(
                     label = "❤️Sở thích",
                     value = uiState.purposes.joinToString(", ").ifEmpty { "Chưa chọn" }
                 )
+                Spacer(modifier = Modifier.height(8.dp))
             }
+
+            // --- Divider ---
             item {
+                CenteredDivider()
+            }
+
+            // --- Cụm 5: Ngân sách ---
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
                 SummaryItem(
                     label = "💰Ngân sách",
                     value = uiState.budget
                 )
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
+            // --- Nút xác nhận ---
             item {
+                Spacer(modifier = Modifier.height(16.dp)) // Khoảng cách lớn hơn trước nút
                 PrimaryButton(
                     text = if (saveState is SaveState.Loading) "Đang tạo..." else "Xác nhận hành trình",
                     onClick = {
@@ -146,6 +188,23 @@ fun RegisterScreen(
     }
 }
 
+/**
+ * Composable mới để vẽ đường kẻ căn giữa
+ */
+@Composable
+private fun CenteredDivider() {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center // Căn giữa nội dung bên trong
+    ) {
+        HorizontalDivider(
+            modifier = Modifier.fillMaxWidth(0.7f), // Chiếm 70%
+            color = Color.Gray.copy(alpha = 0.3f), // Màu xám mờ
+            thickness = 1.dp
+        )
+    }
+}
+
 @Composable
 fun SummaryItem(label: String, value: String) {
     Column {
@@ -162,16 +221,5 @@ fun SummaryItem(label: String, value: String) {
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onBackground
         )
-    }
-}
-
-
-
-@Preview(showBackground = true)
-@Composable
-fun RegisterScreenPreview() {
-    SmarttravelTheme {
-        val navController = rememberNavController()
-        RegisterScreen(navController = navController)
     }
 }
