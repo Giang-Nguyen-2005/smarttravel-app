@@ -37,7 +37,7 @@ import com.example.smarttravel.ui.viewmodel.AuthViewModel
 
 @Composable
 fun RegisterScreen(navController: NavController) {
-
+    var showLinkDialog by remember { mutableStateOf(false) }
     val authViewModel: AuthViewModel = hiltViewModel() // Sử dụng HiltViewModel
     val authState = authViewModel.authState
     val context = LocalContext.current
@@ -46,18 +46,15 @@ fun RegisterScreen(navController: NavController) {
     LaunchedEffect(authState) {
         when (authState) {
             is AuthViewModel.AuthState.Success -> {
-                Toast.makeText(context, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
-                navController.navigate(Screen.Home.route) { // Chuyển đến Home Screen sau khi đăng ký thành công
-                    popUpTo(Screen.Register.route) { inclusive = true }
-                    launchSingleTop = true
-                }
+                // Thay vì tự động đi Home, hiển thị dialog hỏi link Google
+                showLinkDialog = true
                 authViewModel.resetAuthState()
             }
             is AuthViewModel.AuthState.Error -> {
                 Toast.makeText(context, authState.message, Toast.LENGTH_SHORT).show()
                 authViewModel.resetAuthState()
             }
-            else -> {} // Do nothing for Idle or Loading
+            else -> {}
         }
     }
 
@@ -201,6 +198,39 @@ fun RegisterScreen(navController: NavController) {
                 SocialButton(iconRes = R.drawable.icon_facebook, onClick = {})
             }
         }
+    }
+    if (showLinkDialog) {
+        AlertDialog(
+            onDismissRequest = { showLinkDialog = false },
+            title = { Text("Đăng ký thành công") },
+            text = { Text("Bạn có muốn liên kết tài khoản Google để đăng nhập nhanh hơn không?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLinkDialog = false
+                    // Nếu có token Google, gọi link, sau đó điều hướng Home
+                    // Ví dụ:
+                    // authViewModel.linkGoogleWithPassword(idToken, authViewModel.email, authViewModel.password)
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }) {
+                    Text("Có")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showLinkDialog = false
+                    // Không link, chuyển thẳng sang Home
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }) {
+                    Text("Không")
+                }
+            }
+        )
     }
 }
 

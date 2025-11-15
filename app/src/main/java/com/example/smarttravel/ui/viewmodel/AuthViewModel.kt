@@ -76,10 +76,8 @@ class AuthViewModel @Inject constructor(
             val result = authRepository.signInWithGoogle(idToken, email)
             authState = when {
                 result.isSuccess -> AuthState.Success
-                result.exceptionOrNull()?.message?.contains(
-                    "vui lòng đăng nhập bằng email trước",
-                    ignoreCase = true
-                ) == true -> AuthState.NeedPasswordForLink(email, idToken)
+                result.exceptionOrNull()?.message == "EXISTING_EMAIL_NEED_LINK" ->
+                    AuthState.NeedPasswordForLink(email, idToken) // Luồng A
                 else -> AuthState.Error(result.exceptionOrNull()?.message ?: "Đăng nhập Google thất bại.")
             }
         }
@@ -87,43 +85,27 @@ class AuthViewModel @Inject constructor(
 
     // Khi người dùng đã có tài khoản email, nhập mật khẩu để link Google
     fun linkGoogleWithPassword(idToken: String, email: String, password: String) {
+        authState = AuthState.Loading
         viewModelScope.launch {
             val loginResult = authRepository.loginUser(email, password)
-            if (loginResult.isSuccess) {
+            authState = if (loginResult.isSuccess) {
                 val linkResult = authRepository.linkGoogleAccount(idToken)
-                authState = if (linkResult.isSuccess) AuthState.Success
+                if (linkResult.isSuccess) AuthState.Success
                 else AuthState.Error(linkResult.exceptionOrNull()?.message ?: "Liên kết Google thất bại.")
             } else {
-                authState = AuthState.Error(loginResult.exceptionOrNull()?.message ?: "Đăng nhập thất bại.")
+                AuthState.Error(loginResult.exceptionOrNull()?.message ?: "Đăng nhập thất bại.")
             }
         }
     }
 
-    // --- Mới: Link Email/Password vào tài khoản hiện tại ---
-    fun linkEmailWithPassword(email: String, password: String) {
-        viewModelScope.launch {
-            val result = authRepository.linkEmailPasswordAccount(email, password)
-            authState = if (result.isSuccess) AuthState.Success
-            else AuthState.Error(result.exceptionOrNull()?.message ?: "Liên kết Email/Password thất bại.")
-        }
-    }
     fun linkEmailPasswordAccount(email: String, password: String) {
+        authState = AuthState.Loading
         viewModelScope.launch {
             val result = authRepository.linkEmailPasswordAccount(email, password)
             authState = if (result.isSuccess) {
                 AuthState.Success
             } else {
                 AuthState.Error(result.exceptionOrNull()?.message ?: "Liên kết mật khẩu thất bại.")
-            }
-        }
-    }
-    fun sendPasswordResetEmail(email: String) {
-        viewModelScope.launch {
-            val result = authRepository.sendPasswordResetEmail(email)
-            authState = if (result.isSuccess) {
-                AuthState.Success
-            } else {
-                AuthState.Error(result.exceptionOrNull()?.message ?: "Gửi email đặt lại mật khẩu thất bại.")
             }
         }
     }

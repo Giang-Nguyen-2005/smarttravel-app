@@ -86,4 +86,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }

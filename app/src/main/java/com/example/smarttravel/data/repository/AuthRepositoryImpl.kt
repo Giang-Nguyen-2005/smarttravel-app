@@ -86,26 +86,20 @@ class AuthRepositoryImpl @Inject constructor(
             val fetchResult = firebaseAuth.fetchSignInMethodsForEmail(email).await()
             val signInMethods = fetchResult.signInMethods ?: emptyList()
 
-            if ("password" in signInMethods) {
-                val currentUser = firebaseAuth.currentUser
-                if (currentUser == null) {
-                    Result.failure(Exception(
-                        "Email này đã có mật khẩu, vui lòng đăng nhập bằng email trước để liên kết Google."
-                    ))
-                } else {
-                    currentUser.linkWithCredential(credential).await()
-                    ensureUserExistInFirestore(currentUser)
-                    Result.success(Unit)
-                }
-            } else {
-                val result = firebaseAuth.signInWithCredential(credential).await()
-                result.user?.let { ensureUserExistInFirestore(it) }
-                Result.success(Unit)
+            // Nếu email đã có password → yêu cầu người dùng nhập password để link
+            if ("password" in signInMethods && firebaseAuth.currentUser == null) {
+                return Result.failure(
+                    Exception("EXISTING_EMAIL_NEED_LINK") // báo lên ViewModel
+                )
             }
+
+            // Nếu chưa tồn tại user → đăng nhập bằng Google
+            val result = firebaseAuth.signInWithCredential(credential).await()
+            result.user?.let { ensureUserExistInFirestore(it) }
+            Result.success(Unit)
+
         } catch (e: FirebaseAuthUserCollisionException) {
-            Result.failure(Exception(
-                "Email này đã có mật khẩu, vui lòng đăng nhập bằng email trước để liên kết Google."
-            ))
+            Result.failure(Exception("EXISTING_EMAIL_NEED_LINK"))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -172,5 +166,26 @@ class AuthRepositoryImpl @Inject constructor(
             }
         }
         awaitClose { listener.remove() }
+    }
+    override suspend fun updateUserProfile(userProfile: UserProfile): Result<Unit> {
+        return try {
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser == null) {
+                return Result.failure(Exception("Người dùng chưa đăng nhập"))
+            }
+            // Chỉ cho phép update document của chính mình
+            // Kiểm tra userProfile.id nếu có, nhưng chủ yếu dựa vào currentUser.uid
+            if (userProfile.id.isNotEmpty() && currentUser.uid != userProfile.id) {
+                return Result.failure(Exception("Không có quyền cập nhật hồ sơ này"))
+            }
+
+            // Sử dụng set() với merge để chỉ cập nhật các trường thay đổi
+            firestore.collection("users").document(currentUser.uid)
+                .set(userProfile, SetOptions.merge())
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

@@ -16,10 +16,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.smarttravel.R
+import androidx.compose.foundation.layout.*
 
 @Composable
 fun AppTopBar(
     onBackClick: () -> Unit,
+    title: String? = null,
     modifier: Modifier = Modifier,
     containerColor: Color = Color(0xFFE0E0E0), // nền xám nhạt
     iconTint: Color = Color(0xFF1A1A1A) // icon màu đen đậm

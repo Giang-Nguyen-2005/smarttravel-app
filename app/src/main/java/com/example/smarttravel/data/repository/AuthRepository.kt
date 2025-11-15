@@ -31,4 +31,7 @@ interface AuthRepository {
     suspend fun linkGoogleAccount(idToken: String): Result<Unit>
     suspend fun linkEmailPasswordAccount(email: String, password: String): Result<Unit>
 
+    suspend fun updateUserProfile(userProfile: UserProfile): Result<Unit>
+
+
 }

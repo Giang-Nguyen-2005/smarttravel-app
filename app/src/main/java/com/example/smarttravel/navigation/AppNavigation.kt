@@ -18,7 +18,7 @@ import com.example.smarttravel.ui.screens.auth.LoginScreen
 import com.example.smarttravel.ui.screens.auth.RegisterScreen
 import com.example.smarttravel.ui.screens.home.HomeScreen
 import com.example.smarttravel.ui.screens.auth.ResetPasswordScreen
-import com.example.smarttravel.ui.screens.chat.ChatScreen
+import com.example.smarttravel.ui.screens.chat.ChatScreen // Import này có vẻ chưa được dùng?
 import com.example.smarttravel.ui.screens.search.SearchScreen
 import com.example.smarttravel.ui.screens.planregister.RegisterScreen as PlanSummaryScreen
 import com.example.smarttravel.ui.viewmodel.PlanViewModel
@@ -27,6 +27,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.navigation // Đổi tên import 'navigation'
+import com.example.smarttravel.ui.screens.profile.ProfileScreen
+import com.example.smarttravel.ui.screens.profile.UserProfileDetailScreen // <<< IMPORT MÀN HÌNH BỊ THIẾU
+import com.example.smarttravel.ui.screens.editprofile.EditProfileScreen
 import com.example.smarttravel.ui.screens.planregister.EconomyScreen
 import com.example.smarttravel.ui.screens.planregister.GoWithScreen
 import com.example.smarttravel.ui.screens.planregister.PeriodScreen
@@ -39,6 +42,7 @@ fun AppNavigation(navController: NavHostController) {
     // Bắt đầu từ Splash Screen
     NavHost(navController = navController, startDestination = Screen.Splash.route) {
 
+        // ... (Các màn hình Splash, Onboarding, Login, Register, ResetPassword, Home giữ nguyên) ...
         // Màn hình Splash
         composable(Screen.Splash.route) {
             SplashScreen(navController = navController)
@@ -68,25 +72,19 @@ fun AppNavigation(navController: NavHostController) {
             HomeScreen(navController = navController)
         }
 
+
+        // ... (composable cho DetailScreen giữ nguyên) ...
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("destinationId") { type = NavType.StringType }),
-            // 1. Hiệu ứng khi MỞ màn hình: Trượt từ dưới lên
             enterTransition = {
                 slideIntoContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.Up,
-                    animationSpec = tween(400) // Thời gian 400ms
+                    animationSpec = tween(400)
                 )
             },
-            // 2. Hiệu ứng khi ĐÓNG màn hình (hoặc mở màn hình khác đè lên): Giữ nguyên hoặc mờ đi chút
-            exitTransition = {
-                null // Hoặc fadeOut() nếu muốn
-            },
-            // 3. Hiệu ứng khi QUAY LẠI màn hình này (ít dùng cho detail):
-            popEnterTransition = {
-                null
-            },
-            // 4. Hiệu ứng khi BACK khỏi màn hình này: Trượt xuống dưới
+            exitTransition = { null },
+            popEnterTransition = { null },
             popExitTransition = {
                 slideOutOfContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.Down,
@@ -103,30 +101,46 @@ fun AppNavigation(navController: NavHostController) {
             }
         }
 
+
         // TODO: Thêm các màn hình khác của bạn sau
         // composable(Screen.Calendar.route) { CalendarScreen(navController = navController) }
         // composable(Screen.Chat.route) { ChatScreen(navController = navController) }
-        // composable(Screen.Profile.route) { ProfileScreen(navController = navController) }
-        composable(Screen.Search.route) { SearchScreen(navController = navController) }
+
+        // Màn hình Profile
+        composable(Screen.Profile.route) {
+            ProfileScreen(navController = navController)
+        }
+
+        // <<< THÊM COMPOSABLE BỊ THIẾU ĐỂ KHẮC PHỤC LỖI CRASH >>>
+        composable(Screen.UserProfileDetail.route) {
+            UserProfileDetailScreen(navController = navController)
+        }
+
+        composable(Screen.EditProfile.route) {
+            EditProfileScreen(navController = navController)
+        }
+
+        // Màn hình Search
+        composable(Screen.Search.route) {
+            SearchScreen(navController = navController)
+        }
 
         //Plan Register
         planRegisterGraph(navController)
     }
 }
-private fun NavGraphBuilder.planRegisterGraph(navController: NavHostController) {
 
+// ... (Hàm planRegisterGraph giữ nguyên) ...
+private fun NavGraphBuilder.planRegisterGraph(navController: NavHostController) {
+    // ... (Code của bạn giữ nguyên) ...
     navigation(
-        // Route của cả luồng, chứa các tham số
         route = Screen.PlanRegisterFlow.route,
-        // Màn hình bắt đầu của luồng
         startDestination = Screen.GoWith.route,
         arguments = listOf(
             navArgument("destinationId") { type = NavType.StringType },
-            // Cần encode/decode tên địa điểm vì nó có thể chứa dấu cách/ký tự đặc biệt
             navArgument("destinationName") { type = NavType.StringType }
         )
     ) {
-        // Hàm helper để lấy ViewModel chung của luồng
         @Composable
         fun getSharedViewModel(backStackEntry: NavBackStackEntry): PlanViewModel {
             val parentEntry = remember(backStackEntry) {
@@ -134,35 +148,24 @@ private fun NavGraphBuilder.planRegisterGraph(navController: NavHostController) 
             }
             return hiltViewModel(parentEntry)
         }
-
-        // Màn 1: GoWith
         composable(Screen.GoWith.route) {
             val viewModel = getSharedViewModel(it)
             GoWithScreen(navController = navController, viewModel = viewModel)
         }
-
-        // Màn 2: Period
         composable(Screen.Period.route) {
             val viewModel = getSharedViewModel(it)
             PeriodScreen(navController = navController, viewModel = viewModel)
         }
-
-        // Màn 3: Economy
         composable(Screen.Economy.route) {
             val viewModel = getSharedViewModel(it)
             EconomyScreen(navController = navController, viewModel = viewModel)
         }
-
-        // Màn 4: Purpose
         composable(Screen.Purpose.route) {
             val viewModel = getSharedViewModel(it)
             PurposeScreen(navController = navController, viewModel = viewModel)
         }
-
-        // Màn 5: Summary (RegisterScreen của planregister)
         composable(Screen.PlanSummary.route) {
             val viewModel = getSharedViewModel(it)
-            // QUAN TRỌNG: Đảm bảo bạn đã đổi tên import ở trên
             PlanSummaryScreen(navController = navController, viewModel = viewModel)
         }
     }

@@ -50,8 +50,8 @@ fun LoginScreen(navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
 
     // 🔹 Dialog trạng thái
-    var showLinkDialog by remember { mutableStateOf(false) }
-    var showAddPasswordDialog by remember { mutableStateOf(false) }
+    var showLinkDialog by remember { mutableStateOf(false) }        // Luồng A: Email → Google
+    var showAddPasswordDialog by remember { mutableStateOf(false) } // Luồng B: Google → Email
 
     // 🔹 Dữ liệu dialog
     var linkEmail by remember { mutableStateOf("") }
@@ -79,6 +79,7 @@ fun LoginScreen(navController: NavController) {
                 val idToken = account.idToken
                 val email = account.email
                 if (idToken != null && email != null) {
+                    // ⛳ Khi người dùng nhấn Google, luôn đi qua đây
                     authViewModel.signInWithGoogle(idToken, email)
                 } else {
                     Toast.makeText(context, "Không thể lấy thông tin Google.", Toast.LENGTH_SHORT).show()
@@ -92,30 +93,41 @@ fun LoginScreen(navController: NavController) {
     // --- Handle Auth state ---
     LaunchedEffect(authState) {
         when (authState) {
+
+            // ✅ Đăng nhập thành công
             is AuthViewModel.AuthState.Success -> {
                 val currentUser = authViewModel.getCurrentUser()
-                if (currentUser != null && currentUser.providerData.none { it.providerId == "password" }) {
-                    // Nếu user Google chưa có password → hiển thị dialog
-                    showAddPasswordDialog = true
-                } else {
-                    Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                        launchSingleTop = true
+                if (currentUser != null) {
+                    val providers = currentUser.providerData.map { it.providerId }
+
+                    when {
+                        // 🔹 Luồng B: user đăng nhập Google trước, chưa có password
+                        "google.com" in providers && "password" !in providers -> {
+                            showAddPasswordDialog = true
+                        }
+
+                        else -> {
+                            Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Login.route) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
                     }
-                    authViewModel.resetAuthState()
                 }
+                authViewModel.resetAuthState()
+            }
+
+            // 🔹 Luồng A: Google trùng email, cần nhập mật khẩu để link
+            is AuthViewModel.AuthState.NeedPasswordForLink -> {
+                showLinkDialog = true
+                linkEmail = authState.email
+                linkIdToken = authState.idToken
             }
 
             is AuthViewModel.AuthState.Error -> {
                 Toast.makeText(context, authState.message, Toast.LENGTH_LONG).show()
                 authViewModel.resetAuthState()
-            }
-
-            is AuthViewModel.AuthState.NeedPasswordForLink -> {
-                showLinkDialog = true
-                linkEmail = authState.email
-                linkIdToken = authState.idToken
             }
 
             else -> {}
@@ -126,6 +138,7 @@ fun LoginScreen(navController: NavController) {
     val password = authViewModel.password
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // ================= UI Giao diện đăng nhập ==================
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -234,48 +247,17 @@ fun LoginScreen(navController: NavController) {
         }
     }
 
-    // 🔹 Dialog xác thực để liên kết Google ↔ Email
-    if (showLinkDialog) {
-        AlertDialog(
-            onDismissRequest = { showLinkDialog = false },
-            title = { Text("Xác thực tài khoản") },
-            text = {
-                Column {
-                    Text("Tài khoản Google này trùng với email đã có. Vui lòng nhập mật khẩu để liên kết.")
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = linkPassword,
-                        onValueChange = { linkPassword = it },
-                        placeholder = { Text("Nhập mật khẩu hiện tại") },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation()
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showLinkDialog = false
-                    authViewModel.linkGoogleWithPassword(linkIdToken, linkEmail, linkPassword)
-                }) {
-                    Text("Xác nhận")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLinkDialog = false }) {
-                    Text("Hủy")
-                }
-            }
-        )
-    }
+    // 🔹 Luồng A: Nhập mật khẩu để liên kết tài khoản Email ↔ Google
 
-    // 🔹 Dialog thêm mật khẩu cho tài khoản Google
+
+    // 🔹 Luồng B: Thêm mật khẩu cho tài khoản Google-only
     if (showAddPasswordDialog) {
         AlertDialog(
             onDismissRequest = { showAddPasswordDialog = false },
-            title = { Text("Thêm mật khẩu cho tài khoản") },
+            title = { Text("Thêm mật khẩu đăng nhập Email") },
             text = {
                 Column {
-                    Text("Bạn đang đăng nhập Google. Hãy thêm mật khẩu để có thể đăng nhập lại bằng email hoặc google sau này.")
+                    Text("Bạn đang đăng nhập Google. Hãy đặt mật khẩu để có thể đăng nhập bằng email sau này.")
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
                         value = newPassword,
@@ -289,12 +271,10 @@ fun LoginScreen(navController: NavController) {
             confirmButton = {
                 TextButton(onClick = {
                     showAddPasswordDialog = false
-                    authViewModel.linkEmailPasswordAccount(
-                        email = authViewModel.getCurrentUser()?.email ?: "",
-                        password = newPassword
-                    )
+                    val email = authViewModel.getCurrentUser()?.email ?: ""
+                    authViewModel.linkEmailPasswordAccount(email, newPassword)
                 }) {
-                    Text("Lưu mật khẩu")
+                    Text("Lưu")
                 }
             },
             dismissButton = {
@@ -304,6 +284,7 @@ fun LoginScreen(navController: NavController) {
             }
         )
     }
+
 }
 
 @Preview(showBackground = true, showSystemUi = true)

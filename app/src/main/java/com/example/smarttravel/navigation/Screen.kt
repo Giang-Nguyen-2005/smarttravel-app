@@ -29,4 +29,9 @@ sealed class Screen(val route: String) {
     object Economy : Screen("economy_screen")
     object Purpose : Screen("purpose_screen")
     object PlanSummary : Screen("plan_summary_screen")
+
+    object EditProfile : Screen("edit_profile_screen")
+
+    object UserProfileDetail : Screen("user_profile_detail_screen")
+
 }
