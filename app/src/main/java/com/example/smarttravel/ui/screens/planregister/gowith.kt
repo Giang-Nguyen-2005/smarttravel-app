@@ -1,31 +1,28 @@
 package com.example.smarttravel.ui.screens.planregister
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProgressIndicatorDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.smarttravel.ui.components.AppTopBar
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.*
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.rememberNavController
-import com.example.smarttravel.ui.theme.SmarttravelTheme
-import com.example.smarttravel.ui.components.AppBottomBar
 import com.example.smarttravel.navigation.Screen
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.smarttravel.ui.components.AppTopBar
 import com.example.smarttravel.ui.components.PrimaryButton
 import com.example.smarttravel.ui.viewmodel.PlanViewModel
 
@@ -35,174 +32,140 @@ fun GoWithScreen(
     viewModel: PlanViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    Scaffold(
-        bottomBar = {
-            AppBottomBar(navController = navController, currentRoute = Screen.Profile.route)
-        }
-    ) { paddingValues ->
-        LazyColumn(
+    val selectedOption = uiState.companion
+
+    // Logic kiểm tra nút Tiếp tục: nút chỉ BẬT nếu có ít nhất một lựa chọn (companion không rỗng)
+    val isButtonEnabled = !selectedOption.isNullOrBlank()
+
+    Scaffold { paddingValues ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
-                .padding(horizontal = 24.dp)
-                .padding(paddingValues),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
-            item {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 60.dp)
-                ) {
+            // --- HEADER CỐ ĐỊNH (STICKY HEADER) - CĂN GIỮA TUYỆT ĐỐI THANH TIẾN ĐỘ ---
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 60.dp, bottom = 16.dp)
+            ) {
+                // Nút Back (Căn trái)
+                Box(modifier = Modifier.align(Alignment.CenterStart)) {
                     AppTopBar(onBackClick = { navController.popBackStack() })
+                }
 
-                    Spacer(modifier = Modifier.width(12.dp))
-
+                // Thanh tiến trình (Căn giữa tuyệt đối trong Box)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.6f) // Giới hạn chiều rộng của thanh progress
+                        .align(Alignment.Center)
+                ) {
                     LinearProgressIndicator(
-                        progress = 0.25f,
+                        progress = { 0.25f },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(6.dp),
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = Color(0xFFE0E0E0),
                         strokeCap = ProgressIndicatorDefaults.LinearStrokeCap
                     )
                 }
             }
+            // --- KẾT THÚC HEADER CỐ ĐỊNH ---
 
-            item {
-                Text(
-                    text = "Ai sẽ đi cùng bạn? 🎒",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
+            // --- NỘI DUNG CUỘN ---
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Spacer để bù đắp khoảng trống dưới sticky header
+                item { Spacer(modifier = Modifier.height(8.dp)) }
 
-            item {
-                Text(
-                    text = "Hãy bắt đầu bằng cách chọn bạn sẽ đi cùng ai.",
-                    fontSize = 18.sp,
-                    color = Color.Gray
+                item {
+                    Text(
+                        text = "Bạn sẽ đi với ai? 👨‍👩‍👧‍👦",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+                item {
+                    Text(
+                        text = "Chúng tôi sẽ điều chỉnh kế hoạch dựa trên đối tượng đồng hành của bạn.",
+                        fontSize = 16.sp,
+                        color = Color.Gray
+                    )
+                }
+                val companionOptions = listOf(
+                    CompanionData("Chỉ một mình", "👤", "Chuyến đi một mình, khám phá tự do."),
+                    CompanionData("Gia đình", "👨‍👩‍👧‍👦", "Chuyến đi ưu tiên các hoạt động phù hợp cho trẻ em."),
+                    CompanionData("Cặp đôi", "❤️", "Chuyến đi lãng mạn, ưu tiên không gian riêng tư."),
+                    CompanionData("Bạn bè", "👥", "Chuyến đi nhóm, ưu tiên các hoạt động vui vẻ, náo nhiệt."),
+                    CompanionData("Đồng nghiệp", "💼", "Chuyến đi công tác hoặc nghỉ dưỡng kết hợp công việc.")
                 )
-            }
 
-            // Các lựa chọn người đồng hành
-            item {
-                CompanionOption(
-                    title = "Chỉ mình tôi",
-                    emoji = "🚶",
-                    description = "Du lịch một mình, chỉ có bạn.",
-                    isSelected = uiState.companion == "Chỉ mình tôi", // Đọc state
-                    onClick = { viewModel.setCompanion("Chỉ mình tôi") } // Ghi state
-                )
-            }
-            item {
-                CompanionOption(
-                    title = "Cặp đôi",
-                    emoji = "❤️",
-                    description = "Kỳ nghỉ lãng mạn cho hai người.",
-                    isSelected = uiState.companion == "Cặp đôi", // Đọc state
-                    onClick = { viewModel.setCompanion("Cặp đôi") } // Ghi state
-                )
-            }
-            item {
-                CompanionOption(
-                    title = "Gia đình",
-                    emoji = "👨‍👩‍👧‍👦",
-                    description = "Thời gian chất lượng cùng người thân yêu.",
-                    isSelected = uiState.companion == "Gia đình", // Đọc state
-                    onClick = { viewModel.setCompanion("Gia đình") } // Ghi state
-                )
-            }
-            item {
-                CompanionOption(
-                    title = "Bạn bè",
-                    emoji = "✨",
-                    description = "Phiêu lưu cùng những người bạn thân thiết.",
-                    isSelected = uiState.companion == "Bạn bè", // Đọc state
-                    onClick = { viewModel.setCompanion("Bạn bè") } // Ghi state
-                )
-            }
-            item {
-                CompanionOption(
-                    title = "Công việc",
-                    emoji = "💼",
-                    description = "Du lịch công tác hoặc doanh nghiệp.",
-                    isSelected = uiState.companion == "Công việc", // Đọc state
-                    onClick = { viewModel.setCompanion("Công việc") } // Ghi state
-                )
+                items(companionOptions) { option ->
+                    CompanionOption(
+                        title = option.title,
+                        emoji = option.emoji,
+                        description = option.description,
+                        isSelected = selectedOption == option.title,
+                        onClick = { viewModel.setCompanion(option.title) }
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
             }
 
-            item {
+            // --- PHẦN NÚT BẤM (Cố định ở đáy) ---
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White) // Thêm nền trắng cho nút bấm cố định
+                    .padding(16.dp)
+            ) {
                 PrimaryButton(
                     text = "Tiếp tục",
                     onClick = {
-                        // Chuyển sang màn hình tiếp theo trong luồng
                         navController.navigate(Screen.Period.route)
                     },
-                    modifier = Modifier.padding(vertical = 24.dp)
+                    enabled = isButtonEnabled, // Áp dụng logic kiểm tra ở đây
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
 }
 
+data class CompanionData(
+    val title: String,
+    val emoji: String,
+    val description: String
+)
 
 @Composable
 fun CompanionOption(
     title: String,
     emoji: String,
     description: String,
+    isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF5F5F5))
-            .clickable { onClick() }
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "$title $emoji",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = description,
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
-    }
-}
-
-@Composable
-fun CompanionOption(
-    title: String,
-    emoji: String,
-    description: String,
-    isSelected: Boolean, // Thêm
-    onClick: () -> Unit
-) {
-    // Thêm viền nếu được chọn
     val borderColor = if (isSelected) Color(0xFF037CAC) else Color.Transparent
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 4.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFFF5F5F5))
-            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(12.dp)) // Thêm
+            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .padding(16.dp)
     ) {
@@ -220,5 +183,3 @@ fun CompanionOption(
         )
     }
 }
-
-

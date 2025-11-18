@@ -122,7 +122,7 @@ fun DetailScreen(
                 if (uiState.destination != null) {
                     ContentSheet(
                         destination = uiState.destination!!,
-                        navController = navController, // <-- SỬA LỖI 1: TRUYỀN NAVCONTROLLER VÀO
+                        navController = navController,
                         // Khi click ảnh trong list, lưu lại vị trí (index)
                         onImageClick = { index -> selectedImageIndex = index }
                     )
@@ -360,6 +360,11 @@ fun ContentSheet(
 ) {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
+
+    // PADDING_BOTTOM_FIXED: Bù cho nút "Xem thêm" (khoảng 24dp)
+    // PADDING_FOR_BUTTON: Khoảng trống cần thiết để nội dung cuộn lên trên nút cố định ở đáy
+    val PADDING_FOR_BUTTON = 110.dp
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -369,7 +374,10 @@ fun ContentSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 80.dp) // Tạo khoảng trống cho nút (hardcoded)
+                // Đảm bảo nội dung cuộn lên trên thanh nút và Navigation Bar
+                .padding(
+                    bottom = PADDING_FOR_BUTTON
+                )
         ) {
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Text(
@@ -424,7 +432,8 @@ fun ContentSheet(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .navigationBarsPadding() // Tự động thêm padding để né thanh điều hướng
+                // Giữ nguyên navigationBarsPadding() ở đây, nhưng nó chỉ hoạt động nếu layout là Edge-to-Edge.
+                // Tuy nhiên, việc tăng PADDING_FOR_BUTTON đã bù đắp cho điều này.
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(Color.White.copy(alpha = 0f), Color.White, Color.White),
@@ -433,6 +442,7 @@ fun ContentSheet(
                     )
                 )
                 .padding(horizontal = 24.dp, vertical = 16.dp)
+                .navigationBarsPadding() // FIX: Đảm bảo padding Navigation Bar áp dụng cho nút
         ) {
             PrimaryButton(
                 text = "Xem Gợi Ý Hành Trình",

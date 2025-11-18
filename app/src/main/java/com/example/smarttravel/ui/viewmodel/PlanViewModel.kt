@@ -5,11 +5,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.smarttravel.data.model.TravelPlan
+import com.example.smarttravel.data.repository.DestinationRepository
 import com.example.smarttravel.data.repository.PlanRepository
 import com.google.firebase.Timestamp
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import java.time.LocalDate
@@ -21,11 +23,13 @@ import javax.inject.Inject
 data class PlanUiState(
     val destinationId: String = "",
     val destinationName: String = "",
-    val companion: String = "", // Giá trị mặc định
+    val locationName: String = "", // <-- ĐÃ THÊM: Tên khu vực/tỉnh thành
+    val companion: String = "",
     val startDate: LocalDate? = null,
     val endDate: LocalDate? = null,
-    val budget: String = "", // Giá trị mặc định
-    val purposes: List<String> = emptyList()
+    val budget: String = "",
+    val purposes: List<String> = emptyList(),
+    val coverImageUrl: String = ""
 )
 
 // Trạng thái của việc lưu
@@ -39,7 +43,8 @@ sealed class SaveState {
 @HiltViewModel
 class PlanViewModel @Inject constructor(
     private val planRepository: PlanRepository,
-    savedStateHandle: SavedStateHandle // Dùng để nhận destinationId từ navigation
+    private val destinationRepository: DestinationRepository,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PlanUiState())
@@ -49,37 +54,61 @@ class PlanViewModel @Inject constructor(
     val saveState = _saveState.asStateFlow()
 
     init {
-        // Lấy dữ liệu (destinationId, destinationName) được truyền từ DetailScreen
+        // Lấy dữ liệu từ Navigation
         val destinationId: String = savedStateHandle.get("destinationId") ?: ""
         val destinationName: String = try {
             URLDecoder.decode(savedStateHandle.get("destinationName") ?: "", "UTF-8")
         } catch (e: Exception) {
             ""
         }
+
         _uiState.value = _uiState.value.copy(
             destinationId = destinationId,
             destinationName = destinationName
         )
+
+        // Lấy thông tin ảnh và tên khu vực từ DestinationRepository
+        if (destinationId.isNotEmpty()) {
+            fetchDestinationDetails(destinationId)
+        }
     }
 
-    // --- Các hàm để cập nhật State từ UI ---
+    // Đổi tên hàm để phản ánh việc lấy nhiều chi tiết hơn
+    private fun fetchDestinationDetails(destinationId: String) {
+        viewModelScope.launch {
+            // Gọi Repository để lấy chi tiết địa điểm
+            destinationRepository.getDestinationById(destinationId).collect { result ->
+                if (result.isSuccess) {
+                    val destination = result.getOrNull()
 
+                    val imageUrl = destination?.images?.firstOrNull() ?: ""
+                    val locationName = destination?.location_name ?: "" // <-- LẤY LOCATION NAME
+
+                    // Cập nhật cả ảnh và tên khu vực vào UI State
+                    _uiState.update {
+                        it.copy(
+                            coverImageUrl = imageUrl,
+                            locationName = locationName // <-- CẬP NHẬT LOCATION NAME
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // --- Các hàm cập nhật State từ UI ---
     fun setCompanion(companion: String) {
-        _uiState.value = _uiState.value.copy(companion = companion)
+        _uiState.update { it.copy(companion = companion) }
     }
 
     fun setDates(start: LocalDate, end: LocalDate) {
-        _uiState.value = _uiState.value.copy(startDate = start, endDate = end)
+        _uiState.update { it.copy(startDate = start, endDate = end) }
     }
 
     fun setBudget(budget: String) {
-        _uiState.value = _uiState.value.copy(budget = budget)
+        _uiState.update { it.copy(budget = budget) }
     }
 
-    // --- HÀM MỚI: Cập nhật sở thích ---
-    /**
-     * Thêm hoặc xóa một sở thích khỏi uiState
-     */
     fun togglePurpose(purpose: String) {
         val currentPurposes = _uiState.value.purposes.toMutableList()
         if (currentPurposes.contains(purpose)) {
@@ -87,16 +116,13 @@ class PlanViewModel @Inject constructor(
         } else {
             currentPurposes.add(purpose)
         }
-        // Cập nhật lại state
-        _uiState.value = _uiState.value.copy(purposes = currentPurposes)
+        _uiState.update { it.copy(purposes = currentPurposes) }
     }
-
 
     // --- Hàm lưu cuối cùng ---
     fun savePlan() {
         viewModelScope.launch {
             _saveState.value = SaveState.Loading
-
             val currentState = _uiState.value
 
             // Chuyển đổi LocalDate sang Firebase Timestamp
@@ -110,8 +136,7 @@ class PlanViewModel @Inject constructor(
             val newPlan = TravelPlan(
                 destinationId = currentState.destinationId,
                 title = "Chuyến đi đến ${currentState.destinationName}",
-                //  TODO: Lấy ảnh từ destination (cần DestinationRepository)
-                // coverImageUrl = ...
+                coverImageUrl = currentState.coverImageUrl,
                 companion = currentState.companion,
                 budget = currentState.budget,
                 purposes = currentState.purposes,
