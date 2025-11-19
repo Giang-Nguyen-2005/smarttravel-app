@@ -85,6 +85,7 @@ import com.example.smarttravel.R
 import com.example.smarttravel.model.Destination
 import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.PrimaryButton
+import com.example.smarttravel.ui.components.OpenStreetMapView
 import com.example.smarttravel.ui.viewmodel.DetailViewModel
 import java.net.URLEncoder
 // --- THÊM IMPORT NÀY ---
@@ -409,6 +410,28 @@ fun ContentSheet(
             Spacer(modifier = Modifier.height(24.dp))
             InfoRow(destination = destination)
             Spacer(modifier = Modifier.height(24.dp))
+            
+            // Bản đồ địa điểm
+            if (destination.latitude != 0.0 && destination.longitude != 0.0) {
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                    Text(
+                        text = "Vị trí",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OpenStreetMapView(
+                        latitude = destination.latitude,
+                        longitude = destination.longitude,
+                        locationName = destination.name,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                    )
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+            
             if (destination.images.size > 1) {
                 Text(
                     text = "Ảnh khác",

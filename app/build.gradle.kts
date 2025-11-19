@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
-    kotlin("kapt")
+    id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")      // <-- Hilt plugin
 }
 
@@ -72,7 +72,7 @@ dependencies {
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.51.1")
-    kapt("com.google.dagger:hilt-compiler:2.51.1")
+    ksp("com.google.dagger:hilt-android-compiler:2.51.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Others
@@ -85,6 +85,14 @@ dependencies {
     
     // Google Gemini AI
     implementation("com.google.ai.client.generativeai:generativeai:0.2.2")
+    
+    // OpenStreetMap - Osmdroid
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+    implementation("org.osmdroid:osmdroid-wms:6.1.18")
+    implementation("org.osmdroid:osmdroid-mapsforge:6.1.18")
+    
+    // Permissions
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

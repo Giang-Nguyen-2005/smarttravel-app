@@ -37,6 +37,8 @@ import coil.request.ImageRequest
 import com.example.smarttravel.R
 import com.example.smarttravel.data.model.TravelPlan
 import com.example.smarttravel.ui.components.PrimaryButton
+import com.example.smarttravel.ui.components.TravelPlanMapView
+import com.example.smarttravel.ui.components.MapDestination
 import com.example.smarttravel.ui.theme.SmarttravelTheme
 import com.example.smarttravel.ui.viewmodel.PlanDetailViewModel
 import java.time.LocalDate
@@ -81,7 +83,8 @@ fun PlanDetailScreen(
             uiState.plan != null -> {
                 PlanDetailContent(
                     navController = navController,
-                    plan = uiState.plan!!
+                    plan = uiState.plan!!,
+                    destination = uiState.destination
                 )
             }
         }
@@ -91,7 +94,8 @@ fun PlanDetailScreen(
 @Composable
 fun PlanDetailContent(
     navController: NavController,
-    plan: TravelPlan
+    plan: TravelPlan,
+    destination: com.example.smarttravel.model.Destination? = null
 ) {
     // Parse planDetail từ Firestore
     val planDays = remember(plan.planDetail) {
@@ -162,7 +166,31 @@ fun PlanDetailContent(
                 )
             }
 
-            // 3.5. Thanh chọn ngày
+            // 3.5. Bản đồ lịch trình
+            item {
+                val mapDestinations = remember(planDays, destination) {
+                    extractMapDestinations(planDays, destination)
+                }
+                if (mapDestinations.isNotEmpty()) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+                        Text(
+                            text = "Bản đồ lịch trình",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                        TravelPlanMapView(
+                            destinations = mapDestinations,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp)),
+                            showRoute = true
+                        )
+                    }
+                }
+            }
+
+            // 3.6. Thanh chọn ngày
             if (planDays.isNotEmpty() && planDays.size > 1) {
                 item {
                     DaySelectorBar(
@@ -284,6 +312,39 @@ private fun parsePlanDetail(planDetail: List<Map<String, Any>>): List<PlanDayDat
             null
         }
     }
+}
+
+/**
+ * Trích xuất các địa điểm từ plan để hiển thị trên bản đồ
+ * Lưu ý: Vì ActivityInfo chỉ có location là string, hàm này sẽ chỉ hiển thị
+ * destination chính nếu có tọa độ. Để hiển thị đầy đủ, cần tích hợp Geocoding API.
+ */
+private fun extractMapDestinations(
+    planDays: List<PlanDayData>,
+    destination: com.example.smarttravel.model.Destination?
+): List<MapDestination> {
+    val destinations = mutableListOf<MapDestination>()
+    
+    // Thêm destination chính nếu có tọa độ
+    destination?.let { dest ->
+        if (dest.latitude != 0.0 && dest.longitude != 0.0) {
+            destinations.add(
+                MapDestination(
+                    name = dest.name,
+                    location = dest.location_name,
+                    latitude = dest.latitude,
+                    longitude = dest.longitude
+                )
+            )
+        }
+    }
+    
+    // TODO: Thêm các điểm từ activities và hotel
+    // Hiện tại không có tọa độ từ activities, cần:
+    // 1. Lưu tọa độ trong ActivityInfo khi tạo plan
+    // 2. Sử dụng Geocoding API để chuyển đổi location string thành tọa độ
+    
+    return destinations
 }
 
 // Data classes
