@@ -103,6 +103,35 @@ class DestinationRepositoryImpl @Inject constructor(
                     trySend(Result.success(filteredList))
                 }
             }
+            awaitClose { snapshotListener.remove() }
+    }
+
+    override fun getDestinationsByIds(ids: List<String>): Flow<Result<List<Destination>>> = callbackFlow {
+        if (ids.isEmpty()) {
+            trySend(Result.success(emptyList()))
+            close()
+            return@callbackFlow
+        }
+        
+        val idsSet = ids.toSet()
+        val snapshotListener = firestore.collection("destinations")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    trySend(Result.failure(e))
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val allDestinations = snapshot.toObjects(Destination::class.java)
+                    val destinationsWithIds = allDestinations.mapIndexed { index, dest ->
+                        dest.copy(id = snapshot.documents[index].id)
+                    }
+                    // Lọc và sắp xếp theo thứ tự của ids
+                    val filteredDestinations = ids.mapNotNull { id ->
+                        destinationsWithIds.find { it.id == id }
+                    }
+                    trySend(Result.success(filteredDestinations))
+                }
+            }
         awaitClose { snapshotListener.remove() }
     }
 }

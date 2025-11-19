@@ -14,13 +14,11 @@ data class TravelPlan(
     val budget: String = "", // Từ EconomyScreen
     val purposes: List<String> = emptyList(), // Từ PurposeScreen
 
-    @ServerTimestamp
-    val startDate: Timestamp? = null, // Từ PeriodScreen
-    @ServerTimestamp
-    val endDate: Timestamp? = null, // Từ PeriodScreen
+    val startDate: Timestamp? = null, // Từ PeriodScreen - ngày do người dùng chọn, không dùng @ServerTimestamp
+    val endDate: Timestamp? = null, // Từ PeriodScreen - ngày do người dùng chọn, không dùng @ServerTimestamp
 
     @ServerTimestamp
-    val createdAt: Timestamp? = null,
+    val createdAt: Timestamp? = null, // Chỉ createdAt dùng @ServerTimestamp
 
     // Để trống, AI có thể điền sau
     val planDetail: List<Map<String, Any>> = emptyList()

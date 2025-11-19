@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -20,99 +21,201 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.smarttravel.R
+import com.example.smarttravel.data.model.TravelPlan
+import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.screens.home.HomeTopBar
 import com.example.smarttravel.ui.theme.SmarttravelTheme
+import com.example.smarttravel.ui.viewmodel.PlanListViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.*
 
-data class SavedPlan(
-    val id: Int,
-    val title: String,
-    val dateRange: String,
-    val location: String,
-    val imageUrl: String,
-)
-
-val dummyPlans = listOf(
-    SavedPlan(1, "Khám phá Vịnh Hạ Long", "22/11 - 24/11/2025", "Quảng Ninh", "ha_long"),
-    SavedPlan(2, "Thăm phố sương mù Đà Lạt", "05/12 - 08/12/2025", "Lâm Đồng", "avatar"),
-    SavedPlan(3, "Nghỉ dưỡng Phú Quốc", "10/01 - 15/01/2026", "Kiên Giang", "ha_long")
-)
-
 @Composable
-fun PlanScreen(navController: NavController) {
+fun PlanScreen(
+    navController: NavController,
+    viewModel: PlanListViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var showAllPlans by remember { mutableStateOf(false) }
+    
+    // Filter plans theo ngày được chọn hoặc hiển thị tất cả
+    val filteredPlans = remember(uiState.plans, selectedDate, showAllPlans) {
+        if (showAllPlans) {
+            uiState.plans
+        } else {
+            uiState.plans.filter { plan ->
+                if (plan.startDate == null || plan.endDate == null) return@filter false
+                
+                val start = plan.startDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                val end = plan.endDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                
+                // Kiểm tra xem selectedDate có nằm trong khoảng [start, end] không
+                !selectedDate.isBefore(start) && !selectedDate.isAfter(end)
+            }
+        }
+    }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        topBar = {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                shadowElevation = 0.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .statusBarsPadding()
+                        .padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(Color(0xFFE0E0E0), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Quay lại",
+                            tint = Color(0xFF1A1A1A),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Kế hoạch",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .background(Color.White),
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
-            item {
-                //HomeTopBar(
-                    //userName = "Nguyễn Văn A",
-                    //onNotificationClick = {}
-                //)
-            }
 
             // Lịch dạng tuần (horizontal)
             item {
                 WeeklyCalendarSection(
                     selectedDate = selectedDate,
-                    onDateSelected = { selectedDate = it }
+                    onDateSelected = { 
+                        selectedDate = it
+                        showAllPlans = false // Tự động chuyển về chế độ filter theo ngày khi chọn ngày mới
+                    }
                 )
             }
 
             item {
-                PlanListHeader(onViewAllClick = { /*TODO*/ })
-            }
-
-            items(dummyPlans) { plan ->
-                PlanItemCard(plan = plan, onClick = { /*TODO*/ })
-            }
-        }
-
-
-        /*FloatingActionButton(
-
-            onClick = { /* TODO: Navigate to create plan */ },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
-                .height(56.dp)
-                .fillMaxWidth(0.8f),
-            shape = CircleShape,
-            containerColor = MaterialTheme.colorScheme.primary
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Tạo kế hoạch",
-                    tint = Color.White
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Tạo kế hoạch mới",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                PlanListHeader(
+                    filteredCount = filteredPlans.size,
+                    totalCount = uiState.plans.size,
+                    selectedDate = selectedDate,
+                    showAllPlans = showAllPlans,
+                    onViewAllClick = { showAllPlans = !showAllPlans }
                 )
             }
+
+            when {
+                uiState.isLoading -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+                uiState.error != null -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "Lỗi: ${uiState.error}",
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(onClick = { viewModel.loadPlans() }) {
+                                    Text("Thử lại")
+                                }
+                            }
+                        }
+                    }
+                }
+                filteredPlans.isEmpty() -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarMonth,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = Color.Gray
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = if (uiState.plans.isEmpty()) {
+                                        "Chưa có kế hoạch nào"
+                                    } else {
+                                        "Không có kế hoạch cho ngày ${selectedDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}"
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    items(filteredPlans) { plan ->
+                        PlanItemCard(
+                            plan = plan,
+                            onClick = {
+                                navController.navigate(Screen.PlanDetail.createRoute(plan.id))
+                            }
+                        )
+                    }
+                }
+            }
         }
-        */
     }
 }
 
@@ -246,7 +349,13 @@ fun DateItem(
 }
 
 @Composable
-private fun PlanListHeader(onViewAllClick: () -> Unit) {
+private fun PlanListHeader(
+    filteredCount: Int,
+    totalCount: Int,
+    selectedDate: LocalDate,
+    showAllPlans: Boolean,
+    onViewAllClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -254,22 +363,60 @@ private fun PlanListHeader(onViewAllClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = "Kế hoạch đã lưu",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "Xem tất cả",
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.clickable { onViewAllClick() }
-        )
+        Column {
+            Text(
+                text = if (showAllPlans) {
+                    "Tất cả kế hoạch"
+                } else {
+                    "Kế hoạch cho ngày ${selectedDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}"
+                },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            if (filteredCount > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$filteredCount kế hoạch",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+        }
+        if (showAllPlans) {
+            Text(
+                text = "Lọc theo ngày",
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                modifier = Modifier.clickable { onViewAllClick() }
+            )
+        } else if (totalCount > filteredCount) {
+            Text(
+                text = "Xem tất cả ($totalCount)",
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                modifier = Modifier.clickable { onViewAllClick() }
+            )
+        }
     }
 }
 
 @Composable
-fun PlanItemCard(plan: SavedPlan, onClick: () -> Unit) {
+fun PlanItemCard(plan: TravelPlan, onClick: () -> Unit) {
+    // Format dates
+    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    val dateRange = if (plan.startDate != null && plan.endDate != null) {
+        val start = plan.startDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+        val end = plan.endDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+        "${start.format(dateFormatter)} - ${end.format(dateFormatter)}"
+    } else {
+        "Chưa có ngày"
+    }
+    
+    // Extract location from title or use destinationId
+    val location = plan.title.substringAfter("đến ").substringBefore(",").ifEmpty { "Địa điểm" }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -283,31 +430,76 @@ fun PlanItemCard(plan: SavedPlan, onClick: () -> Unit) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val context = LocalContext.current
-            val resId = context.resources.getIdentifier(plan.imageUrl, "drawable", context.packageName)
-            val painter = if (resId != 0)
-                painterResource(id = resId)
-            else painterResource(id = R.drawable.ic_launcher_foreground)
-
-            Image(
-                painter = painter,
-                contentDescription = plan.title,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-            )
+            // Hiển thị ảnh từ coverImageUrl hoặc fallback
+            if (plan.coverImageUrl.isNotEmpty()) {
+                val isNetworkImage = plan.coverImageUrl.startsWith("http") || plan.coverImageUrl.startsWith("https://")
+                if (isNetworkImage) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(plan.coverImageUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = plan.title,
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    val context = LocalContext.current
+                    val resId = context.resources.getIdentifier(plan.coverImageUrl, "drawable", context.packageName)
+                    val painter = if (resId != 0)
+                        painterResource(id = resId)
+                    else painterResource(id = R.drawable.ic_launcher_foreground)
+                    Image(
+                        painter = painter,
+                        contentDescription = plan.title,
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.LightGray),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarMonth,
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(plan.title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(plan.dateRange, color = Color.Gray, fontSize = 14.sp)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(plan.location, color = Color.Gray, fontSize = 14.sp)
+                Text(dateRange, color = Color.Gray, fontSize = 14.sp)
+                if (plan.planDetail.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Có gợi ý AI",
+                            color = Color(0xFFFFC107),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
             Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))

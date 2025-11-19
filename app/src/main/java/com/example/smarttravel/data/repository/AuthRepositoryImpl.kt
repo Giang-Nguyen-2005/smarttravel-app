@@ -188,4 +188,68 @@ class AuthRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun saveDestination(destinationId: String): Result<Unit> {
+        return try {
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser == null) {
+                return Result.failure(Exception("Người dùng chưa đăng nhập"))
+            }
+            val userDocRef = firestore.collection("users").document(currentUser.uid)
+            val snapshot = userDocRef.get().await()
+            val currentFavorites = snapshot.get("favorite_destination_ids") as? List<*> ?: emptyList<Any>()
+            val favoriteIds = currentFavorites.map { it.toString() }.toMutableList()
+            
+            if (!favoriteIds.contains(destinationId)) {
+                favoriteIds.add(destinationId)
+                userDocRef.update("favorite_destination_ids", favoriteIds).await()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun unsaveDestination(destinationId: String): Result<Unit> {
+        return try {
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser == null) {
+                return Result.failure(Exception("Người dùng chưa đăng nhập"))
+            }
+            val userDocRef = firestore.collection("users").document(currentUser.uid)
+            val snapshot = userDocRef.get().await()
+            val currentFavorites = snapshot.get("favorite_destination_ids") as? List<*> ?: emptyList<Any>()
+            val favoriteIds = currentFavorites.map { it.toString() }.toMutableList()
+            
+            favoriteIds.remove(destinationId)
+            userDocRef.update("favorite_destination_ids", favoriteIds).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override fun getSavedDestinationIds(): Flow<List<String>> = callbackFlow {
+        val currentUser = firebaseAuth.currentUser
+        if (currentUser == null) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+        val docRef = firestore.collection("users").document(currentUser.uid)
+        val listener = docRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                trySend(emptyList())
+                return@addSnapshotListener
+            }
+            if (snapshot != null && snapshot.exists()) {
+                val favoriteIds = snapshot.get("favorite_destination_ids") as? List<*> ?: emptyList<Any>()
+                val ids = favoriteIds.map { it.toString() }
+                trySend(ids)
+            } else {
+                trySend(emptyList())
+            }
+        }
+        awaitClose { listener.remove() }
+    }
 }

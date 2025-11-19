@@ -57,9 +57,10 @@ fun RegisterScreen(
     LaunchedEffect(saveState) {
         when (val state = saveState) {
             is SaveState.Success -> {
-                Toast.makeText(context, "Đã tạo kế hoạch!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Đã tạo kế hoạch với gợi ý AI!", Toast.LENGTH_SHORT).show()
                 viewModel.resetSaveState()
-                navController.navigate(Screen.Home.route) {
+                // Chuyển đến trang Kế hoạch thay vì Home
+                navController.navigate(Screen.Calendar.route) {
                     popUpTo(Screen.PlanRegisterFlow.route) { inclusive = true }
                 }
             }
@@ -205,13 +206,17 @@ fun RegisterScreen(
                     .padding(16.dp)
             ) {
                 PrimaryButton(
-                    text = if (saveState is SaveState.Loading) "Đang tạo..." else "Xác nhận hành trình",
+                    text = when (saveState) {
+                        is SaveState.Loading -> "Đang lưu..."
+                        is SaveState.GeneratingAI -> "Đang tạo gợi ý AI..."
+                        else -> "Xác nhận hành trình"
+                    },
                     onClick = {
-                        if (saveState !is SaveState.Loading) {
+                        if (saveState !is SaveState.Loading && saveState !is SaveState.GeneratingAI) {
                             viewModel.savePlan()
                         }
                     },
-                    enabled = saveState !is SaveState.Loading,
+                    enabled = saveState !is SaveState.Loading && saveState !is SaveState.GeneratingAI,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

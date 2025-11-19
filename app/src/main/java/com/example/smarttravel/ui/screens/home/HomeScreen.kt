@@ -41,13 +41,11 @@ import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.AppBottomBar
 import com.example.smarttravel.ui.components.DestinationCard
 import com.example.smarttravel.ui.theme.SmarttravelTheme
-import com.example.smarttravel.ui.viewmodel.AuthViewModel
 import com.example.smarttravel.ui.viewmodel.HomeViewModel
 
 @Composable
 fun HomeScreen(
     navController: NavController,
-    authViewModel: AuthViewModel = hiltViewModel(),
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     // Lắng nghe các trạng thái từ ViewModel
@@ -175,23 +173,6 @@ fun HomeScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
-            }
-            item {
-                Button(
-                    onClick = {
-                        authViewModel.logout()
-                        // Điều hướng về màn hình Login và xóa Home khỏi stack
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(Screen.Home.route) { inclusive = true }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error), // Màu đỏ để dễ thấy
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp)
-                ) {
-                    Text("Đăng xuất (Test)")
-                }
             }
         }
     }

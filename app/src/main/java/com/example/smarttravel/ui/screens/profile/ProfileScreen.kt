@@ -32,6 +32,7 @@ import coil.compose.AsyncImage
 import com.example.smarttravel.R
 import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.theme.SmarttravelTheme
+import com.example.smarttravel.ui.viewmodel.AuthViewModel
 import com.example.smarttravel.ui.viewmodel.ProfileViewModel
 
 // --- DỮ LIỆU MENU ---
@@ -46,7 +47,8 @@ val menuItems = listOf(
     ProfileMenuItem("Đã Lưu", Icons.Default.BookmarkBorder),
     ProfileMenuItem("Các chuyến đi trước", Icons.Default.TravelExplore),
     ProfileMenuItem("Cài đặt", Icons.Default.Settings),
-    ProfileMenuItem("Version", Icons.Default.Info)
+    ProfileMenuItem("Version", Icons.Default.Info),
+    ProfileMenuItem("Đăng xuất", Icons.Default.ExitToApp)
 )
 
 // --- NÚT BACK & EDIT ---
@@ -76,7 +78,8 @@ fun RoundIconButton(
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
 
@@ -141,6 +144,14 @@ fun ProfileScreen(
                     onMenuItemClick = { item ->
                         when (item.title) {
                             "Hồ Sơ" -> navController.navigate(Screen.UserProfileDetail.route)
+                            "Đã Lưu" -> navController.navigate(Screen.SavedDestinations.route)
+                            "Đăng xuất" -> {
+                                authViewModel.logout()
+                                // Điều hướng về màn hình Login và xóa toàn bộ stack
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(Screen.Home.route) { inclusive = true }
+                                }
+                            }
                         }
                     }
                 )
@@ -160,25 +171,32 @@ fun UserProfileDetailScreen(
 
     Scaffold(
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .statusBarsPadding(),
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                shadowElevation = 0.dp
             ) {
-                RoundIconButton(
-                    onClick = { navController.popBackStack() },
-                    icon = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Quay lại"
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = "Thông tin hồ sơ",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .statusBarsPadding()
+                        .padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RoundIconButton(
+                        onClick = { navController.popBackStack() },
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Quay lại"
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Thông tin hồ sơ",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     ) { paddingValues ->
@@ -186,8 +204,13 @@ fun UserProfileDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+            contentPadding = PaddingValues(bottom = 24.dp)
         ) {
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            
             item {
                 val displayName = (profile?.displayName ?: "")
                     .ifEmpty { profile?.email?.substringBefore("@") ?: "N/A" }
@@ -321,17 +344,23 @@ fun ProfileMenuItem(item: ProfileMenuItem, onClick: () -> Unit) {
 @Composable
 fun DetailMenuSection(items: List<ProfileMenuItem>) {
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
         color = Color.White,
-        shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        shadowElevation = 2.dp
     ) {
-        Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
             items.forEachIndexed { index, item ->
                 DetailMenuItem(item = item)
                 if (index < items.lastIndex) {
                     HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = Color.LightGray.copy(alpha = 0.3f)
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = Color.LightGray.copy(alpha = 0.2f),
+                        thickness = 0.5.dp
                     )
                 }
             }
@@ -344,33 +373,42 @@ fun DetailMenuItem(item: ProfileMenuItem) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .padding(vertical = 16.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = item.icon,
-            contentDescription = item.title,
-            tint = Color.Gray,
-            modifier = Modifier.size(24.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(10.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.title,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF757575),
+                fontWeight = FontWeight.Normal
             )
-            item.subtitle?.let {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = item.subtitle ?: "Chưa cập nhật",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 3
+            )
         }
-        // BỎ ICON >
     }
 }
 

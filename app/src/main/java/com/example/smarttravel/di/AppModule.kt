@@ -1,5 +1,7 @@
 package com.example.smarttravel.di
 
+import com.example.smarttravel.data.repository.AiService
+import com.example.smarttravel.data.repository.AiServiceImpl
 import com.example.smarttravel.data.repository.AuthRepository
 import com.example.smarttravel.data.repository.AuthRepositoryImpl
 import com.example.smarttravel.data.repository.DestinationRepository
@@ -57,6 +59,13 @@ object AppModule { // <-- Dòng 19
         firebaseAuth: FirebaseAuth
     ): PlanRepository {
         return PlanRepositoryImpl(firestore, firebaseAuth) // Sửa lỗi logic: cần firestore và firebaseAuth
+    }
+    
+    // Cung cấp AiService
+    @Provides
+    @Singleton
+    fun provideAiService(): AiService {
+        return AiServiceImpl()
     }
 
 }

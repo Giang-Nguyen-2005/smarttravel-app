@@ -29,11 +29,14 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.navigation // Đổi tên import 'navigation'
 import com.example.smarttravel.ui.screens.profile.ProfileScreen
 import com.example.smarttravel.ui.screens.profile.UserProfileDetailScreen // <<< IMPORT MÀN HÌNH BỊ THIẾU
+import com.example.smarttravel.ui.screens.profile.SavedDestinationsScreen
 import com.example.smarttravel.ui.screens.editprofile.EditProfileScreen
 import com.example.smarttravel.ui.screens.planregister.EconomyScreen
 import com.example.smarttravel.ui.screens.planregister.GoWithScreen
 import com.example.smarttravel.ui.screens.planregister.PeriodScreen
 import com.example.smarttravel.ui.screens.planregister.PurposeScreen
+import com.example.smarttravel.ui.screens.schedule.PlanScreen
+import com.example.smarttravel.ui.screens.plan_detail.PlanDetailScreen
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
@@ -102,8 +105,23 @@ fun AppNavigation(navController: NavHostController) {
         }
 
 
+        // Màn hình Calendar/Plan (Kế hoạch)
+        composable(Screen.Calendar.route) {
+            PlanScreen(navController = navController)
+        }
+        
+        // Màn hình Plan Detail
+        composable(
+            route = Screen.PlanDetail.route,
+            arguments = listOf(navArgument("planId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val planId = backStackEntry.arguments?.getString("planId")
+            if (planId != null) {
+                PlanDetailScreen(navController = navController, planId = planId)
+            }
+        }
+        
         // TODO: Thêm các màn hình khác của bạn sau
-        // composable(Screen.Calendar.route) { CalendarScreen(navController = navController) }
         // composable(Screen.Chat.route) { ChatScreen(navController = navController) }
 
         // Màn hình Profile
@@ -118,6 +136,10 @@ fun AppNavigation(navController: NavHostController) {
 
         composable(Screen.EditProfile.route) {
             EditProfileScreen(navController = navController)
+        }
+
+        composable(Screen.SavedDestinations.route) {
+            SavedDestinationsScreen(navController = navController)
         }
 
         // Màn hình Search

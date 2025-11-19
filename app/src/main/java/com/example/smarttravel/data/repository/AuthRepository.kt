@@ -33,5 +33,8 @@ interface AuthRepository {
 
     suspend fun updateUserProfile(userProfile: UserProfile): Result<Unit>
 
+    suspend fun saveDestination(destinationId: String): Result<Unit>
+    suspend fun unsaveDestination(destinationId: String): Result<Unit>
+    fun getSavedDestinationIds(): Flow<List<String>>
 
 }

@@ -82,6 +82,9 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("com.kizitonwose.calendar:compose:2.0.4")
     implementation("com.airbnb.android:lottie-compose:6.3.0")
+    
+    // Google Gemini AI
+    implementation("com.google.ai.client.generativeai:generativeai:0.2.2")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

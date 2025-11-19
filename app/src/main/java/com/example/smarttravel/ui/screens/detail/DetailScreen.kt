@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
@@ -160,7 +161,8 @@ fun DetailScreen(
                 }
                 TopControls(
                     onBackClick = { navController.popBackStack() },
-                    onBookmarkClick = { /* TODO */ }
+                    onBookmarkClick = { viewModel.toggleBookmark() },
+                    isBookmarked = uiState.isBookmarked
                 )
             }
         }
@@ -311,7 +313,7 @@ fun ImageHeader(imageUrl: String, modifier: Modifier = Modifier, onImageClick: (
 }
 
 @Composable
-fun TopControls(onBackClick: () -> Unit, onBookmarkClick: () -> Unit) {
+fun TopControls(onBackClick: () -> Unit, onBookmarkClick: () -> Unit, isBookmarked: Boolean = false) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -338,12 +340,15 @@ fun TopControls(onBackClick: () -> Unit, onBookmarkClick: () -> Unit) {
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.3f))
+                .background(
+                    if (isBookmarked) Color(0xFFFFC107).copy(alpha = 0.9f)
+                    else Color.Black.copy(alpha = 0.3f)
+                )
                 .clickable { onBookmarkClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.BookmarkBorder,
+                imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                 contentDescription = "Bookmark",
                 tint = Color.White,
                 modifier = Modifier.size(24.dp)
