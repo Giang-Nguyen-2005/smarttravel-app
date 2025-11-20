@@ -46,5 +46,16 @@ class PlanListViewModel @Inject constructor(
             }
         }
     }
+    
+    fun deletePlan(planId: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            val result = planRepository.deletePlan(planId)
+            if (result.isSuccess) {
+                onSuccess()
+            } else {
+                onError(result.exceptionOrNull()?.message ?: "Lỗi không xác định")
+            }
+        }
+    }
 }
 

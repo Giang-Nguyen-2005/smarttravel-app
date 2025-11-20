@@ -147,18 +147,18 @@ class PlanViewModel @Inject constructor(
                 return@launch
             }
 
-            // Kiểm tra xem có kế hoạch nào trùng ngày không
-            val overlapResult = planRepository.hasOverlappingPlan(startTimestamp, endTimestamp)
-            if (overlapResult.isFailure) {
-                _saveState.value = SaveState.Error("Lỗi kiểm tra trùng ngày: ${overlapResult.exceptionOrNull()?.message ?: "Lỗi không xác định"}")
-                return@launch
-            }
-            
-            val hasOverlap = overlapResult.getOrNull() ?: false
-            if (hasOverlap) {
-                _saveState.value = SaveState.Error("Bạn đã có kế hoạch du lịch trong khoảng thời gian này. Vui lòng chọn ngày khác.")
-                return@launch
-            }
+            // Đã disable kiểm tra trùng ngày - cho phép nhiều chuyến đi trong cùng ngày
+            // val overlapResult = planRepository.hasOverlappingPlan(startTimestamp, endTimestamp)
+            // if (overlapResult.isFailure) {
+            //     _saveState.value = SaveState.Error("Lỗi kiểm tra trùng ngày: ${overlapResult.exceptionOrNull()?.message ?: "Lỗi không xác định"}")
+            //     return@launch
+            // }
+            // 
+            // val hasOverlap = overlapResult.getOrNull() ?: false
+            // if (hasOverlap) {
+            //     _saveState.value = SaveState.Error("Bạn đã có kế hoạch du lịch trong khoảng thời gian này. Vui lòng chọn ngày khác.")
+            //     return@launch
+            // }
 
             val newPlan = TravelPlan(
                 destinationId = currentState.destinationId,
@@ -279,6 +279,11 @@ class PlanViewModel @Inject constructor(
                         "location" to activityObj.optString("location", ""),
                         "description" to activityObj.optString("description", "")
                     )
+                    
+                    // Parse price nếu có
+                    if (activityObj.has("price")) {
+                        activityMap["price"] = activityObj.optString("price", "")
+                    }
                     
                     // Parse recommendedDishes nếu có
                     if (activityObj.has("recommendedDishes")) {

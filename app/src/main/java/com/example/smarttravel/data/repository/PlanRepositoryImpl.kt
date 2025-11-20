@@ -179,4 +179,32 @@ class PlanRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+    
+    override suspend fun deletePlan(planId: String): Result<Unit> {
+        return try {
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser == null) {
+                return Result.failure(Exception("Người dùng chưa đăng nhập"))
+            }
+            
+            val documentRef = firestore.collection("travel_plans").document(planId)
+            val snapshot = documentRef.get().await()
+            
+            if (!snapshot.exists()) {
+                return Result.failure(Exception("Không tìm thấy kế hoạch"))
+            }
+            
+            // Kiểm tra quyền sở hữu
+            val userId = snapshot.getString("userId")
+            if (userId != currentUser.uid) {
+                return Result.failure(Exception("Không có quyền xóa kế hoạch này"))
+            }
+            
+            documentRef.delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("PlanRepositoryImpl", "Error deleting plan: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
 }

@@ -19,4 +19,7 @@ interface PlanRepository {
     
     // Kiểm tra xem có kế hoạch nào trùng ngày với khoảng thời gian cho trước không
     suspend fun hasOverlappingPlan(startDate: Timestamp, endDate: Timestamp): Result<Boolean>
+    
+    // Xóa một kế hoạch theo ID
+    suspend fun deletePlan(planId: String): Result<Unit>
 }

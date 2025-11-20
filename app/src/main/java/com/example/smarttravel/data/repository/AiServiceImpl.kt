@@ -264,6 +264,7 @@ Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ tr�
         "name": "[Tên nhà hàng/quán ăn]",
         "location": "[Địa chỉ]",
         "description": "[Mô tả món ăn đặc sản]",
+        "price": "[Giá ước tính, ví dụ: 50.000 - 150.000 VNĐ/người]",
         "recommendedDishes": ["[Món 1]", "[Món 2]"]
       },
       {
@@ -272,6 +273,7 @@ Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ tr�
         "name": "[Tên địa điểm tham quan]",
         "location": "[Địa chỉ]",
         "description": "[Mô tả chi tiết về địa điểm]",
+        "price": "[Giá vé tham quan, ví dụ: 100.000 - 200.000 VNĐ/người]",
         "tips": "[Mẹo khi tham quan]"
       },
       {
@@ -280,6 +282,7 @@ Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ tr�
         "name": "[Tên nhà hàng]",
         "location": "[Địa chỉ]",
         "description": "[Mô tả món ăn]",
+        "price": "[Giá ước tính, ví dụ: 100.000 - 300.000 VNĐ/người]",
         "recommendedDishes": ["[Món đặc sản 1]", "[Món đặc sản 2]"]
       },
       {
@@ -287,7 +290,8 @@ Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ tr�
         "type": "activity",
         "name": "[Hoạt động/Khu vui chơi]",
         "location": "[Địa chỉ, gần khách sạn nếu có]",
-        "description": "[Mô tả hoạt động]"
+        "description": "[Mô tả hoạt động]",
+        "price": "[Giá ước tính, ví dụ: 200.000 - 500.000 VNĐ/người]"
       },
       {
         "time": "18:00",
@@ -295,6 +299,7 @@ Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ tr�
         "name": "[Tên nhà hàng]",
         "location": "[Địa chỉ]",
         "description": "[Mô tả món ăn]",
+        "price": "[Giá ước tính, ví dụ: 150.000 - 400.000 VNĐ/người]",
         "recommendedDishes": ["[Món đặc sản]"]
       }
     ]
@@ -306,6 +311,8 @@ Lưu ý QUAN TRỌNG:
 - Mỗi ngày PHẢI có field "hotel" với thông tin khách sạn
 - Mỗi ngày có ít nhất 6-8 hoạt động (ăn sáng, tham quan, ăn trưa, hoạt động, ăn tối, nghỉ ngơi)
 - Type có thể là: "breakfast", "lunch", "dinner", "attraction", "activity", "entertainment", "rest", "hotel"
+- MỖI ACTIVITY PHẢI CÓ field "price" với giá ước tính (theo ngân sách $budget). Ví dụ: "50.000 - 150.000 VNĐ/người" hoặc "Miễn phí"
+- Giá phải phù hợp với ngân sách đã chọn: Tiết kiệm (500k-1.5M/ngày), Cân bằng (1.5M-3M/ngày), Cao cấp (3M-5M/ngày), Linh hoạt (trên 5M/ngày)
 - Gợi ý các món ăn đặc sản địa phương trong "recommendedDishes"
 - Gợi ý khu vui chơi giải trí gần khách sạn
 - Phù hợp với ngân sách $budget và sở thích $purposesText

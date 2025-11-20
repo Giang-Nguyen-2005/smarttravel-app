@@ -7,15 +7,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-// THÊM IMPORT ICON NÀY CHO BIỂU TƯỢNG TRÁI TIM
 import androidx.compose.material.icons.filled.FavoriteBorder
-// THÊM IMPORT ICON NÀY CHO BIỂU TƯỢNG ĐỊA ĐIỂM
 import androidx.compose.material.icons.outlined.LocationOn
-// THÊM IMPORT ICON NÀY CHO BIỂU TƯỢNG NGƯỜI ĐỒNG HÀNH
 import androidx.compose.material.icons.outlined.Groups
-// THÊM IMPORT ICON NÀY CHO BIỂU TƯỢNG THỜI GIAN
 import androidx.compose.material.icons.outlined.CalendarMonth
-// THÊM IMPORT ICON NÀY CHO BIỂU TƯỢNG NGÂN SÁCH
 import androidx.compose.material.icons.outlined.MonetizationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -85,9 +80,9 @@ fun RegisterScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White) // Đảm bảo nền trắng khi cuộn
+                    .background(Color.White)
                     .padding(horizontal = 24.dp)
-                    .padding(top = 60.dp, bottom = 16.dp) // Điều chỉnh padding
+                    .padding(top = 60.dp, bottom = 16.dp)
             ) {
                 // 1. Nút Back (Căn trái)
                 Box(modifier = Modifier.align(Alignment.CenterStart)) {
@@ -124,7 +119,7 @@ fun RegisterScreen(
                         label = "Địa điểm",
                         // Truyền tên khu vực/tỉnh thành
                         locationName = uiState.locationName,
-                        // Tên địa điểm chính (Thành phố Đà Lạt)
+                        // Tên địa điểm chính
                         value = uiState.destinationName.ifEmpty { "Chưa chọn" },
                         onEditClick = {
                             navController.navigate(Screen.Home.route) {
@@ -288,11 +283,12 @@ fun EditableTitleRow(
         Spacer(modifier = Modifier.height(16.dp))
 
         if (showImage) {
-            // CÁCH HIỂN THỊ ĐẶC BIỆT CHO ĐỊA ĐIỂM (CÓ ẢNH VÀ TEXT LỚN)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+            // CÁCH HIỂN THỊ ĐẶC BIỆT CHO ĐỊA ĐIỂM (CÓ ẢNH VÀ TEXT LỚN) - CĂN GIỮA
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Ảnh địa điểm - căn giữa
                 if (imageUrl.isNotEmpty()) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
@@ -308,30 +304,35 @@ fun EditableTitleRow(
                 } else {
                     Box(
                         modifier = Modifier
-                            .size(70.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .size(160.dp)
+                            .clip(RoundedCornerShape(20.dp))
                             .background(Color.LightGray)
                     )
                 }
-                Spacer(modifier = Modifier.width(16.dp))
+                
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Cột chứa Tên địa điểm và Tên khu vực
-                Column(modifier = Modifier.weight(1f)) {
+                // Cột chứa Tên địa điểm và Tên khu vực - căn giữa
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     // Tên địa điểm chính (ví dụ: Thành phố Đà Lạt)
                     Text(
                         text = value.ifEmpty { "Chưa chọn" },
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
+                        textAlign = TextAlign.Center
                     )
                     // Tên khu vực (ví dụ: Lâm Đồng, Việt Nam)
                     if (locationName.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = locationName,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Normal,
                             color = Color.Gray,
-                            modifier = Modifier.padding(top = 2.dp)
+                            textAlign = TextAlign.Center
                         )
                     }
                 }

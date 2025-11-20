@@ -210,7 +210,20 @@ fun PlanScreen(
                             plan = plan,
                             onClick = {
                                 navController.navigate(Screen.PlanDetail.createRoute(plan.id))
-                            }
+                            },
+                            onDelete = {
+                                viewModel.deletePlan(
+                                    planId = plan.id,
+                                    onSuccess = {
+                                        // Plan sẽ tự động được xóa khỏi danh sách nhờ Flow
+                                    },
+                                    onError = { error ->
+                                        // Có thể hiển thị Toast hoặc Snackbar
+                                        android.util.Log.e("PlanScreen", "Error deleting plan: $error")
+                                    }
+                                )
+                            },
+                            viewModel = viewModel
                         )
                     }
                 }
@@ -403,7 +416,12 @@ private fun PlanListHeader(
 }
 
 @Composable
-fun PlanItemCard(plan: TravelPlan, onClick: () -> Unit) {
+fun PlanItemCard(
+    plan: TravelPlan, 
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    viewModel: PlanListViewModel
+) {
     // Format dates
     val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     val dateRange = if (plan.startDate != null && plan.endDate != null) {
@@ -502,6 +520,44 @@ fun PlanItemCard(plan: TravelPlan, onClick: () -> Unit) {
                     }
                 }
             }
+            // Nút xóa
+            var showDeleteDialog by remember { mutableStateOf(false) }
+            IconButton(
+                onClick = { showDeleteDialog = true },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Xóa kế hoạch",
+                    tint = Color(0xFFE53935),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            
+            if (showDeleteDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    title = { Text("Xóa kế hoạch") },
+                    text = { Text("Bạn có chắc chắn muốn xóa kế hoạch này? Hành động này không thể hoàn tác.") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showDeleteDialog = false
+                                onDelete()
+                            }
+                        ) {
+                            Text("Xóa", color = Color(0xFFE53935))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteDialog = false }) {
+                            Text("Hủy")
+                        }
+                    }
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(4.dp))
             Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
         }
     }

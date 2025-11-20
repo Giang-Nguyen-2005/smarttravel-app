@@ -79,5 +79,21 @@ class PlanDetailViewModel @Inject constructor(
             }
         }
     }
+    
+    fun deletePlan(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        if (planId == null) {
+            onError("Không tìm thấy ID kế hoạch")
+            return
+        }
+        
+        viewModelScope.launch {
+            val result = planRepository.deletePlan(planId)
+            if (result.isSuccess) {
+                onSuccess()
+            } else {
+                onError(result.exceptionOrNull()?.message ?: "Lỗi không xác định")
+            }
+        }
+    }
 }
 

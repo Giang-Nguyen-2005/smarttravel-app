@@ -44,6 +44,9 @@ import com.example.smarttravel.ui.viewmodel.PlanDetailViewModel
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun PlanDetailScreen(
@@ -52,6 +55,7 @@ fun PlanDetailScreen(
     viewModel: PlanDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -84,9 +88,42 @@ fun PlanDetailScreen(
                 PlanDetailContent(
                     navController = navController,
                     plan = uiState.plan!!,
-                    destination = uiState.destination
+                    destination = uiState.destination,
+                    onDeleteClick = { showDeleteDialog = true },
+                    viewModel = viewModel
                 )
             }
+        }
+        
+        // Dialog xác nhận xóa
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Xóa kế hoạch") },
+                text = { Text("Bạn có chắc chắn muốn xóa kế hoạch này? Hành động này không thể hoàn tác.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog = false
+                            viewModel.deletePlan(
+                                onSuccess = {
+                                    navController.popBackStack()
+                                },
+                                onError = { error ->
+                                    android.util.Log.e("PlanDetailScreen", "Error deleting plan: $error")
+                                }
+                            )
+                        }
+                    ) {
+                        Text("Xóa", color = Color(0xFFE53935))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Hủy")
+                    }
+                }
+            )
         }
     }
 }
@@ -95,7 +132,9 @@ fun PlanDetailScreen(
 fun PlanDetailContent(
     navController: NavController,
     plan: TravelPlan,
-    destination: com.example.smarttravel.model.Destination? = null
+    destination: com.example.smarttravel.model.Destination? = null,
+    onDeleteClick: () -> Unit = {},
+    viewModel: PlanDetailViewModel? = null
 ) {
     // Parse planDetail từ Firestore
     val planDays = remember(plan.planDetail) {
@@ -164,6 +203,16 @@ fun PlanDetailContent(
                     participants = plan.companion,
                     budget = plan.budget
                 )
+            }
+            
+            // 3.5. Tổng tiền ước tính
+            item {
+                val (title, priceText) = remember(planDays) {
+                    calculateTotalPrice(planDays)
+                }
+                if (priceText.isNotEmpty()) {
+                    TotalPriceSection(title = title, totalPrice = priceText)
+                }
             }
 
             // 3.5. Bản đồ lịch trình
@@ -253,11 +302,101 @@ fun PlanDetailContent(
             }
         }
 
-        // 6. Nút Back
+        // 6. Nút Back và Xóa
         PlanTopControls(
-            onBackClick = { navController.popBackStack() }
+            onBackClick = { navController.popBackStack() },
+            onDeleteClick = onDeleteClick
         )
     }
+}
+
+// Parse giá từ string (có thể là range hoặc số cụ thể)
+private fun parsePrice(priceString: String): Pair<Long, Long>? {
+    if (priceString.isEmpty() || priceString.contains("Miễn phí", ignoreCase = true)) {
+        return null
+    }
+    
+    // Loại bỏ các ký tự không cần thiết
+    var cleanPrice = priceString
+        .replace("VNĐ", "", ignoreCase = true)
+        .replace("/người", "", ignoreCase = true)
+        .replace("/đêm", "", ignoreCase = true)
+        .replace("đ", "", ignoreCase = true)
+        .trim()
+    
+    // Xử lý range (ví dụ: "50.000 - 150.000")
+    if (cleanPrice.contains("-")) {
+        val parts = cleanPrice.split("-").map { it.trim() }
+        if (parts.size == 2) {
+            val min = extractNumber(parts[0])
+            val max = extractNumber(parts[1])
+            if (min != null && max != null) {
+                return Pair(min, max)
+            }
+        }
+    }
+    
+    // Xử lý số cụ thể
+    val number = extractNumber(cleanPrice)
+    return number?.let { Pair(it, it) }
+}
+
+// Trích xuất số từ string (loại bỏ dấu chấm, phẩy)
+private fun extractNumber(text: String): Long? {
+    val cleaned = text.replace(".", "").replace(",", "").trim()
+    return cleaned.toLongOrNull()
+}
+
+// Tính tổng tiền ước tính từ tất cả activities và hotels
+private fun calculateTotalPrice(planDays: List<PlanDayData>): Pair<String, String> {
+    var minTotal: Long = 0
+    var maxTotal: Long = 0
+    var hasPrice = false
+    
+    // Thu thập và tính tổng giá từ hotels
+    planDays.forEach { day ->
+        day.hotel?.price?.let { priceStr ->
+            parsePrice(priceStr)?.let { (min, max) ->
+                minTotal += min
+                maxTotal += max
+                hasPrice = true
+            }
+        }
+    }
+    
+    // Thu thập và tính tổng giá từ activities
+    planDays.forEach { day ->
+        day.activities.forEach { activity ->
+            activity.price?.let { priceStr ->
+                parsePrice(priceStr)?.let { (min, max) ->
+                    minTotal += min
+                    maxTotal += max
+                    hasPrice = true
+                }
+            }
+        }
+    }
+    
+    if (!hasPrice) {
+        return Pair("", "")
+    }
+    
+    // Format tổng giá
+    val formattedMin = formatPrice(minTotal)
+    val formattedMax = formatPrice(maxTotal)
+    
+    val totalPriceText = if (minTotal == maxTotal) {
+        formattedMin
+    } else {
+        "$formattedMin - $formattedMax"
+    }
+    
+    return Pair("Tổng chi phí ước tính", totalPriceText)
+}
+
+// Format giá tiền
+private fun formatPrice(amount: Long): String {
+    return String.format("%,d VNĐ", amount).replace(",", ".")
 }
 
 // Parse planDetail từ Firestore
@@ -289,6 +428,7 @@ private fun parsePlanDetail(planDetail: List<Map<String, Any>>): List<PlanDayDat
                 val description = activityMap["description"] as? String ?: ""
                 val recommendedDishes = (activityMap["recommendedDishes"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
                 val tips = activityMap["tips"] as? String
+                val price = activityMap["price"] as? String
                 
                 ActivityInfo(
                     time = time,
@@ -297,7 +437,8 @@ private fun parsePlanDetail(planDetail: List<Map<String, Any>>): List<PlanDayDat
                     location = location,
                     description = description,
                     recommendedDishes = recommendedDishes,
-                    tips = tips
+                    tips = tips,
+                    price = price
                 )
             }
             
@@ -316,35 +457,72 @@ private fun parsePlanDetail(planDetail: List<Map<String, Any>>): List<PlanDayDat
 
 /**
  * Trích xuất các địa điểm từ plan để hiển thị trên bản đồ
- * Lưu ý: Vì ActivityInfo chỉ có location là string, hàm này sẽ chỉ hiển thị
- * destination chính nếu có tọa độ. Để hiển thị đầy đủ, cần tích hợp Geocoding API.
+ * Thêm destination chính và các địa điểm từ activities/hotels nếu có location
  */
 private fun extractMapDestinations(
     planDays: List<PlanDayData>,
     destination: com.example.smarttravel.model.Destination?
 ): List<MapDestination> {
     val destinations = mutableListOf<MapDestination>()
+    val addedLocations = mutableSetOf<String>() // Để tránh trùng lặp
     
     // Thêm destination chính nếu có tọa độ
     destination?.let { dest ->
         if (dest.latitude != 0.0 && dest.longitude != 0.0) {
-            destinations.add(
-                MapDestination(
-                    name = dest.name,
-                    location = dest.location_name,
-                    latitude = dest.latitude,
-                    longitude = dest.longitude
+            val key = "${dest.latitude},${dest.longitude}"
+            if (key !in addedLocations) {
+                destinations.add(
+                    MapDestination(
+                        name = dest.name,
+                        location = dest.location_name,
+                        latitude = dest.latitude,
+                        longitude = dest.longitude
+                    )
                 )
-            )
+                addedLocations.add(key)
+            }
         }
     }
     
-    // TODO: Thêm các điểm từ activities và hotel
-    // Hiện tại không có tọa độ từ activities, cần:
-    // 1. Lưu tọa độ trong ActivityInfo khi tạo plan
-    // 2. Sử dụng Geocoding API để chuyển đổi location string thành tọa độ
+    // Thêm các địa điểm từ hotels và activities
+    // Lưu ý: Vì không có tọa độ từ activities/hotels, chúng ta sẽ chỉ thêm vào danh sách
+    // để hiển thị trên bản đồ nếu có tọa độ. Hiện tại chỉ thêm destination chính.
+    // Có thể mở rộng sau bằng cách sử dụng Geocoding API.
     
     return destinations
+}
+
+/**
+ * Mở địa điểm trong Google Maps bằng location string
+ */
+private fun openLocationInGoogleMaps(context: android.content.Context, location: String, name: String) {
+    try {
+        // Encode location và name để tránh lỗi với ký tự đặc biệt
+        val encodedLocation = Uri.encode(location)
+        val encodedName = Uri.encode(name)
+        
+        // Tạo URI cho Google Maps với location string
+        val gmmIntentUri = Uri.parse("geo:0,0?q=$encodedLocation($encodedName)")
+        
+        // Thử mở Google Maps app trước
+        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
+            setPackage("com.google.android.apps.maps")
+        }
+        
+        // Nếu Google Maps không có, mở bằng trình duyệt
+        if (mapIntent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(mapIntent)
+        } else {
+            // Fallback: mở trong trình duyệt
+            val webIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://www.google.com/maps/search/?api=1&query=$encodedLocation")
+            )
+            context.startActivity(webIntent)
+        }
+    } catch (e: Exception) {
+        android.util.Log.e("PlanDetailScreen", "Error opening Google Maps: ${e.message}", e)
+    }
 }
 
 // Data classes
@@ -371,7 +549,8 @@ data class ActivityInfo(
     val location: String,
     val description: String,
     val recommendedDishes: List<String> = emptyList(),
-    val tips: String? = null
+    val tips: String? = null,
+    val price: String? = null
 )
 
 // --- CÁC COMPONENT CON ---
@@ -435,7 +614,10 @@ fun ImageHeader(imageUrl: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun PlanTopControls(onBackClick: () -> Unit) {
+fun PlanTopControls(
+    onBackClick: () -> Unit,
+    onDeleteClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -454,6 +636,22 @@ fun PlanTopControls(onBackClick: () -> Unit) {
                 contentDescription = "Back",
                 tint = Color.White
             )
+        }
+        
+        // Nút xóa
+        if (onDeleteClick != {}) {
+            IconButton(
+                onClick = onDeleteClick,
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(Color.White.copy(alpha = 0.3f), CircleShape)
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Xóa kế hoạch",
+                    tint = Color.White
+                )
+            }
         }
     }
 }
@@ -503,6 +701,49 @@ fun OverviewItem(icon: ImageVector, text: String) {
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = text, fontSize = 14.sp, color = Color.Gray)
+    }
+}
+
+@Composable
+fun TotalPriceSection(title: String, totalPrice: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.MonetizationOn,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            // Hiển thị giá tiền bên dưới
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = totalPrice,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 32.dp) // Căn lề với icon và text phía trên
+            )
+        }
     }
 }
 
@@ -645,19 +886,46 @@ fun PlanDayItem(day: PlanDayData, dayNumber: Int) {
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = Color.Gray,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = hotel.location,
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
+                    val context = LocalContext.current
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = hotel.location,
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        }
+                        // Nút mở Google Maps
+                        TextButton(
+                            onClick = {
+                                openLocationInGoogleMaps(context, hotel.location, hotel.name)
+                            },
+                            modifier = Modifier.padding(start = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Map,
+                                contentDescription = "Mở trong Google Maps",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Bản đồ",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                     if (hotel.rating.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -752,19 +1020,46 @@ fun ActivityItem(activity: ActivityInfo) {
             
             if (activity.location.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = activity.location,
-                        fontSize = 13.sp,
-                        color = Color.Gray
-                    )
+                val context = LocalContext.current
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = activity.location,
+                            fontSize = 13.sp,
+                            color = Color.Gray
+                        )
+                    }
+                    // Nút mở Google Maps
+                    TextButton(
+                        onClick = {
+                            openLocationInGoogleMaps(context, activity.location, activity.name)
+                        },
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Map,
+                            contentDescription = "Mở trong Google Maps",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Bản đồ",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
             
@@ -792,6 +1087,26 @@ fun ActivityItem(activity: ActivityInfo) {
                         text = "Món đề xuất: ${activity.recommendedDishes.joinToString(", ")}",
                         fontSize = 13.sp,
                         color = Color(0xFFFF9800),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+            
+            // Price
+            if (activity.price != null && activity.price.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.MonetizationOn,
+                        contentDescription = null,
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Giá: ${activity.price}",
+                        fontSize = 13.sp,
+                        color = Color(0xFF4CAF50),
                         fontWeight = FontWeight.Medium
                     )
                 }

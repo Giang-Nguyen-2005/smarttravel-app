@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -26,9 +28,18 @@ import com.example.smarttravel.ui.viewmodel.PlanViewModel
 fun EconomyScreen(navController: NavController, viewModel: PlanViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val selectedOption = uiState.budget
+    
+    // State cho mục "Khác" - lưu số tiền người dùng nhập
+    var customAmount by remember { mutableStateOf("") }
+    var isCustomSelected by remember { mutableStateOf(false) }
 
     // Logic kiểm tra nút Tiếp tục: nút chỉ BẬT nếu có ít nhất một lựa chọn (budget không rỗng)
-    val isButtonEnabled = !selectedOption.isNullOrBlank()
+    // Nếu chọn "Khác", phải nhập số tiền
+    val isButtonEnabled = if (isCustomSelected) {
+        customAmount.isNotBlank() && customAmount.toLongOrNull() != null
+    } else {
+        !selectedOption.isNullOrBlank()
+    }
 
     Scaffold{ paddingValues ->
         Column(
@@ -97,10 +108,10 @@ fun EconomyScreen(navController: NavController, viewModel: PlanViewModel) {
                 }
                 // Các lựa chọn ngân sách
                 val options = listOf(
-                    BudgetOption("Tiết kiệm", "💰", "Chuyến đi ưu tiên chi phí thấp."),
-                    BudgetOption("Cân bằng", "⚖️", "Chi tiêu hợp lý để cân bằng giữa trải nghiệm và chi phí."),
-                    BudgetOption("Cao cấp", "👑", "Trải nghiệm cao cấp, sang chảnh với chi phí cao hơn."),
-                    BudgetOption("Linh hoạt", "🔓", "Chi tiêu linh hoạt, thoải mái, không giới hạn.")
+                    BudgetOption("Tiết kiệm", "💰", "Chuyến đi ưu tiên chi phí thấp.", "500.000 - 1.500.000 VNĐ/ngày"),
+                    BudgetOption("Cân bằng", "⚖️", "Chi tiêu hợp lý để cân bằng giữa trải nghiệm và chi phí.", "1.500.000 - 3.000.000 VNĐ/ngày"),
+                    BudgetOption("Cao cấp", "👑", "Trải nghiệm cao cấp, sang chảnh với chi phí cao hơn.", "3.000.000 - 5.000.000 VNĐ/ngày"),
+                    BudgetOption("Linh hoạt", "🔓", "Chi tiêu linh hoạt, thoải mái, không giới hạn.", "Trên 5.000.000 VNĐ/ngày")
                 )
                 items(options.size) { index ->
                     val option = options[index]
@@ -108,9 +119,52 @@ fun EconomyScreen(navController: NavController, viewModel: PlanViewModel) {
                         title = option.title,
                         emoji = option.emoji,
                         description = option.description,
-                        isSelected = selectedOption == option.title,
-                        onClick = { viewModel.setBudget(option.title) }
+                        price = option.price,
+                        isSelected = selectedOption == option.title && !isCustomSelected,
+                        onClick = { 
+                            isCustomSelected = false
+                            customAmount = ""
+                            viewModel.setBudget(option.title) 
+                        }
                     )
+                }
+                
+                // Mục "Khác" với input field
+                item {
+                    BudgetCard(
+                        title = "Khác",
+                        emoji = "✏️",
+                        description = "Nhập số tiền bạn có cho chuyến đi này.",
+                        price = null,
+                        isSelected = isCustomSelected,
+                        onClick = { 
+                            isCustomSelected = true
+                            viewModel.setBudget("") 
+                        }
+                    )
+                }
+                
+                // Hiển thị input field nếu chọn "Khác"
+                if (isCustomSelected) {
+                    item {
+                        OutlinedTextField(
+                            value = customAmount,
+                            onValueChange = { newValue ->
+                                // Chỉ cho phép nhập số
+                                if (newValue.all { it.isDigit() } || newValue.isEmpty()) {
+                                    customAmount = newValue
+                                    if (newValue.isNotBlank()) {
+                                        viewModel.setBudget("Khác: ${formatCurrency(newValue.toLongOrNull() ?: 0)}")
+                                    }
+                                }
+                            },
+                            label = { Text("Nhập số tiền (VNĐ)") },
+                            placeholder = { Text("Ví dụ: 5000000") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
                 }
                 item {
                     Spacer(modifier = Modifier.height(20.dp))
@@ -140,14 +194,21 @@ fun EconomyScreen(navController: NavController, viewModel: PlanViewModel) {
 data class BudgetOption(
     val title: String,
     val emoji: String,
-    val description: String
+    val description: String,
+    val price: String
 )
+
+// Hàm format số tiền
+fun formatCurrency(amount: Long): String {
+    return String.format("%,d VNĐ", amount).replace(",", ".")
+}
 
 @Composable
 fun BudgetCard(
     title: String,
     emoji: String,
     description: String,
+    price: String?,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -162,17 +223,29 @@ fun BudgetCard(
             .clickable { onClick() }
             .padding(16.dp)
     ) {
-        Text(
-            text = "$title ${emoji}",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = description,
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "$title ${emoji}",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = description,
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+            // Hiển thị giá bên dưới subtitle
+            if (price != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = price,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
     }
 }
