@@ -122,8 +122,10 @@ fun AppNavigation(navController: NavHostController) {
             }
         }
         
-        // TODO: Thêm các màn hình khác của bạn sau
-        // composable(Screen.Chat.route) { ChatScreen(navController = navController) }
+        // Màn hình Chat
+        composable(Screen.Chat.route) { 
+            ChatScreen(navController = navController) 
+        }
 
         // Màn hình Profile
         composable(Screen.Profile.route) {

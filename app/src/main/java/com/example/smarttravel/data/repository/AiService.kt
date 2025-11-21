@@ -21,5 +21,12 @@ interface AiService {
         dayNumber: Int,
         date: String
     ): Result<Map<String, Any>> // Trả về hotel hoặc activity mới
+
+    // Method mới cho chat
+    suspend fun sendChatMessage(
+        message: String,
+        conversationHistory: List<Pair<String, String>> = emptyList() // (user, bot) pairs
+    ): Result<String>
+
 }
 

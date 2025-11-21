@@ -275,8 +275,8 @@ Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ tr�
                 "gemini-1.5-pro-latest",
                 "gemini-1.5-flash-latest",
                 "gemini-1.5-pro",
-                "gemini-1.5-flash",
-                "gemini-pro"
+                "gemini-1.5-flash"
+                //"gemini-pro"
             )
         }
         
@@ -507,6 +507,257 @@ Lưu ý QUAN TRỌNG:
 - Tất cả nội dung bằng tiếng Việt
 - Khách sạn nên phù hợp với ngân sách $budget
 """.trimIndent()
+    }
+    
+    override suspend fun sendChatMessage(
+        message: String,
+        conversationHistory: List<Pair<String, String>>
+    ): Result<String> {
+        return try {
+            if (apiKey.isEmpty() || apiKey == "YOUR_GEMINI_API_KEY_HERE") {
+                // Nếu chưa có API key, trả về response mẫu
+                return Result.success("Xin chào! Tôi là chatbot hỗ trợ du lịch. Hiện tại API key chưa được cấu hình.")
+            }
+            
+            android.util.Log.d("AiServiceImpl", "Sending chat message: ${message.take(100)}...")
+            
+            val response = withContext(Dispatchers.IO) {
+                callGeminiApiForChat(message, conversationHistory)
+            }
+            
+            android.util.Log.d("AiServiceImpl", "Chat response received, length: ${response.length}")
+            
+            Result.success(response)
+            
+        } catch (e: Exception) {
+            android.util.Log.e("AiServiceImpl", "Error in chat: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
+    private fun callGeminiApiForChat(
+        message: String,
+        conversationHistory: List<Pair<String, String>>
+    ): String {
+        // Thử lấy danh sách models có sẵn trước
+        val availableModels = try {
+            listAvailableModels()
+        } catch (e: Exception) {
+            android.util.Log.w("AiServiceImpl", "Failed to list models for chat: ${e.message}")
+            emptyList()
+        }
+        
+        // Nếu có models từ ListModels, dùng chúng, nếu không thì dùng danh sách mặc định
+        val modelNames = if (availableModels.isNotEmpty()) {
+            android.util.Log.d("AiServiceImpl", "Available models for chat: $availableModels")
+            // Lọc bỏ gemini-pro và các models cũ không còn được hỗ trợ
+            availableModels.filter { 
+                !it.contains("gemini-pro", ignoreCase = true) && 
+                !it.contains("gemini-1.0", ignoreCase = true)
+            }
+        } else {
+            // Danh sách fallback (không có gemini-pro vì không còn được hỗ trợ)
+            android.util.Log.d("AiServiceImpl", "Using fallback model list")
+            listOf(
+                "gemini-1.5-flash-002",
+                "gemini-1.5-flash-001",
+                "gemini-1.5-flash-latest",
+                "gemini-1.5-flash",
+                "gemini-1.5-pro-002",
+                "gemini-1.5-pro-001",
+                "gemini-1.5-pro-latest",
+                "gemini-1.5-pro"
+            )
+        }
+        
+        // Ưu tiên v1beta trước vì v1 có thể không hỗ trợ một số models
+        val apiVersions = listOf("v1beta", "v1")
+        
+        var lastException: Exception? = null
+        
+        for (apiVersion in apiVersions) {
+            for (modelName in modelNames) {
+                try {
+                    val url = URL("https://generativelanguage.googleapis.com/$apiVersion/models/$modelName:generateContent?key=$apiKey")
+                    android.util.Log.d("AiServiceImpl", "Trying chat: $apiVersion/models/$modelName")
+                    val connection = url.openConnection() as HttpURLConnection
+                    
+                    try {
+                        connection.requestMethod = "POST"
+                        connection.setRequestProperty("Content-Type", "application/json")
+                        connection.doOutput = true
+                        
+                        // Tạo request body với conversation history
+                        val contentsArray = org.json.JSONArray()
+                        
+                        // Thêm system instruction đầy đủ chỉ lần đầu (khi chưa có lịch sử)
+                        // Với các request sau, chỉ cần nhắc nhở ngắn gọn trong tin nhắn người dùng
+                        if (conversationHistory.isEmpty()) {
+                            contentsArray.put(JSONObject().apply {
+                                put("role", "user")
+                                put("parts", org.json.JSONArray().apply {
+                                    put(JSONObject().apply {
+                                        put("text", """Bạn là chatbot hỗ trợ du lịch. Trả lời CỰC KỲ NGẮN GỌN.
+
+QUY TẮC BẮT BUỘC:
+- Tối đa 1-4 câu ngắn
+- Dùng bullet points (•) khi liệt kê
+- Không giải thích dài dòng
+- Trả lời trực tiếp vào câu hỏi
+- Dùng tiếng Việt
+
+QUY TẮC QUAN TRỌNG NHẤT - XỬ LÝ CÂU HỎI KHÔNG LIÊN QUAN:
+BẠN CHỈ ĐƯỢC TRẢ LỜI CÂU HỎI VỀ DU LỊCH. 
+
+Nếu người dùng hỏi về bất kỳ chủ đề nào KHÔNG liên quan đến du lịch (ví dụ: toán học, lịch sử, công nghệ, tin tức, khoa học, văn học, thể thao, giải trí không liên quan du lịch, v.v.), BẠN PHẢI:
+1. Từ chối một cách lịch sự
+2. Nhắc nhở rằng bạn chỉ hỗ trợ về du lịch
+3. Hỏi lại về du lịch
+
+Câu trả lời mẫu BẮT BUỘC:
+"Xin lỗi, tôi chỉ có thể hỗ trợ về du lịch thôi. Bạn muốn hỏi gì về du lịch không?"
+
+KHÔNG BAO GIỜ trả lời câu hỏi không liên quan du lịch, dù người dùng có hỏi gì đi nữa.
+
+Nếu câu hỏi hơi liên quan nhưng không rõ ràng, hãy cố gắng liên kết với du lịch hoặc hỏi lại:
+"Bạn muốn biết về [chủ đề] trong chuyến du lịch phải không? Tôi có thể tư vấn về..."
+
+Ví dụ câu trả lời tốt cho câu hỏi về du lịch:
+"Đà Lạt có nhiều điểm thú vị:
+• Hồ Xuân Hương
+• Dinh Bảo Đại  
+• Thung Lũng Tình Yêu
+Chi phí khoảng 2-3 triệu/người/ngày."
+
+KHÔNG viết dài như đoạn văn. Chỉ trả lời ngắn gọn, súc tích.""")
+                                    })
+                                })
+                            })
+                            contentsArray.put(JSONObject().apply {
+                                put("role", "model")
+                                put("parts", org.json.JSONArray().apply {
+                                    put(JSONObject().apply {
+                                        put("text", "Hiểu rồi! Tôi sẽ trả lời cực kỳ ngắn gọn, tối đa 2-3 câu. QUAN TRỌNG: Tôi sẽ TỪ CHỐI và không trả lời bất kỳ câu hỏi nào không liên quan đến du lịch. Tôi chỉ hỗ trợ về du lịch thôi.")
+                                    })
+                                })
+                            })
+                        }
+                        
+                        // Thêm lịch sử hội thoại
+                        conversationHistory.forEach { (userMsg, botMsg) ->
+                            // User message
+                            contentsArray.put(JSONObject().apply {
+                                put("role", "user")
+                                put("parts", org.json.JSONArray().apply {
+                                    put(JSONObject().apply {
+                                        put("text", userMsg)
+                                    })
+                                })
+                            })
+                            
+                            // Bot response
+                            contentsArray.put(JSONObject().apply {
+                                put("role", "model")
+                                put("parts", org.json.JSONArray().apply {
+                                    put(JSONObject().apply {
+                                        put("text", botMsg)
+                                    })
+                                })
+                            })
+                        }
+                        
+                        // Thêm tin nhắn hiện tại với nhắc nhở ngắn gọn về quy tắc
+                        // Nhắc nhở này giúp model luôn nhớ từ chối câu hỏi không liên quan
+                        val userMessageWithReminder = if (conversationHistory.isNotEmpty()) {
+                            // Nếu đã có lịch sử, thêm nhắc nhở ngắn gọn nhưng rõ ràng
+                            "[QUY TẮC: Bạn CHỈ trả lời câu hỏi về du lịch. Nếu câu hỏi KHÔNG liên quan du lịch (toán, lịch sử, công nghệ, tin tức, v.v.), bạn PHẢI từ chối và trả lời: 'Xin lỗi, tôi chỉ có thể hỗ trợ về du lịch thôi. Bạn muốn hỏi gì về du lịch không?']\n\nCâu hỏi: $message"
+                        } else {
+                            message
+                        }
+                        
+                        contentsArray.put(JSONObject().apply {
+                            put("role", "user")
+                            put("parts", org.json.JSONArray().apply {
+                                put(JSONObject().apply {
+                                    put("text", userMessageWithReminder)
+                                })
+                            })
+                        })
+                        
+                        val requestBody = JSONObject().apply {
+                            put("contents", contentsArray)
+                        }
+                        
+                        // Log request để debug (chỉ log một phần)
+                        android.util.Log.d("AiServiceImpl", "Request body preview: ${requestBody.toString().take(200)}...")
+                        
+                        // Gửi request
+                        connection.outputStream.use { output ->
+                            output.write(requestBody.toString().toByteArray(Charsets.UTF_8))
+                        }
+                        
+                        // Đọc response
+                        val responseCode = connection.responseCode
+                        if (responseCode == HttpURLConnection.HTTP_OK) {
+                            val response = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                            android.util.Log.d("AiServiceImpl", "Response body: ${response.take(500)}")
+                            val jsonResponse = JSONObject(response)
+                            
+                            // Kiểm tra nếu có lỗi trong response
+                            if (jsonResponse.has("error")) {
+                                val error = jsonResponse.getJSONObject("error")
+                                val errorMessage = error.optString("message", "Unknown error")
+                                android.util.Log.e("AiServiceImpl", "API Error: $errorMessage")
+                                lastException = Exception("API Error: $errorMessage")
+                                continue
+                            }
+                            
+                            val candidates = jsonResponse.getJSONArray("candidates")
+                            if (candidates.length() > 0) {
+                                val candidate = candidates.getJSONObject(0)
+                                
+                                // Kiểm tra nếu có finishReason và nó không phải là STOP
+                                if (candidate.has("finishReason")) {
+                                    val finishReason = candidate.getString("finishReason")
+                                    if (finishReason != "STOP") {
+                                        android.util.Log.w("AiServiceImpl", "Finish reason: $finishReason")
+                                    }
+                                }
+                                
+                                val content = candidate.getJSONObject("content")
+                                val parts = content.getJSONArray("parts")
+                                if (parts.length() > 0) {
+                                    val text = parts.getJSONObject(0).getString("text")
+                                    android.util.Log.d("AiServiceImpl", "Chat success with $apiVersion/models/$modelName")
+                                    return text
+                                }
+                            }
+                            throw Exception("Không tìm thấy text trong response")
+                        } else {
+                            val errorResponse = connection.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: "Unknown error"
+                            android.util.Log.e("AiServiceImpl", "HTTP Error $responseCode for chat $apiVersion/models/$modelName")
+                            android.util.Log.e("AiServiceImpl", "Error response: $errorResponse")
+                            lastException = Exception("HTTP Error $responseCode: $errorResponse")
+                            continue
+                        }
+                    } finally {
+                        connection.disconnect()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("AiServiceImpl", "Failed chat $apiVersion/models/$modelName: ${e.message}")
+                    lastException = e
+                    continue
+                }
+            }
+        }
+        
+        // Nếu tất cả đều fail
+        throw lastException ?: Exception("Tất cả models và API versions đều thất bại")
+    }
+    
+    private fun buildChatPrompt(userMessage: String): String {
+        // Không dùng nữa vì đã có system instruction trong conversation
+        return userMessage
     }
     
     private fun getSamplePlanDetail(): String {
