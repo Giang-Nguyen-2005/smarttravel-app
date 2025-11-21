@@ -57,6 +57,7 @@ fun PlanScreen(
     var showAllPlans by remember { mutableStateOf(false) }
     
     // Filter plans theo ngày được chọn hoặc hiển thị tất cả
+    // (Các kế hoạch đã kết thúc hơn 3 ngày đã được filter ở ViewModel)
     val filteredPlans = remember(uiState.plans, selectedDate, showAllPlans) {
         if (showAllPlans) {
             uiState.plans

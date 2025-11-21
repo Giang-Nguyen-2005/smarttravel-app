@@ -64,6 +64,194 @@ class AiServiceImpl @Inject constructor() : AiService {
         }
     }
     
+    override suspend fun generateAlternativeSuggestion(
+        destination: String,
+        locationName: String,
+        itemType: String,
+        currentItem: Map<String, Any>,
+        budget: String,
+        dayNumber: Int,
+        date: String
+    ): Result<Map<String, Any>> {
+        return try {
+            if (apiKey.isEmpty() || apiKey == "YOUR_GEMINI_API_KEY_HERE") {
+                // Trả về sample data
+                return Result.success(getSampleAlternative(itemType))
+            }
+            
+            val prompt = buildAlternativePrompt(
+                destination = destination,
+                locationName = locationName,
+                itemType = itemType,
+                currentItem = currentItem,
+                budget = budget,
+                dayNumber = dayNumber,
+                date = date
+            )
+            
+            android.util.Log.d("AiServiceImpl", "Calling AI for alternative suggestion: type=$itemType")
+            
+            val response = withContext(Dispatchers.IO) {
+                callGeminiApiDirectly(prompt)
+            }
+            
+            android.util.Log.d("AiServiceImpl", "Alternative suggestion received, length: ${response.length}")
+            
+            // Parse response thành Map
+            val alternativeItem = parseAlternativeResponse(response, itemType)
+            Result.success(alternativeItem)
+            
+        } catch (e: Exception) {
+            android.util.Log.e("AiServiceImpl", "Error generating alternative suggestion: ${e.message}", e)
+            // Trả về sample data nếu có lỗi
+            Result.success(getSampleAlternative(itemType))
+        }
+    }
+    
+    private fun buildAlternativePrompt(
+        destination: String,
+        locationName: String,
+        itemType: String,
+        currentItem: Map<String, Any>,
+        budget: String,
+        dayNumber: Int,
+        date: String
+    ): String {
+        val currentItemJson = org.json.JSONObject(currentItem).toString(2)
+        
+        return when (itemType) {
+            "hotel" -> {
+                """
+Bạn là chuyên gia du lịch. Hãy đề xuất một khách sạn/nơi nghỉ KHÁC (không trùng với khách sạn hiện tại) cho chuyến đi với thông tin sau:
+
+- Địa điểm: $destination
+- Khu vực: $locationName
+- Ngân sách: $budget
+- Ngày: Ngày $dayNumber ($date)
+
+Khách sạn hiện tại:
+$currentItemJson
+
+Yêu cầu:
+1. Đề xuất một khách sạn KHÁC HOÀN TOÀN (không trùng tên, địa chỉ)
+2. Phù hợp với ngân sách $budget
+3. Cùng khu vực hoặc gần khu vực $locationName
+4. Có thể là loại khác (ví dụ: resort thay vì hostel, hoặc ngược lại)
+
+Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ trả về JSON, không có text thêm):
+
+{
+  "name": "[Tên khách sạn mới]",
+  "location": "[Địa chỉ khách sạn mới]",
+  "price": "[Giá phòng/đêm, phù hợp với ngân sách $budget]",
+  "rating": "[Xếp hạng sao, ví dụ: 3 sao, 4 sao]",
+  "description": "[Mô tả ngắn về khách sạn mới, tại sao phù hợp với chuyến đi]"
+}
+"""
+            }
+            "activity" -> {
+                val time = currentItem["time"] as? String ?: ""
+                val type = currentItem["type"] as? String ?: ""
+                """
+Bạn là chuyên gia du lịch. Hãy đề xuất một hoạt động/địa điểm KHÁC (không trùng với hoạt động hiện tại) cho chuyến đi với thông tin sau:
+
+- Địa điểm: $destination
+- Khu vực: $locationName
+- Ngân sách: $budget
+- Ngày: Ngày $dayNumber ($date)
+- Thời gian: $time
+- Loại hoạt động: $type
+
+Hoạt động hiện tại:
+$currentItemJson
+
+Yêu cầu:
+1. Đề xuất một hoạt động/địa điểm KHÁC HOÀN TOÀN (không trùng tên, địa chỉ)
+2. Cùng loại ($type) hoặc tương tự
+3. Phù hợp với ngân sách $budget
+4. Cùng khu vực hoặc gần khu vực $locationName
+5. Có thể tham quan vào thời gian $time
+
+Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ trả về JSON, không có text thêm):
+
+{
+  "time": "$time",
+  "type": "$type",
+  "name": "[Tên hoạt động/địa điểm mới]",
+  "location": "[Địa chỉ mới]",
+  "description": "[Mô tả chi tiết về hoạt động/địa điểm mới]",
+  "price": "[Giá ước tính, phù hợp với ngân sách $budget]",
+  ${if (type in listOf("breakfast", "lunch", "dinner")) """
+  "recommendedDishes": ["[Món đặc sản 1]", "[Món đặc sản 2]"]
+  """ else if (type == "attraction") """
+  "tips": "[Mẹo khi tham quan địa điểm mới này]"
+  """ else ""}
+}
+"""
+            }
+            else -> throw IllegalArgumentException("Unknown item type: $itemType")
+        }
+    }
+    
+    private fun parseAlternativeResponse(response: String, itemType: String): Map<String, Any> {
+        return try {
+            var jsonString = response.trim()
+            // Loại bỏ markdown code blocks nếu có
+            if (jsonString.startsWith("```json")) {
+                jsonString = jsonString.removePrefix("```json").trim()
+            }
+            if (jsonString.startsWith("```")) {
+                jsonString = jsonString.removePrefix("```").trim()
+            }
+            if (jsonString.endsWith("```")) {
+                jsonString = jsonString.removeSuffix("```").trim()
+            }
+            
+            val jsonObject = org.json.JSONObject(jsonString)
+            val result = mutableMapOf<String, Any>()
+            
+            // Parse các field chung
+            jsonObject.keys().forEach { key ->
+                when (val value = jsonObject.get(key)) {
+                    is org.json.JSONArray -> {
+                        val list = mutableListOf<String>()
+                        for (i in 0 until value.length()) {
+                            list.add(value.getString(i))
+                        }
+                        result[key] = list
+                    }
+                    else -> result[key] = value.toString()
+                }
+            }
+            
+            result
+        } catch (e: Exception) {
+            android.util.Log.e("AiServiceImpl", "Error parsing alternative response: ${e.message}", e)
+            getSampleAlternative(itemType)
+        }
+    }
+    
+    private fun getSampleAlternative(itemType: String): Map<String, Any> {
+        return when (itemType) {
+            "hotel" -> mapOf(
+                "name" to "Khách sạn mẫu",
+                "location" to "Địa chỉ mẫu",
+                "price" to "200.000 - 500.000 VNĐ/đêm",
+                "rating" to "3 sao",
+                "description" to "Khách sạn mẫu phù hợp với ngân sách"
+            )
+            "activity" -> mapOf(
+                "time" to "09:00",
+                "type" to "attraction",
+                "name" to "Địa điểm mẫu",
+                "location" to "Địa chỉ mẫu",
+                "description" to "Mô tả địa điểm mẫu",
+                "price" to "100.000 - 200.000 VNĐ/người"
+            )
+            else -> emptyMap()
+        }
+    }
+    
     private fun callGeminiApiDirectly(prompt: String): String {
         // Thử gọi ListModels trước để xem models nào available
         val availableModels = try {

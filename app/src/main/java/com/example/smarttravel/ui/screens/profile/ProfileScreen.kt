@@ -145,6 +145,7 @@ fun ProfileScreen(
                         when (item.title) {
                             "Hồ Sơ" -> navController.navigate(Screen.UserProfileDetail.route)
                             "Đã Lưu" -> navController.navigate(Screen.SavedDestinations.route)
+                            "Các chuyến đi trước" -> navController.navigate(Screen.PreviousTrips.route)
                             "Đăng xuất" -> {
                                 authViewModel.logout()
                                 // Điều hướng về màn hình Login và xóa toàn bộ stack

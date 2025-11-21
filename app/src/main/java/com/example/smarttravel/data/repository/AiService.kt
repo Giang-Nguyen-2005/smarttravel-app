@@ -10,5 +10,16 @@ interface AiService {
         budget: String,
         purposes: List<String>
     ): Result<String> // Trả về JSON string của planDetail
+    
+    // Tạo gợi ý thay thế cho hotel hoặc activity
+    suspend fun generateAlternativeSuggestion(
+        destination: String,
+        locationName: String,
+        itemType: String, // "hotel" hoặc "activity"
+        currentItem: Map<String, Any>, // Item hiện tại (hotel hoặc activity)
+        budget: String,
+        dayNumber: Int,
+        date: String
+    ): Result<Map<String, Any>> // Trả về hotel hoặc activity mới
 }
 

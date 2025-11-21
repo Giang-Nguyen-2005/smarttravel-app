@@ -8,7 +8,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
 import javax.inject.Inject
 
 data class PlanListUiState(
@@ -31,19 +34,46 @@ class PlanListViewModel @Inject constructor(
 
     fun loadPlans() {
         viewModelScope.launch {
-            planRepository.getMyPlans().collect { result ->
-                if (result.isSuccess) {
-                    _uiState.value = PlanListUiState(
-                        plans = result.getOrNull() ?: emptyList(),
-                        isLoading = false
-                    )
-                } else {
-                    _uiState.value = PlanListUiState(
-                        isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Lỗi không xác định"
-                    )
+            planRepository.getMyPlans()
+                .map { result ->
+                    if (result.isSuccess) {
+                        val allPlans = result.getOrNull() ?: emptyList()
+                        val today = LocalDate.now()
+                        val threeDaysAgo = today.minusDays(3)
+                        
+                        // Filter: Chỉ giữ lại các kế hoạch chưa kết thúc hoặc mới kết thúc trong vòng 3 ngày
+                        val activePlans = allPlans.filter { plan ->
+                            if (plan.endDate == null) return@filter true // Giữ lại nếu không có endDate
+                            
+                            val endDate = plan.endDate.toDate()
+                                .toInstant()
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            
+                            // Chỉ giữ lại nếu endDate >= threeDaysAgo (chưa quá 3 ngày)
+                            !endDate.isBefore(threeDaysAgo)
+                        }
+                        
+                        android.util.Log.d("PlanListViewModel", "Filtered plans: ${activePlans.size} active out of ${allPlans.size} total")
+                        
+                        Result.success(activePlans)
+                    } else {
+                        result
+                    }
                 }
-            }
+                .collect { result ->
+                    if (result.isSuccess) {
+                        _uiState.value = PlanListUiState(
+                            plans = result.getOrNull() ?: emptyList(),
+                            isLoading = false
+                        )
+                    } else {
+                        _uiState.value = PlanListUiState(
+                            isLoading = false,
+                            error = result.exceptionOrNull()?.message ?: "Lỗi không xác định"
+                        )
+                    }
+                }
         }
     }
     

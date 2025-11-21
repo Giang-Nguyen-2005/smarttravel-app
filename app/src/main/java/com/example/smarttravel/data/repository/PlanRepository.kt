@@ -10,6 +10,15 @@ interface PlanRepository {
     
     // Cập nhật planDetail cho một plan đã tồn tại
     suspend fun updatePlanDetail(planId: String, planDetail: List<Map<String, Any>>): Result<Unit>
+    
+    // Cập nhật một item cụ thể trong planDetail (hotel hoặc activity)
+    suspend fun updatePlanDetailItem(
+        planId: String,
+        dayIndex: Int,
+        itemType: String, // "hotel" hoặc "activity"
+        activityIndex: Int? = null, // Chỉ cần khi itemType là "activity"
+        newItem: Map<String, Any>
+    ): Result<Unit>
 
     // Lấy các kế hoạch đã tạo của user hiện tại
     fun getMyPlans(): kotlinx.coroutines.flow.Flow<Result<List<TravelPlan>>>

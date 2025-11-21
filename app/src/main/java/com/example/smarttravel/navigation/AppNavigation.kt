@@ -30,6 +30,7 @@ import androidx.navigation.compose.navigation // Đổi tên import 'navigation'
 import com.example.smarttravel.ui.screens.profile.ProfileScreen
 import com.example.smarttravel.ui.screens.profile.UserProfileDetailScreen // <<< IMPORT MÀN HÌNH BỊ THIẾU
 import com.example.smarttravel.ui.screens.profile.SavedDestinationsScreen
+import com.example.smarttravel.ui.screens.previous_trips.PreviousTripsScreen
 import com.example.smarttravel.ui.screens.editprofile.EditProfileScreen
 import com.example.smarttravel.ui.screens.planregister.EconomyScreen
 import com.example.smarttravel.ui.screens.planregister.GoWithScreen
@@ -140,6 +141,11 @@ fun AppNavigation(navController: NavHostController) {
 
         composable(Screen.SavedDestinations.route) {
             SavedDestinationsScreen(navController = navController)
+        }
+        
+        // Màn hình Các chuyến đi trước
+        composable(Screen.PreviousTrips.route) {
+            PreviousTripsScreen(navController = navController)
         }
 
         // Màn hình Search

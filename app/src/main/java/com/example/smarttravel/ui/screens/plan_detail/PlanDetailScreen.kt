@@ -264,7 +264,13 @@ fun PlanDetailContent(
                         it.day == day.day && it.date == day.date 
                     }
                     val dayNumber = if (originalIndex >= 0) originalIndex + 1 else displayedIndex + 1
-                    PlanDayItem(day = day, dayNumber = dayNumber)
+                    val dayIndex = if (originalIndex >= 0) originalIndex else displayedIndex
+                    PlanDayItem(
+                        day = day, 
+                        dayNumber = dayNumber,
+                        dayIndex = dayIndex,
+                        viewModel = viewModel
+                    )
                 }
             } else {
                 item {
@@ -838,7 +844,12 @@ fun DaySelectorButton(
 }
 
 @Composable
-fun PlanDayItem(day: PlanDayData, dayNumber: Int) {
+fun PlanDayItem(
+    day: PlanDayData, 
+    dayNumber: Int,
+    dayIndex: Int,
+    viewModel: PlanDetailViewModel? = null
+) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
         // Tiêu đề ngày
         Text(
@@ -960,14 +971,66 @@ fun PlanDayItem(day: PlanDayData, dayNumber: Int) {
                             color = Color.Gray
                         )
                     }
+                    
+                    // Nút "Gợi ý khác"
+                    if (viewModel != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        val uiState by viewModel.uiState.collectAsState()
+                        val context = LocalContext.current
+                        val isGenerating = uiState.generatingAlternative?.let { 
+                            it.first == dayIndex && it.second == "hotel" 
+                        } ?: false
+                        
+                        TextButton(
+                            onClick = {
+                                viewModel.requestAlternativeSuggestion(
+                                    dayIndex = dayIndex,
+                                    itemType = "hotel",
+                                    onSuccess = { /* Plan sẽ tự động update qua Flow */ },
+                                    onError = { error ->
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            error,
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            },
+                            enabled = !isGenerating,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (isGenerating) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Đang tạo gợi ý...", fontSize = 12.sp)
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Gợi ý khác", fontSize = 12.sp)
+                            }
+                        }
+                    }
                 }
             }
         }
 
         // Danh sách hoạt động
         Column {
-            day.activities.forEach { activity ->
-                ActivityItem(activity = activity)
+            day.activities.forEachIndexed { activityIndex, activity ->
+                ActivityItem(
+                    activity = activity,
+                    dayIndex = dayIndex,
+                    activityIndex = activityIndex,
+                    viewModel = viewModel
+                )
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
@@ -980,7 +1043,12 @@ fun PlanDayItem(day: PlanDayData, dayNumber: Int) {
 }
 
 @Composable
-fun ActivityItem(activity: ActivityInfo) {
+fun ActivityItem(
+    activity: ActivityInfo,
+    dayIndex: Int,
+    activityIndex: Int,
+    viewModel: PlanDetailViewModel? = null
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -1130,6 +1198,54 @@ fun ActivityItem(activity: ActivityInfo) {
                             color = Color(0xFFFFC107),
                             fontStyle = FontStyle.Italic
                         )
+                    }
+                }
+            }
+            
+            // Nút "Gợi ý khác"
+            if (viewModel != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                val uiState by viewModel.uiState.collectAsState()
+                val context = LocalContext.current
+                val isGenerating = uiState.generatingAlternative?.let { 
+                    it.first == dayIndex && it.second == "activity"
+                } ?: false
+                
+                TextButton(
+                    onClick = {
+                        viewModel.requestAlternativeSuggestion(
+                            dayIndex = dayIndex,
+                            itemType = "activity",
+                            activityIndex = activityIndex,
+                            onSuccess = { /* Plan sẽ tự động update qua Flow */ },
+                            onError = { error ->
+                                android.widget.Toast.makeText(
+                                    context,
+                                    error,
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
+                    },
+                    enabled = !isGenerating,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isGenerating) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Đang tạo gợi ý...", fontSize = 12.sp)
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Gợi ý khác", fontSize = 12.sp)
                     }
                 }
             }

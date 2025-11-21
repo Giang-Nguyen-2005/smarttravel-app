@@ -83,6 +83,75 @@ class PlanRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun updatePlanDetailItem(
+        planId: String,
+        dayIndex: Int,
+        itemType: String,
+        activityIndex: Int?,
+        newItem: Map<String, Any>
+    ): Result<Unit> {
+        return try {
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser == null) {
+                return Result.failure(Exception("Người dùng chưa đăng nhập"))
+            }
+            
+            val documentRef = firestore.collection("travel_plans").document(planId)
+            val snapshot = documentRef.get().await()
+            
+            if (!snapshot.exists()) {
+                return Result.failure(Exception("Không tìm thấy kế hoạch"))
+            }
+            
+            // Kiểm tra quyền sở hữu
+            val userId = snapshot.getString("userId")
+            if (userId != currentUser.uid) {
+                return Result.failure(Exception("Không có quyền cập nhật kế hoạch này"))
+            }
+            
+            // Lấy planDetail hiện tại
+            @Suppress("UNCHECKED_CAST")
+            val planDetail = snapshot.get("planDetail") as? List<Map<String, Any>> ?: emptyList()
+            
+            if (dayIndex >= planDetail.size) {
+                return Result.failure(Exception("Ngày không hợp lệ"))
+            }
+            
+            // Tạo planDetail mới với item đã được cập nhật
+            val updatedPlanDetail = planDetail.toMutableList()
+            val dayMap = updatedPlanDetail[dayIndex].toMutableMap()
+            
+            when (itemType) {
+                "hotel" -> {
+                    dayMap["hotel"] = newItem
+                }
+                "activity" -> {
+                    if (activityIndex == null) {
+                        return Result.failure(Exception("activityIndex không được null khi itemType là activity"))
+                    }
+                    @Suppress("UNCHECKED_CAST")
+                    val activities = (dayMap["activities"] as? List<Map<String, Any>>)?.toMutableList() ?: mutableListOf()
+                    if (activityIndex >= activities.size) {
+                        return Result.failure(Exception("Activity index không hợp lệ"))
+                    }
+                    activities[activityIndex] = newItem
+                    dayMap["activities"] = activities
+                }
+                else -> return Result.failure(Exception("Item type không hợp lệ: $itemType"))
+            }
+            
+            updatedPlanDetail[dayIndex] = dayMap
+            
+            // Cập nhật vào Firestore
+            documentRef.update("planDetail", updatedPlanDetail).await()
+            android.util.Log.d("PlanRepositoryImpl", "PlanDetail item updated successfully: day=$dayIndex, type=$itemType")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("PlanRepositoryImpl", "Error updating planDetail item: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
     override fun getMyPlans(): Flow<Result<List<TravelPlan>>> = callbackFlow {
         val currentUser = firebaseAuth.currentUser
         if (currentUser == null) {
