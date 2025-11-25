@@ -600,14 +600,14 @@ Lưu ý QUAN TRỌNG:
                                         put("text", """Bạn là chatbot hỗ trợ du lịch. Trả lời CỰC KỲ NGẮN GỌN.
 
 QUY TẮC BẮT BUỘC:
-- Tối đa 1-4 câu ngắn
+- Tối đa 2-4 câu ngắn
 - Dùng bullet points (•) khi liệt kê
 - Không giải thích dài dòng
 - Trả lời trực tiếp vào câu hỏi
 - Dùng tiếng Việt
 
 QUY TẮC QUAN TRỌNG NHẤT - XỬ LÝ CÂU HỎI KHÔNG LIÊN QUAN:
-BẠN CHỈ ĐƯỢC TRẢ LỜI CÂU HỎI VỀ DU LỊCH. 
+BẠN CHỈ ĐƯỢC TRẢ LỜI CÂU HỎI VỀ DU LỊCH.
 
 Nếu người dùng hỏi về bất kỳ chủ đề nào KHÔNG liên quan đến du lịch (ví dụ: toán học, lịch sử, công nghệ, tin tức, khoa học, văn học, thể thao, giải trí không liên quan du lịch, v.v.), BẠN PHẢI:
 1. Từ chối một cách lịch sự
@@ -758,6 +758,143 @@ KHÔNG viết dài như đoạn văn. Chỉ trả lời ngắn gọn, súc tích
     private fun buildChatPrompt(userMessage: String): String {
         // Không dùng nữa vì đã có system instruction trong conversation
         return userMessage
+    }
+    
+    override suspend fun rankDestinationsByInterests(
+        interests: List<String>,
+        destinations: List<com.example.smarttravel.model.Destination>,
+        recentPlanDestinationIds: List<String>
+    ): Result<List<String>> {
+        return try {
+            if (apiKey.isEmpty() || apiKey == "YOUR_GEMINI_API_KEY_HERE") {
+                // Trả về sample data - lấy top 10 destinations đầu tiên
+                return Result.success(destinations.take(10).map { it.id })
+            }
+            
+            if (destinations.isEmpty()) {
+                return Result.success(emptyList())
+            }
+            
+            val prompt = buildRankingPrompt(interests, destinations, recentPlanDestinationIds)
+            
+            android.util.Log.d("AiServiceImpl", "Calling AI to rank destinations by interests")
+            android.util.Log.d("AiServiceImpl", "User interests: ${interests.joinToString(", ")}")
+            android.util.Log.d("AiServiceImpl", "Total destinations: ${destinations.size}")
+            
+            val response = withContext(Dispatchers.IO) {
+                callGeminiApiDirectly(prompt)
+            }
+            
+            android.util.Log.d("AiServiceImpl", "Ranking response received, length: ${response.length}")
+            
+            // Parse response để lấy danh sách destination IDs
+            val rankedIds = parseRankingResponse(response, destinations)
+            
+            Result.success(rankedIds)
+            
+        } catch (e: Exception) {
+            android.util.Log.e("AiServiceImpl", "Error ranking destinations: ${e.message}", e)
+            // Trả về sample data nếu có lỗi - lấy top 10 destinations đầu tiên
+            Result.success(destinations.take(10).map { it.id })
+        }
+    }
+    
+    private fun buildRankingPrompt(
+        interests: List<String>,
+        destinations: List<com.example.smarttravel.model.Destination>,
+        recentPlanDestinationIds: List<String>
+    ): String {
+        val interestsText = if (interests.isNotEmpty()) {
+            interests.joinToString(", ")
+        } else {
+            "du lịch, khám phá"
+        }
+        
+        // Tạo danh sách destinations để gửi cho AI
+        val destinationsList = destinations.take(50).joinToString("\n") { dest ->
+            "- ID: ${dest.id}, Tên: ${dest.name}, Địa điểm: ${dest.location_name}, Category: ${dest.category_id}, Rating: ${dest.rating}"
+        }
+        
+        // Thông tin về các điểm đến từ plans gần đây
+        val recentPlansInfo = if (recentPlanDestinationIds.isNotEmpty()) {
+            val recentDestinations = destinations.filter { it.id in recentPlanDestinationIds }
+            val recentNames = recentDestinations.joinToString(", ") { it.name }
+            "\n\nCác điểm đến người dùng đã tạo kế hoạch gần đây (trong vòng 30 ngày): $recentNames\nLưu ý: Tránh gợi ý lại các điểm đến này, ưu tiên các điểm đến MỚI và KHÁC."
+        } else {
+            ""
+        }
+        
+        return """
+Bạn là chuyên gia du lịch. Hãy sắp xếp danh sách các điểm đến sau theo mức độ phù hợp với sở thích của người dùng.
+
+Sở thích của người dùng: $interestsText$recentPlansInfo
+
+Danh sách điểm đến:
+$destinationsList
+
+Yêu cầu:
+1. Sắp xếp các điểm đến theo mức độ phù hợp với sở thích: $interestsText
+2. Ưu tiên các điểm đến có rating cao và phù hợp với sở thích
+3. TRÁNH gợi ý lại các điểm đến mà người dùng đã tạo kế hoạch gần đây (nếu có)
+4. Ưu tiên các điểm đến MỚI, KHÁC với những gì người dùng đã khám phá
+5. Trả về tối đa 20 điểm đến phù hợp nhất
+6. Chỉ trả về danh sách ID, không cần giải thích
+
+Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ trả về JSON, không có text thêm):
+
+{
+  "ranked_destination_ids": ["id1", "id2", "id3", ...]
+}
+
+Lưu ý:
+- Chỉ trả về JSON, không có text thêm
+- Sắp xếp theo thứ tự từ phù hợp nhất đến ít phù hợp hơn
+- Tối đa 20 ID
+- Ưu tiên điểm đến mới, khác với những gì đã khám phá
+""".trimIndent()
+    }
+    
+    private fun parseRankingResponse(
+        response: String,
+        destinations: List<com.example.smarttravel.model.Destination>
+    ): List<String> {
+        return try {
+            var cleanJson = response.trim()
+            // Loại bỏ markdown code blocks nếu có
+            if (cleanJson.startsWith("```json")) {
+                cleanJson = cleanJson.removePrefix("```json").trim()
+            }
+            if (cleanJson.startsWith("```")) {
+                cleanJson = cleanJson.removePrefix("```").trim()
+            }
+            if (cleanJson.endsWith("```")) {
+                cleanJson = cleanJson.removeSuffix("```").trim()
+            }
+            
+            val jsonObject = JSONObject(cleanJson)
+            val rankedIdsArray = jsonObject.getJSONArray("ranked_destination_ids")
+            
+            val rankedIds = mutableListOf<String>()
+            for (i in 0 until rankedIdsArray.length()) {
+                val id = rankedIdsArray.getString(i)
+                // Kiểm tra xem ID có tồn tại trong danh sách destinations không
+                if (destinations.any { it.id == id }) {
+                    rankedIds.add(id)
+                }
+            }
+            
+            // Nếu không parse được hoặc không có ID nào hợp lệ, trả về top destinations theo rating
+            if (rankedIds.isEmpty()) {
+                android.util.Log.w("AiServiceImpl", "No valid IDs parsed, using top rated destinations")
+                return destinations.sortedByDescending { it.rating }.take(20).map { it.id }
+            }
+            
+            rankedIds
+        } catch (e: Exception) {
+            android.util.Log.e("AiServiceImpl", "Error parsing ranking response: ${e.message}", e)
+            // Fallback: trả về top destinations theo rating
+            destinations.sortedByDescending { it.rating }.take(20).map { it.id }
+        }
     }
     
     private fun getSamplePlanDetail(): String {

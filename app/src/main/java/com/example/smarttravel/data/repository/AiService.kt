@@ -28,5 +28,12 @@ interface AiService {
         conversationHistory: List<Pair<String, String>> = emptyList() // (user, bot) pairs
     ): Result<String>
 
+    // Gợi ý điểm đến dựa trên sở thích của user từ danh sách destinations có sẵn
+    suspend fun rankDestinationsByInterests(
+        interests: List<String>,
+        destinations: List<com.example.smarttravel.model.Destination>,
+        recentPlanDestinationIds: List<String> = emptyList() // Các điểm đến từ plans gần đây
+    ): Result<List<String>> // Trả về danh sách destination IDs được rank theo mức độ phù hợp
+
 }
 

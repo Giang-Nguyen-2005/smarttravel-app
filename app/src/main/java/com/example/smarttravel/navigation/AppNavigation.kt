@@ -155,6 +155,11 @@ fun AppNavigation(navController: NavHostController) {
             SearchScreen(navController = navController)
         }
 
+        // Màn hình AI Suggestions
+        composable(Screen.AiSuggestions.route) {
+            com.example.smarttravel.ui.screens.ai_suggestions.AiSuggestionsScreen(navController = navController)
+        }
+
         //Plan Register
         planRegisterGraph(navController)
     }

@@ -46,7 +46,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun PlanDetailScreen(
@@ -300,9 +299,17 @@ fun PlanDetailContent(
 
             // 5. Nút Chia sẻ
             item {
+                val context = LocalContext.current
                 PrimaryButton(
                     text = "Chia sẻ Kế hoạch",
-                    onClick = { /*TODO: Share plan*/ },
+                    onClick = { 
+                        sharePlan(
+                            context = context,
+                            plan = plan,
+                            destination = destination,
+                            planDays = planDays
+                        )
+                    },
                     modifier = Modifier.padding(16.dp)
                 )
             }
@@ -528,6 +535,147 @@ private fun openLocationInGoogleMaps(context: android.content.Context, location:
         }
     } catch (e: Exception) {
         android.util.Log.e("PlanDetailScreen", "Error opening Google Maps: ${e.message}", e)
+    }
+}
+
+/**
+ * Format kế hoạch thành text đẹp để chia sẻ
+ */
+private fun formatPlanForSharing(
+    plan: TravelPlan,
+    destination: com.example.smarttravel.model.Destination?,
+    planDays: List<PlanDayData>
+): String {
+    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    val dateRange = if (plan.startDate != null && plan.endDate != null) {
+        val start = plan.startDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+        val end = plan.endDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+        "${start.format(dateFormatter)} - ${end.format(dateFormatter)}"
+    } else {
+        "Chưa có ngày"
+    }
+    
+    val duration = if (plan.startDate != null && plan.endDate != null) {
+        val start = plan.startDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+        val end = plan.endDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+        val days = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1
+        "$days ngày ${days - 1} đêm"
+    } else {
+        "Chưa xác định"
+    }
+    
+    val destinationName = destination?.name ?: plan.title.replace("Chuyến đi đến ", "")
+    
+    val sb = StringBuilder()
+    sb.appendLine("🗺️ ${plan.title}")
+    sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    sb.appendLine()
+    sb.appendLine("📅 Thời gian: $dateRange ($duration)")
+    sb.appendLine("👥 Người đồng hành: ${plan.companion}")
+    sb.appendLine("💰 Ngân sách: ${plan.budget}")
+    if (plan.purposes.isNotEmpty()) {
+        sb.appendLine("🎯 Mục đích: ${plan.purposes.joinToString(", ")}")
+    }
+    sb.appendLine()
+    sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    sb.appendLine()
+    
+    if (planDays.isEmpty()) {
+        sb.appendLine("📝 Lịch trình đang được tạo...")
+    } else {
+        sb.appendLine("📋 LỊCH TRÌNH CHI TIẾT:")
+        sb.appendLine()
+        
+        planDays.forEachIndexed { index, day ->
+            sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            sb.appendLine("📌 ${day.title}")
+            sb.appendLine("   Ngày: ${day.date}")
+            sb.appendLine()
+            
+            // Thông tin khách sạn
+            day.hotel?.let { hotel ->
+                sb.appendLine("🏨 Khách sạn:")
+                sb.appendLine("   • Tên: ${hotel.name}")
+                sb.appendLine("   • Địa chỉ: ${hotel.location}")
+                sb.appendLine("   • Giá: ${hotel.price}")
+                sb.appendLine("   • Xếp hạng: ${hotel.rating}")
+                if (hotel.description.isNotEmpty()) {
+                    sb.appendLine("   • Mô tả: ${hotel.description}")
+                }
+                sb.appendLine()
+            }
+            
+            // Các hoạt động
+            if (day.activities.isNotEmpty()) {
+                sb.appendLine("🎯 Hoạt động trong ngày:")
+                day.activities.forEach { activity ->
+                    val activityType = when (activity.type) {
+                        "breakfast" -> "🍳 Bữa sáng"
+                        "lunch" -> "🍽️ Bữa trưa"
+                        "dinner" -> "🍴 Bữa tối"
+                        "attraction" -> "🏛️ Tham quan"
+                        "activity" -> "🎮 Hoạt động"
+                        "entertainment" -> "🎪 Giải trí"
+                        "rest" -> "😴 Nghỉ ngơi"
+                        else -> "📍 Hoạt động"
+                    }
+                    sb.appendLine("   $activityType - ${activity.time}")
+                    sb.appendLine("   • ${activity.name}")
+                    if (activity.location.isNotEmpty()) {
+                        sb.appendLine("   • Địa chỉ: ${activity.location}")
+                    }
+                    if (activity.description.isNotEmpty()) {
+                        sb.appendLine("   • Mô tả: ${activity.description}")
+                    }
+                    if (activity.price != null && activity.price.isNotEmpty()) {
+                        sb.appendLine("   • Giá: ${activity.price}")
+                    }
+                    if (activity.recommendedDishes.isNotEmpty()) {
+                        sb.appendLine("   • Món đề xuất: ${activity.recommendedDishes.joinToString(", ")}")
+                    }
+                    if (activity.tips != null && activity.tips.isNotEmpty()) {
+                        sb.appendLine("   • Mẹo: ${activity.tips}")
+                    }
+                    sb.appendLine()
+                }
+            }
+            
+            if (index < planDays.size - 1) {
+                sb.appendLine()
+            }
+        }
+    }
+    
+    sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    sb.appendLine()
+    sb.appendLine("📱 Được tạo bởi SmartTravel App")
+    
+    return sb.toString()
+}
+
+/**
+ * Chia sẻ kế hoạch qua Android Share Intent
+ */
+private fun sharePlan(
+    context: android.content.Context,
+    plan: TravelPlan,
+    destination: com.example.smarttravel.model.Destination?,
+    planDays: List<PlanDayData>
+) {
+    try {
+        val shareText = formatPlanForSharing(plan, destination, planDays)
+        
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            putExtra(Intent.EXTRA_SUBJECT, plan.title)
+        }
+        
+        val chooserIntent = Intent.createChooser(shareIntent, "Chia sẻ kế hoạch du lịch")
+        context.startActivity(chooserIntent)
+    } catch (e: Exception) {
+        android.util.Log.e("PlanDetailScreen", "Error sharing plan: ${e.message}", e)
     }
 }
 

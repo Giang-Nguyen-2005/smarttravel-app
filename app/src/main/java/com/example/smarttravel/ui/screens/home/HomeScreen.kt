@@ -36,12 +36,16 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.smarttravel.R
+import com.example.smarttravel.data.model.TravelPlan
 import com.example.smarttravel.model.Category
+import com.example.smarttravel.model.Destination
 import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.AppBottomBar
 import com.example.smarttravel.ui.components.DestinationCard
 import com.example.smarttravel.ui.theme.SmarttravelTheme
 import com.example.smarttravel.ui.viewmodel.HomeViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomeScreen(
@@ -91,9 +95,25 @@ fun HomeScreen(
 
             // 3. Khối "Gợi ý AI" nổi bật (MỚI)
             item {
+                val aiSuggestionsState by homeViewModel.aiSuggestionsState.collectAsState()
+                val topDestination = aiSuggestionsState.destinations.firstOrNull()
+                
+                // Load AI suggestions lần đầu nếu chưa có cache cho hôm nay
+                LaunchedEffect(Unit) {
+                    val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                    if (aiSuggestionsState.cachedDate != today || aiSuggestionsState.destinations.isEmpty()) {
+                        homeViewModel.loadAiSuggestions()
+                    }
+                }
+                
                 AiSuggestionCard(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    onClick = { /* TODO: Mở màn hình chi tiết gợi ý AI */ }
+                    topDestination = topDestination,
+                    isLoading = aiSuggestionsState.isLoading,
+                    onClick = { 
+                        // Điều hướng đến màn hình gợi ý AI
+                        navController.navigate(Screen.AiSuggestions.route)
+                    }
                 )
             }
 
@@ -139,7 +159,15 @@ fun HomeScreen(
 
             // 6. Khối "Kế hoạch gần đây" (MỚI)
             item {
-                RecentPlanSection(onClick = { navController.navigate(Screen.Calendar.route) })
+                val recentPlanState by homeViewModel.recentPlanState.collectAsState()
+                RecentPlanSection(
+                    recentPlan = recentPlanState.recentPlan,
+                    isLoading = recentPlanState.isLoading,
+                    onClick = { navController.navigate(Screen.Calendar.route) },
+                    onPlanClick = { planId ->
+                        navController.navigate(Screen.PlanDetail.createRoute(planId))
+                    }
+                )
             }
 
             // 7. Tiêu đề "Đang thịnh hành"
@@ -332,7 +360,12 @@ fun CategoryChip(
 }
 
 @Composable
-fun AiSuggestionCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun AiSuggestionCard(
+    modifier: Modifier = Modifier,
+    topDestination: com.example.smarttravel.model.Destination?,
+    isLoading: Boolean,
+    onClick: () -> Unit
+) {
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -356,14 +389,41 @@ fun AiSuggestionCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
                     fontSize = 16.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Dựa trên sở thích của bạn: Khám phá Sa Pa mùa lúa chín!",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = Color(0xFF037CAC)
+                    )
+                } else if (topDestination != null) {
+                    Text(
+                        text = "Dựa trên sở thích của bạn: ${topDestination.name}!",
+                        color = Color.Black,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = topDestination.location_name,
+                        color = Color.Gray,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else {
+                    Text(
+                        text = "Cập nhật sở thích để nhận gợi ý cá nhân hóa",
+                        color = Color.Black,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
                     text = "Xem chi tiết →",
@@ -388,7 +448,12 @@ fun AiSuggestionCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
 }
 
 @Composable
-fun RecentPlanSection(onClick: () -> Unit) {
+fun RecentPlanSection(
+    recentPlan: com.example.smarttravel.data.model.TravelPlan?,
+    isLoading: Boolean,
+    onClick: () -> Unit,
+    onPlanClick: (String) -> Unit
+) {
     Column(modifier = Modifier.padding(top = 24.dp)) {
         Row(
             modifier = Modifier
@@ -410,45 +475,147 @@ fun RecentPlanSection(onClick: () -> Unit) {
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
-        // Card kế hoạch gần đây (giả lập)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .clickable { onClick() },
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+        
+        // Hiển thị kế hoạch thật hoặc placeholder
+        if (isLoading) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
                     )
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
+                    Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = "Chuyến đi Vịnh Hạ Long",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "22/11 - 24/11/2025 • Sắp diễn ra",
+                        text = "Đang tải...",
                         color = Color.Gray,
                         fontSize = 14.sp
                     )
+                }
+            }
+        } else if (recentPlan != null) {
+            // Format dates
+            val dateFormatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")
+            val dateRange = if (recentPlan.startDate != null && recentPlan.endDate != null) {
+                val start = recentPlan.startDate.toDate().toInstant()
+                    .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                val end = recentPlan.endDate.toDate().toInstant()
+                    .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                "${start.format(dateFormatter)} - ${end.format(dateFormatter)}"
+            } else {
+                "Chưa có ngày"
+            }
+            
+            // Xác định trạng thái
+            val status = if (recentPlan.startDate != null && recentPlan.endDate != null) {
+                val today = java.time.LocalDate.now()
+                val start = recentPlan.startDate.toDate().toInstant()
+                    .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                val end = recentPlan.endDate.toDate().toInstant()
+                    .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                
+                when {
+                    today.isBefore(start) -> "Sắp diễn ra"
+                    today.isAfter(end) -> "Đã kết thúc"
+                    else -> "Đang diễn ra"
+                }
+            } else {
+                "Chưa xác định"
+            }
+            
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .clickable { onPlanClick(recentPlan.id) },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = recentPlan.title,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "$dateRange • $status",
+                            color = Color.Gray,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        } else {
+            // Không có kế hoạch nào
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .clickable { onClick() },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = "Chưa có kế hoạch",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Tạo kế hoạch mới để bắt đầu",
+                            color = Color.Gray,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
         }

@@ -2,15 +2,17 @@ package com.example.smarttravel.ui.screens.planregister
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.MonetizationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -36,9 +38,12 @@ import com.example.smarttravel.ui.components.AppTopBar
 import com.example.smarttravel.ui.components.PrimaryButton
 import com.example.smarttravel.ui.viewmodel.PlanViewModel
 import com.example.smarttravel.ui.viewmodel.SaveState
-import androidx.compose.foundation.border
 
-import androidx.compose.foundation.layout.Arrangement
+// --- MÀU SẮC THEME ---
+private val AppPrimaryColor = Color(0xFF037CAC)
+private val BgLightGray = Color(0xFFF5F7FA) // Màu nền cho các box con
+private val TextDark = Color(0xFF1A1A1A)
+private val TextGray = Color(0xFF757575)
 
 @Composable
 fun RegisterScreen(
@@ -52,9 +57,8 @@ fun RegisterScreen(
     LaunchedEffect(saveState) {
         when (val state = saveState) {
             is SaveState.Success -> {
-                Toast.makeText(context, "Đã tạo kế hoạch với gợi ý AI!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Đã tạo kế hoạch thành công!", Toast.LENGTH_SHORT).show()
                 viewModel.resetSaveState()
-                // Chuyển đến trang Kế hoạch thay vì Home
                 navController.navigate(Screen.Calendar.route) {
                     popUpTo(Screen.PlanRegisterFlow.route) { inclusive = true }
                 }
@@ -68,380 +72,359 @@ fun RegisterScreen(
     }
 
     Scaffold(
-        // Đã xóa bottomBar
+        containerColor = Color.White,
+        bottomBar = {
+            // Nút bấm cố định ở đáy (Tách khỏi LazyColumn để luôn hiển thị)
+            Surface(
+                shadowElevation = 8.dp,
+                color = Color.White
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    PrimaryButton(
+                        text = when (saveState) {
+                            is SaveState.Loading -> "Đang lưu..."
+                            is SaveState.GeneratingAI -> "Đang tạo lịch trình AI..." // Giả sử bạn có state này
+                            else -> "Xác nhận hành trình"
+                        },
+                        onClick = {
+                            if (saveState !is SaveState.Loading) {
+                                viewModel.savePlan()
+                            }
+                        },
+                        enabled = saveState !is SaveState.Loading,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
-                .padding(bottom = paddingValues.calculateBottomPadding())
+                .padding(paddingValues)
         ) {
-            // --- HEADER CỐ ĐỊNH (STICKY) DÙNG BOX ĐỂ CĂN GIỮA TUYỆT ĐỐI ---
+            // --- HEADER ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 60.dp, bottom = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                // 1. Nút Back (Căn trái)
-                Box(modifier = Modifier.align(Alignment.CenterStart)) {
-                    AppTopBar(onBackClick = { navController.popBackStack() })
-                }
-
-                // 2. Tiêu đề (Căn giữa tuyệt đối)
+                AppTopBar(onBackClick = { navController.popBackStack() })
                 Text(
-                    text = "Tóm tắt đánh giá",
-                    fontSize = 25.sp,
+                    text = "Tóm tắt chuyến đi",
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center,
+                    color = TextDark,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
 
-            // --- NỘI DUNG CÓ THỂ CUỘN (LazyColumn) ---
+            // --- NỘI DUNG ---
             LazyColumn(
                 modifier = Modifier
+                    .fillMaxWidth()
                     .weight(1f)
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
             ) {
-                // Thêm một Spacer đầu tiên để tạo khoảng trống dưới Header cố định
+                // 1. Card Địa điểm (Hero Section)
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                // Cụm 1: Địa điểm
-                item {
-                    EditableTitleRow(
-                        icon = Icons.Outlined.LocationOn,
-                        label = "Địa điểm",
-                        // Truyền tên khu vực/tỉnh thành
+                    LocationSummaryCard(
+                        destinationName = uiState.destinationName.ifEmpty { "Chưa chọn địa điểm" },
                         locationName = uiState.locationName,
-                        // Tên địa điểm chính
-                        value = uiState.destinationName.ifEmpty { "Chưa chọn" },
+                        imageUrl = uiState.coverImageUrl,
                         onEditClick = {
                             navController.navigate(Screen.Home.route) {
                                 popUpTo(Screen.Home.route) { inclusive = true }
                             }
-                        },
-                        showImage = true,
-                        imageUrl = uiState.coverImageUrl
+                        }
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                item { CenteredDivider() }
-
-                // Cụm 2: Người đồng hành
+                // 2. Thông tin chi tiết (Nhóm vào 1 khối)
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    EditableTitleRow(
-                        icon = Icons.Outlined.Groups,
-                        label = "Người đồng hành",
-                        value = uiState.companion,
-                        onEditClick = { navController.popBackStack(Screen.GoWith.route, false) }
+                    Text(
+                        text = "Thông tin chi tiết",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // Người đồng hành
+                        DetailSummaryItem(
+                            icon = Icons.Outlined.Groups,
+                            label = "Người đồng hành",
+                            value = uiState.companion.ifEmpty { "Chưa chọn" },
+                            onEditClick = { navController.popBackStack(Screen.GoWith.route, false) }
+                        )
+
+                        // Thời gian
+                        val dateText = if (uiState.startDate != null && uiState.endDate != null) {
+                            "${uiState.startDate} - ${uiState.endDate}"
+                        } else "Chưa chọn ngày"
+                        DetailSummaryItem(
+                            icon = Icons.Outlined.CalendarMonth,
+                            label = "Thời gian",
+                            value = dateText,
+                            onEditClick = { navController.popBackStack(Screen.Period.route, false) }
+                        )
+
+                        // Ngân sách
+                        DetailSummaryItem(
+                            icon = Icons.Outlined.MonetizationOn,
+                            label = "Ngân sách dự kiến",
+                            value = uiState.budget.ifEmpty { "Chưa chọn" },
+                            onEditClick = { navController.popBackStack(Screen.Economy.route, false) }
+                        )
+                    }
                 }
 
-                item { CenteredDivider() }
-
-                // Cụm 3: Thời gian
+                // 3. Sở thích (Tags)
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    val dateText = if (uiState.startDate != null && uiState.endDate != null) {
-                        "${uiState.startDate} -> ${uiState.endDate}"
-                    } else "Chưa chọn ngày"
-                    EditableTitleRow(
-                        icon = Icons.Outlined.CalendarMonth,
-                        label = "Thời gian",
-                        value = dateText,
-                        onEditClick = { navController.popBackStack(Screen.Period.route, false) }
+                    Text(
+                        text = "Sở thích & Mong muốn",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                item { CenteredDivider() }
-
-                // CỤM 4: SỞ THÍCH
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    EditableSummaryTags(
+                    InterestsSummaryCard(
                         purposes = uiState.purposes,
                         onEditClick = { navController.popBackStack(Screen.Purpose.route, false) }
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
-                // KẾT THÚC CỤM 4
-
-                item { CenteredDivider() }
-
-                // Cụm 5: Ngân sách
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    EditableTitleRow(
-                        icon = Icons.Outlined.MonetizationOn,
-                        label = "Ngân sách",
-                        value = uiState.budget,
-                        onEditClick = { navController.popBackStack(Screen.Economy.route, false) }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                item { Spacer(modifier = Modifier.height(20.dp)) }
-            }
-
-            // Nút bấm cố định ở đáy
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White) // Đảm bảo nền trắng khi cuộn
-                    .padding(16.dp)
-            ) {
-                PrimaryButton(
-                    text = when (saveState) {
-                        is SaveState.Loading -> "Đang lưu..."
-                        is SaveState.GeneratingAI -> "Đang tạo gợi ý AI..."
-                        else -> "Xác nhận hành trình"
-                    },
-                    onClick = {
-                        if (saveState !is SaveState.Loading && saveState !is SaveState.GeneratingAI) {
-                            viewModel.savePlan()
-                        }
-                    },
-                    enabled = saveState !is SaveState.Loading && saveState !is SaveState.GeneratingAI,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
         }
     }
 }
 
-@Composable
-private fun CenteredDivider() {
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
-    ) {
-        HorizontalDivider(
-            // Đã điều chỉnh chiều rộng lên 0.9f
-            modifier = Modifier.fillMaxWidth(0.9f),
-            color = Color.Gray.copy(alpha = 0.3f),
-            thickness = 1.dp
-        )
-    }
-}
+// --- COMPONENTS CON ---
 
-// HÀM CHUNG CHO CÁC MỤC CÓ TIÊU ĐỀ ICON VÀ GIÁ TRỊ DẠNG THẺ
 @Composable
-fun EditableTitleRow(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    onEditClick: () -> Unit,
-    showImage: Boolean = false,
-    imageUrl: String = "",
-    // THÊM THAM SỐ locationName MỚI
-    locationName: String = ""
+fun LocationSummaryCard(
+    destinationName: String,
+    locationName: String,
+    imageUrl: String,
+    onEditClick: () -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // HÀNG TIÊU ĐỀ + NÚT EDIT
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Tiêu đề: Icon + Text
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = Color.Black,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = label,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Black
-                )
-            }
-
-            // Nút Edit
-            IconButton(onClick = onEditClick) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Chỉnh sửa $label",
-                    tint = Color.Black
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (showImage) {
-            // CÁCH HIỂN THỊ ĐẶC BIỆT CHO ĐỊA ĐIỂM (CÓ ẢNH VÀ TEXT LỚN) - CĂN GIỮA
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Ảnh địa điểm - căn giữa
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column {
+            Box(modifier = Modifier.height(180.dp)) {
+                // Ảnh nền
                 if (imageUrl.isNotEmpty()) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(imageUrl)
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Ảnh địa điểm",
+                        contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(160.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                        modifier = Modifier.fillMaxSize()
                     )
                 } else {
                     Box(
                         modifier = Modifier
-                            .size(160.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                            .fillMaxSize()
                             .background(Color.LightGray)
                     )
                 }
-                
-                Spacer(modifier = Modifier.height(16.dp))
 
-                // Cột chứa Tên địa điểm và Tên khu vực - căn giữa
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Gradient mờ để nút edit rõ hơn (nếu cần)
+                // Nút Edit tròn nổi trên ảnh
+                IconButton(
+                    onClick = onEditClick,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                        .background(Color.White.copy(alpha = 0.8f), CircleShape)
+                        .size(36.dp)
                 ) {
-                    // Tên địa điểm chính (ví dụ: Thành phố Đà Lạt)
-                    Text(
-                        text = value.ifEmpty { "Chưa chọn" },
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        textAlign = TextAlign.Center
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        tint = AppPrimaryColor,
+                        modifier = Modifier.size(20.dp)
                     )
-                    // Tên khu vực (ví dụ: Lâm Đồng, Việt Nam)
-                    if (locationName.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+
+            // Thông tin text bên dưới ảnh
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = destinationName,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark,
+                    textAlign = TextAlign.Center
+                )
+                if (locationName.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Outlined.LocationOn,
+                            contentDescription = null,
+                            tint = TextGray,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = locationName,
                             fontSize = 14.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray,
-                            textAlign = TextAlign.Center
+                            color = TextGray
                         )
                     }
                 }
             }
-        } else {
-            // ÁP DỤNG KHUNG BOX 85% VÀ PURPOSECHIP CHO CÁC GIÁ TRỊ CÒN LẠI
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(0.85f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Sử dụng PurposeChip để đóng khung cho giá trị
-                    PurposeChip(text = value.ifEmpty { "Chưa chọn" })
-                }
-            }
         }
     }
 }
 
-// PurposeChip giữ nguyên
 @Composable
-private fun PurposeChip(text: String) {
-    Box(
+fun DetailSummaryItem(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    onEditClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = BgLightGray),
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(12.dp))
-            .border(1.dp, Color.LightGray.copy(alpha = 0.8f), RoundedCornerShape(12.dp))
-            .padding(vertical = 14.dp, horizontal = 16.dp),
-        contentAlignment = Alignment.Center
+            .clickable { onEditClick() } // Cho phép click toàn bộ dòng để sửa
     ) {
-        Text(
-            text = text,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                // Icon Box xanh nhạt
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.White, CircleShape)
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = AppPrimaryColor
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column {
+                    Text(
+                        text = label,
+                        fontSize = 12.sp,
+                        color = TextGray
+                    )
+                    Text(
+                        text = value,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextDark
+                    )
+                }
+            }
+
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = "Edit",
+                tint = AppPrimaryColor.copy(alpha = 0.6f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
 
-// EditableSummaryTags giữ nguyên
+@OptIn(ExperimentalLayoutApi::class) // Cần cho FlowRow
 @Composable
-fun EditableSummaryTags(
+fun InterestsSummaryCard(
     purposes: List<String>,
     onEditClick: () -> Unit
 ) {
-    // Top-level Column
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // Hàng chứa Tiêu đề (Sở thích + Icon) và Nút Edit
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Tiêu đề: Heart Icon + Text "Sở thích"
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.FavoriteBorder, // Heart Icon
-                    contentDescription = "Sở thích",
-                    tint = Color.Black,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Sở thích",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Black // Màu đen
-                )
-            }
-
-            // Nút Edit
-            IconButton(onClick = onEditClick) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = BgLightGray),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEditClick() }
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.FavoriteBorder,
+                        contentDescription = null,
+                        tint = AppPrimaryColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "${purposes.size} Sở thích đã chọn",
+                        fontSize = 14.sp,
+                        color = TextGray
+                    )
+                }
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Chỉnh sửa Sở thích",
-                    tint = Color.Black
+                    contentDescription = "Edit",
+                    tint = AppPrimaryColor.copy(alpha = 0.6f),
+                    modifier = Modifier.size(20.dp)
                 )
             }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
 
-        if (purposes.isEmpty()) {
-            // Hiển thị khung cho trường hợp chưa chọn
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(0.85f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    PurposeChip(text = "Chưa chọn")
-                }
-            }
-        } else {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    // Giới hạn chiều rộng 85% của khối này
-                    modifier = Modifier.fillMaxWidth(0.85f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (purposes.isEmpty()) {
+                Text(
+                    text = "Chưa chọn sở thích nào",
+                    fontSize = 14.sp,
+                    color = TextDark,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                )
+            } else {
+                // FlowRow tự động xuống dòng
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     purposes.forEach { purpose ->
-                        PurposeChip(text = purpose)
+                        Surface(
+                            color = Color.White,
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+                        ) {
+                            Text(
+                                text = purpose,
+                                fontSize = 13.sp,
+                                color = TextDark,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
