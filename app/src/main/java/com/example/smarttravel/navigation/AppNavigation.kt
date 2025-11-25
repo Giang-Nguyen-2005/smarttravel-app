@@ -161,6 +161,84 @@ fun AppNavigation(navController: NavHostController) {
             com.example.smarttravel.ui.screens.ai_suggestions.AiSuggestionsScreen(navController = navController)
         }
         
+        // Màn hình thêm kế hoạch mới - Chọn ngày
+        composable(Screen.AddPlanDateSelection.route) {
+            com.example.smarttravel.ui.screens.add_plan.DateSelectionScreen(navController = navController)
+        }
+        
+        // Navigation graph con để chia sẻ ViewModel giữa AddPlanActivities và AddActivityForm
+        navigation(
+            startDestination = Screen.AddPlanActivities.route,
+            route = "add_plan_flow/{startDate}/{endDate}",
+            arguments = listOf(
+                navArgument("startDate") { type = NavType.StringType },
+                navArgument("endDate") { type = NavType.StringType }
+            )
+        ) {
+            composable(
+                route = Screen.AddPlanActivities.route,
+                arguments = listOf(
+                    navArgument("startDate") { type = NavType.StringType },
+                    navArgument("endDate") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val startDate = backStackEntry.arguments?.getString("startDate")
+                val endDate = backStackEntry.arguments?.getString("endDate")
+                @Composable
+                fun getSharedViewModel(entry: NavBackStackEntry): com.example.smarttravel.ui.viewmodel.ManualPlanViewModel {
+                    val parentRoute = "add_plan_flow/$startDate/$endDate"
+                    val parentEntry = remember(entry) {
+                        try {
+                            navController.getBackStackEntry(parentRoute)
+                        } catch (e: Exception) {
+                            entry
+                        }
+                    }
+                    return hiltViewModel(parentEntry)
+                }
+                val viewModel = getSharedViewModel(backStackEntry)
+                com.example.smarttravel.ui.screens.add_plan.AddPlanActivitiesScreen(
+                    navController = navController,
+                    startDate = startDate,
+                    endDate = endDate,
+                    viewModel = viewModel
+                )
+            }
+            
+            composable(
+                route = Screen.AddActivityForm.route,
+                arguments = listOf(
+                    navArgument("dayIndex") { type = NavType.IntType },
+                    navArgument("startDate") { type = NavType.StringType },
+                    navArgument("endDate") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val dayIndex = backStackEntry.arguments?.getInt("dayIndex") ?: 0
+                val startDate = backStackEntry.arguments?.getString("startDate")
+                val endDate = backStackEntry.arguments?.getString("endDate")
+                @Composable
+                fun getSharedViewModel(entry: NavBackStackEntry): com.example.smarttravel.ui.viewmodel.ManualPlanViewModel {
+                    val parentRouteStr = "add_plan_flow/$startDate/$endDate"
+                    val parentEntry = remember(entry) {
+                        try {
+                            navController.getBackStackEntry(parentRouteStr)
+                        } catch (e: Exception) {
+                            entry
+                        }
+                    }
+                    return hiltViewModel(parentEntry)
+                }
+                val viewModel = getSharedViewModel(backStackEntry)
+                com.example.smarttravel.ui.screens.add_plan.AddActivityFormScreen(
+                    navController = navController,
+                    dayIndex = dayIndex,
+                    viewModel = viewModel,
+                    startDate = startDate,
+                    endDate = endDate
+                )
+            }
+        }
+        
         //Plan Register
         planRegisterGraph(navController)
     }

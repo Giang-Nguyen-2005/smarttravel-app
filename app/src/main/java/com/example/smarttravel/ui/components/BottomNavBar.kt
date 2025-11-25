@@ -119,9 +119,34 @@ private fun RowScope.BottomBarItem(
             .fillMaxHeight() // Lấp đầy chiều cao của Row
             .clickable {
                 if (!isSelected) {
-                    navController.navigate(item.route) {
-                        popUpTo(navController.graph.startDestinationId)
-                        launchSingleTop = true
+                    try {
+                        // Pop về root graph nếu đang ở trong nested graph
+                        val currentDestination = navController.currentDestination
+                        val isInNestedGraph = currentDestination?.parent?.route != null
+                        
+                        if (isInNestedGraph) {
+                            // Pop về root graph (Home screen)
+                            navController.popBackStack(Screen.Home.route, false)
+                        }
+                        
+                        // Navigate đến route mong muốn
+                        navController.navigate(item.route) {
+                            // Pop về Home screen (root của main navigation)
+                            popUpTo(Screen.Home.route) {
+                                inclusive = false
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("BottomNavBar", "Error navigating to ${item.route}: ${e.message}", e)
+                        // Fallback: thử navigate đơn giản
+                        try {
+                            navController.navigate(item.route)
+                        } catch (e2: Exception) {
+                            android.util.Log.e("BottomNavBar", "Fallback navigation also failed: ${e2.message}", e2)
+                        }
                     }
                 }
             },
@@ -168,9 +193,34 @@ private fun RowScope.SearchBottomBarItem(
                     .background(Color(0xFF1976D2))
                     .clickable {
                         if (!isSelected) {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.startDestinationId)
-                                launchSingleTop = true
+                            try {
+                                // Pop về root graph nếu đang ở trong nested graph
+                                val currentDestination = navController.currentDestination
+                                val isInNestedGraph = currentDestination?.parent?.route != null
+                                
+                                if (isInNestedGraph) {
+                                    // Pop về root graph (Home screen)
+                                    navController.popBackStack(Screen.Home.route, false)
+                                }
+                                
+                                // Navigate đến route mong muốn
+                                navController.navigate(item.route) {
+                                    // Pop về Home screen (root của main navigation)
+                                    popUpTo(Screen.Home.route) {
+                                        inclusive = false
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("BottomNavBar", "Error navigating to ${item.route}: ${e.message}", e)
+                                // Fallback: thử navigate đơn giản
+                                try {
+                                    navController.navigate(item.route)
+                                } catch (e2: Exception) {
+                                    android.util.Log.e("BottomNavBar", "Fallback navigation also failed: ${e2.message}", e2)
+                                }
                             }
                         }
                     },

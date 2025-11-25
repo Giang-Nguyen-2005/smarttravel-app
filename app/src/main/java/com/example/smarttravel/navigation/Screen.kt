@@ -47,5 +47,13 @@ sealed class Screen(val route: String) {
     object AiGenerating : Screen("ai_generating_screen/{planId}") {
         fun createRoute(planId: String) = "ai_generating_screen/$planId"
     }
+    
+    object AddPlanDateSelection : Screen("add_plan_date_selection_screen")
+    object AddPlanActivities : Screen("add_plan_activities_screen/{startDate}/{endDate}") {
+        fun createRoute(startDate: String, endDate: String) = "add_plan_activities_screen/$startDate/$endDate"
+    }
+    object AddActivityForm : Screen("add_activity_form_screen/{dayIndex}/{startDate}/{endDate}") {
+        fun createRoute(dayIndex: Int, startDate: String, endDate: String) = "add_activity_form_screen/$dayIndex/$startDate/$endDate"
+    }
 
 }

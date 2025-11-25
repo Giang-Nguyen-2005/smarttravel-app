@@ -81,7 +81,7 @@ fun PeriodScreen(
                 // Thanh tiến trình (Căn giữa tuyệt đối trong Box)
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.6f) // Giới hạn chiều rộng của thanh progress
+                        .fillMaxWidth(0.6f)
                         .align(Alignment.Center)
                 ) {
                     LinearProgressIndicator(
