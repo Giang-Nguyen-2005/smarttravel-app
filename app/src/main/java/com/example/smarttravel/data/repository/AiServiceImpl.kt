@@ -5,6 +5,9 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -414,30 +417,91 @@ Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ tr�
     ): String {
         val purposesText = purposes.joinToString(", ")
         
-        return """
-Bạn là một chuyên gia du lịch chuyên nghiệp. Hãy tạo một lịch trình chi tiết và đầy đủ cho chuyến đi với thông tin sau:
-
-- Địa điểm: $destination
-- Khu vực: $locationName
-- Người đồng hành: $companion
-- Thời gian: $startDate đến $endDate
-- Ngân sách: $budget
-- Sở thích: $purposesText
-
-Hãy tạo lịch trình theo từng ngày với các hoạt động chi tiết, BAO GỒM:
-1. Địa điểm du lịch nổi tiếng
-2. Các món ăn đặc sản địa phương (gợi ý nhà hàng/quán ăn cụ thể)
-3. Khách sạn/nơi nghỉ (gợi ý khách sạn phù hợp với ngân sách)
-4. Khu vui chơi giải trí gần khách sạn
-5. Các hoạt động thú vị khác
-
-Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ trả về JSON, không có text thêm):
-
-[
-  {
-    "day": 1,
-    "date": "$startDate",
-    "title": "Ngày 1: [Tiêu đề ngày]",
+        // Tính số ngày
+        val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        val start = try {
+            LocalDate.parse(startDate, dateFormatter)
+        } catch (e: Exception) {
+            LocalDate.now()
+        }
+        val end = try {
+            LocalDate.parse(endDate, dateFormatter)
+        } catch (e: Exception) {
+            LocalDate.now().plusDays(1)
+        }
+        val numberOfDays = ChronoUnit.DAYS.between(start, end).toInt() + 1
+        
+        // Tính ngân sách theo ngày dựa trên budget
+        val budgetPerDay = when (budget) {
+            "Tiết kiệm" -> "500.000 - 1.500.000 VNĐ/ngày"
+            "Cân bằng" -> "1.500.000 - 3.000.000 VNĐ/ngày"
+            "Cao cấp" -> "3.000.000 - 5.000.000 VNĐ/ngày"
+            "Linh hoạt" -> "5.000.000+ VNĐ/ngày"
+            else -> "1.500.000 - 3.000.000 VNĐ/ngày"
+        }
+        
+        // Phân bổ ngân sách theo loại dịch vụ
+        val budgetBreakdown = when (budget) {
+            "Tiết kiệm" -> """
+- Khách sạn: 200.000 - 500.000 VNĐ/đêm/phòng
+- Ăn sáng: 30.000 - 80.000 VNĐ/người
+- Ăn trưa: 50.000 - 150.000 VNĐ/người
+- Ăn tối: 80.000 - 200.000 VNĐ/người
+- Tham quan: 0 - 100.000 VNĐ/người (ưu tiên địa điểm miễn phí)
+- Hoạt động: 50.000 - 200.000 VNĐ/người
+- Tổng 1 ngày: 500.000 - 1.500.000 VNĐ/người"""
+            "Cân bằng" -> """
+- Khách sạn: 500.000 - 1.200.000 VNĐ/đêm/phòng
+- Ăn sáng: 50.000 - 150.000 VNĐ/người
+- Ăn trưa: 100.000 - 300.000 VNĐ/người
+- Ăn tối: 150.000 - 400.000 VNĐ/người
+- Tham quan: 50.000 - 300.000 VNĐ/người
+- Hoạt động: 100.000 - 500.000 VNĐ/người
+- Tổng 1 ngày: 1.500.000 - 3.000.000 VNĐ/người"""
+            "Cao cấp" -> """
+- Khách sạn: 1.200.000 - 2.500.000 VNĐ/đêm/phòng
+- Ăn sáng: 100.000 - 300.000 VNĐ/người
+- Ăn trưa: 200.000 - 600.000 VNĐ/người
+- Ăn tối: 300.000 - 1.000.000 VNĐ/người
+- Tham quan: 100.000 - 500.000 VNĐ/người
+- Hoạt động: 200.000 - 1.000.000 VNĐ/người
+- Tổng 1 ngày: 3.000.000 - 5.000.000 VNĐ/người"""
+            "Linh hoạt" -> """
+- Khách sạn: 2.500.000+ VNĐ/đêm/phòng
+- Ăn sáng: 200.000+ VNĐ/người
+- Ăn trưa: 400.000+ VNĐ/người
+- Ăn tối: 500.000+ VNĐ/người
+- Tham quan: 200.000+ VNĐ/người
+- Hoạt động: 500.000+ VNĐ/người
+- Tổng 1 ngày: 5.000.000+ VNĐ/người"""
+            else -> """
+- Khách sạn: 500.000 - 1.200.000 VNĐ/đêm/phòng
+- Ăn sáng: 50.000 - 150.000 VNĐ/người
+- Ăn trưa: 100.000 - 300.000 VNĐ/người
+- Ăn tối: 150.000 - 400.000 VNĐ/người
+- Tham quan: 50.000 - 300.000 VNĐ/người
+- Hoạt động: 100.000 - 500.000 VNĐ/người
+- Tổng 1 ngày: 1.500.000 - 3.000.000 VNĐ/người"""
+        }
+        
+        // Tạo danh sách các ngày
+        val dateList = mutableListOf<String>()
+        var currentDate = start
+        for (i in 1..numberOfDays) {
+            dateList.add(currentDate.format(dateFormatter))
+            currentDate = currentDate.plusDays(1)
+        }
+        
+        // Tạo ví dụ JSON cho tất cả các ngày (tối đa 5 ngày để không quá dài)
+        val exampleDays = minOf(numberOfDays, 5)
+        val jsonExample = buildString {
+            append("[\n")
+            for (day in 1..exampleDays) {
+                val dayDate = dateList[day - 1]
+                append("""  {
+    "day": $day,
+    "date": "$dayDate",
+    "title": "Ngày $day: [Tiêu đề ngày]",
     "hotel": {
       "name": "[Tên khách sạn]",
       "location": "[Địa chỉ khách sạn]",
@@ -491,21 +555,77 @@ Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ tr�
         "recommendedDishes": ["[Món đặc sản]"]
       }
     ]
-  }
-]
+  }""")
+                if (day < exampleDays) {
+                    append(",\n")
+                } else if (numberOfDays > exampleDays) {
+                    append(",\n")
+                    append("  // ... TIẾP TỤC TẠO ĐỦ $numberOfDays NGÀY (ngày ${exampleDays + 1} đến ngày $numberOfDays) ...\n")
+                }
+            }
+            append("\n]")
+        }
+        
+        return """
+🚨 QUAN TRỌNG: BẠN PHẢI TẠO ĐỦ $numberOfDays NGÀY (TỪ NGÀY $startDate ĐẾN NGÀY $endDate) 🚨
 
-Lưu ý QUAN TRỌNG:
-- Tạo đủ số ngày từ $startDate đến $endDate
-- Mỗi ngày PHẢI có field "hotel" với thông tin khách sạn
+Bạn là một chuyên gia du lịch chuyên nghiệp với kiến thức sâu về giá cả thực tế tại Việt Nam. Hãy tạo một lịch trình chi tiết và đầy đủ cho chuyến đi với thông tin sau:
+
+- Địa điểm: $destination
+- Khu vực: $locationName
+- Người đồng hành: $companion
+- Thời gian: $startDate đến $endDate (TỔNG CỘNG $numberOfDays NGÀY)
+- Ngân sách: $budget ($budgetPerDay)
+- Sở thích: $purposesText
+
+💰 HƯỚNG DẪN VỀ GIÁ CẢ - PHẢI TUÂN THỦ:
+💰 Bạn PHẢI sử dụng giá thực tế tại Việt Nam, không được bịa đặt giá
+💰 Phân bổ ngân sách theo mức "$budget":
+$budgetBreakdown
+
+💰 QUY TẮC TÍNH GIÁ:
+- Giá phải THỰC TẾ với thị trường Việt Nam tại khu vực $locationName
+- Không được đưa ra giá quá cao hoặc quá thấp so với thực tế
+- Nếu không biết giá chính xác, hãy tra cứu hoặc ước tính dựa trên mức giá trung bình tại Việt Nam
+- Giá khách sạn: tính theo phòng/đêm, không phải theo người
+- Giá ăn uống: tính theo người
+- Giá tham quan: tính theo người (nếu có vé)
+- Địa điểm miễn phí: ghi "Miễn phí" thay vì "0 VNĐ"
+- Giá phải nằm trong khoảng ngân sách đã phân bổ ở trên
+
+
+🚨 YÊU CẦU BẮT BUỘC - ĐỌC KỸ:
+🚨 BẠN PHẢI TẠO ĐỦ $numberOfDays NGÀY (KHÔNG ĐƯỢC THIẾU NGÀY NÀO, KHÔNG ĐƯỢC CHỈ TẠO 1 NGÀY)
+🚨 Danh sách ngày: ${dateList.joinToString(", ")}
+🚨 Mỗi ngày PHẢI có một object riêng trong mảng JSON với:
+   - Ngày 1: day = 1, date = "$startDate"
+   - Ngày 2: day = 2, date = "${dateList.getOrNull(1) ?: ""}"
+${if (numberOfDays > 2) "   - Ngày 3: day = 3, date = \"${dateList[2]}\"\n" else ""}${if (numberOfDays > 3) "   - ... và cứ thế cho đến ngày $numberOfDays: day = $numberOfDays, date = \"$endDate\"" else ""}
+
+Hãy tạo lịch trình theo từng ngày với các hoạt động chi tiết, BAO GỒM:
+1. Địa điểm du lịch nổi tiếng
+2. Các món ăn đặc sản địa phương (gợi ý nhà hàng/quán ăn cụ thể)
+3. Khách sạn/nơi nghỉ (gợi ý khách sạn phù hợp với ngân sách)
+4. Khu vui chơi giải trí gần khách sạn
+5. Các hoạt động thú vị khác
+
+Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ trả về JSON, không có text thêm):
+
+$jsonExample
+
+🚨 Lưu ý QUAN TRỌNG - ĐỌC KỸ:
+🚨 BẠN PHẢI TẠO ĐỦ $numberOfDays NGÀY (KHÔNG ĐƯỢC THIẾU NGÀY NÀO, KHÔNG ĐƯỢC CHỈ TẠO 1 NGÀY)
+🚨 Mỗi ngày PHẢI có một object riêng trong mảng JSON với day = 1, 2, 3, ... đến $numberOfDays
+💰 Mỗi ngày PHẢI có field "hotel" với thông tin khách sạn và giá PHẢI nằm trong khoảng ngân sách đã phân bổ
+💰 Mỗi activity PHẢI có field "price" với giá THỰC TẾ, không được bịa đặt
+💰 Tổng chi phí 1 ngày (khách sạn + ăn uống + tham quan + hoạt động) PHẢI nằm trong khoảng $budgetPerDay
+💰 Giá phải phù hợp với mức "$budget" và thực tế tại $locationName
 - Mỗi ngày có ít nhất 6-8 hoạt động (ăn sáng, tham quan, ăn trưa, hoạt động, ăn tối, nghỉ ngơi)
 - Type có thể là: "breakfast", "lunch", "dinner", "attraction", "activity", "entertainment", "rest", "hotel"
-- MỖI ACTIVITY PHẢI CÓ field "price" với giá ước tính (theo ngân sách $budget). Ví dụ: "50.000 - 150.000 VNĐ/người" hoặc "Miễn phí"
-- Giá phải phù hợp với ngân sách đã chọn: Tiết kiệm (500k-1.5M/ngày), Cân bằng (1.5M-3M/ngày), Cao cấp (3M-5M/ngày), Linh hoạt (trên 5M/ngày)
 - Gợi ý các món ăn đặc sản địa phương trong "recommendedDishes"
 - Gợi ý khu vui chơi giải trí gần khách sạn
 - Phù hợp với ngân sách $budget và sở thích $purposesText
 - Tất cả nội dung bằng tiếng Việt
-- Khách sạn nên phù hợp với ngân sách $budget
 """.trimIndent()
     }
     

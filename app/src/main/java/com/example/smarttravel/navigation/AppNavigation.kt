@@ -38,6 +38,7 @@ import com.example.smarttravel.ui.screens.planregister.PeriodScreen
 import com.example.smarttravel.ui.screens.planregister.PurposeScreen
 import com.example.smarttravel.ui.screens.schedule.PlanScreen
 import com.example.smarttravel.ui.screens.plan_detail.PlanDetailScreen
+import com.example.smarttravel.ui.screens.ai_generating.AiGeneratingScreen
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
@@ -159,7 +160,7 @@ fun AppNavigation(navController: NavHostController) {
         composable(Screen.AiSuggestions.route) {
             com.example.smarttravel.ui.screens.ai_suggestions.AiSuggestionsScreen(navController = navController)
         }
-
+        
         //Plan Register
         planRegisterGraph(navController)
     }
@@ -202,6 +203,20 @@ private fun NavGraphBuilder.planRegisterGraph(navController: NavHostController) 
         composable(Screen.PlanSummary.route) {
             val viewModel = getSharedViewModel(it)
             PlanSummaryScreen(navController = navController, viewModel = viewModel)
+        }
+        
+        // Màn hình AI Generating (nằm trong plan register flow để share ViewModel)
+        composable(
+            route = Screen.AiGenerating.route,
+            arguments = listOf(navArgument("planId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val planId = backStackEntry.arguments?.getString("planId")
+            val viewModel = getSharedViewModel(backStackEntry)
+            AiGeneratingScreen(
+                navController = navController,
+                planId = planId,
+                viewModel = viewModel
+            )
         }
     }
 }

@@ -82,6 +82,10 @@ class HomeViewModel @Inject constructor(
     private val _aiSuggestionsState = MutableStateFlow(AiSuggestionsUiState())
     val aiSuggestionsState: StateFlow<AiSuggestionsUiState> = _aiSuggestionsState.asStateFlow()
     
+    // State cho bookmark destinations
+    private val _savedDestinationIds = MutableStateFlow<Set<String>>(emptySet())
+    val savedDestinationIds: StateFlow<Set<String>> = _savedDestinationIds.asStateFlow()
+    
     // Cache gợi ý theo ngày
     private var cachedSuggestions: List<Destination> = emptyList()
     private var cachedDate: String? = null
@@ -91,6 +95,7 @@ class HomeViewModel @Inject constructor(
         loadDestinations()
         loadUserProfile()
         loadRecentPlan()
+        loadSavedDestinations()
         // Khởi tạo state từ cache nếu có
         initializeAiSuggestionsFromCache()
     }
@@ -314,6 +319,38 @@ class HomeViewModel @Inject constructor(
                         error = result.exceptionOrNull()?.message
                     )
                 }
+            }
+        }
+    }
+    
+    private fun loadSavedDestinations() {
+        viewModelScope.launch {
+            authRepository.getSavedDestinationIds().collect { savedIds ->
+                _savedDestinationIds.value = savedIds.toSet()
+            }
+        }
+    }
+    
+    fun toggleBookmark(destinationId: String) {
+        viewModelScope.launch {
+            val isCurrentlyBookmarked = _savedDestinationIds.value.contains(destinationId)
+            val result = if (isCurrentlyBookmarked) {
+                authRepository.unsaveDestination(destinationId)
+            } else {
+                authRepository.saveDestination(destinationId)
+            }
+            
+            // Cập nhật UI ngay lập tức để UX tốt hơn
+            if (result.isSuccess) {
+                val currentSet = _savedDestinationIds.value.toMutableSet()
+                if (isCurrentlyBookmarked) {
+                    currentSet.remove(destinationId)
+                } else {
+                    currentSet.add(destinationId)
+                }
+                _savedDestinationIds.value = currentSet
+            } else {
+                android.util.Log.e("HomeViewModel", "Error toggling bookmark: ${result.exceptionOrNull()?.message}")
             }
         }
     }

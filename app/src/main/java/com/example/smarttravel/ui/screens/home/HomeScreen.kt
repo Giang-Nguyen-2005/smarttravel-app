@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.NotificationsNone
@@ -187,15 +188,24 @@ fun HomeScreen(
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
+                    )                     {
                         items(destinationState.destinations.take(5)) { destination ->
+                            val savedIds by homeViewModel.savedDestinationIds.collectAsState()
+                            val isBookmarked = savedIds.contains(destination.id)
+                            
                             LargeDestinationCard(
-                                modifier = Modifier.clickable {
-                                    navController.navigate(Screen.Detail.createRoute(destination.id))
-                                },
+                                modifier = Modifier,
                                 name = destination.name,
                                 rating = destination.rating,
-                                imageUrl = destination.images.firstOrNull() ?: "ha_long"
+                                imageUrl = destination.images.firstOrNull() ?: "ha_long",
+                                destinationId = destination.id,
+                                isBookmarked = isBookmarked,
+                                onBookmarkClick = {
+                                    homeViewModel.toggleBookmark(destination.id)
+                                },
+                                onCardClick = {
+                                    navController.navigate(Screen.Detail.createRoute(destination.id))
+                                }
                             )
                         }
                     }
@@ -627,6 +637,10 @@ fun LargeDestinationCard(
     name: String,
     rating: Double,
     imageUrl: String,
+    destinationId: String,
+    isBookmarked: Boolean,
+    onBookmarkClick: () -> Unit,
+    onCardClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -635,7 +649,11 @@ fun LargeDestinationCard(
             .height(320.dp),
         shape = RoundedCornerShape(20.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable { onCardClick() }
+        ) {
             val isNetworkImage = imageUrl.startsWith("http") || imageUrl.startsWith("https://")
             if (isNetworkImage) {
                 AsyncImage(
@@ -667,15 +685,19 @@ fun LargeDestinationCard(
                     )
             )
             IconButton(
-                onClick = { /* TODO */ },
+                onClick = onBookmarkClick,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
-                    .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                    .background(
+                        if (isBookmarked) Color(0xFFFFC107).copy(alpha = 0.9f)
+                        else Color.Black.copy(alpha = 0.3f),
+                        CircleShape
+                    )
             ) {
                 Icon(
-                    imageVector = Icons.Default.BookmarkBorder,
-                    contentDescription = "Bookmark",
+                    imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                    contentDescription = if (isBookmarked) "Bỏ lưu" else "Lưu",
                     tint = Color.White
                 )
             }

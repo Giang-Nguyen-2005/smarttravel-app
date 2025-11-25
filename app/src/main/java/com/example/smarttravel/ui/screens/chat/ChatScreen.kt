@@ -1,6 +1,5 @@
 package com.example.smarttravel.ui.screens.chat
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,38 +9,34 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.rememberLottieComposition
+import com.airbnb.lottie.compose.*
 import com.example.smarttravel.R
 import com.example.smarttravel.ui.components.AppTopBar
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.style.TextAlign
-import com.example.smarttravel.ui.theme.SmarttravelTheme
 import com.example.smarttravel.ui.viewmodel.ChatMessage
-import com.example.smarttravel.ui.viewmodel.Sender
 import com.example.smarttravel.ui.viewmodel.ChatViewModel
+import com.example.smarttravel.ui.viewmodel.Sender
 import kotlinx.coroutines.launch
+
+// --- MÀU SẮC THEME ---
+private val AppPrimaryColor = Color(0xFF037CAC)
+private val BotBubbleColor = Color(0xFFF2F4F5)
+private val InputBgColor = Color(0xFFF5F7FA)
 
 @Composable
 fun ChatScreen(
@@ -53,49 +48,46 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Tự động cuộn xuống cuối khi có tin nhắn mới
-    LaunchedEffect(uiState.messages.size) {
-        if (uiState.messages.isNotEmpty()) {
+    // Auto scroll
+    LaunchedEffect(uiState.messages.size, uiState.isLoading) {
+        if (uiState.messages.isNotEmpty() || uiState.isLoading) {
             coroutineScope.launch {
                 listState.animateScrollToItem(0)
             }
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        topBar = { ChatTopBar(onBackClick = { navController.popBackStack() }) },
+        // ĐÃ BỎ BOTTOM BAR TẠI ĐÂY
+        containerColor = Color.White
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .padding(paddingValues)
+                .imePadding() // Quan trọng: Đẩy nội dung lên khi bàn phím hiện
         ) {
-            // 1. Top Bar
-            ChatTopBar(onBackClick = { navController.popBackStack() })
-
-            // 2. Danh sách tin nhắn (cuộn ngược)
-            Box(modifier = Modifier.weight(1f)) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    reverseLayout = true, // Tin nhắn mới nhất ở dưới
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Typing animation phải ở đầu tiên để hiển thị ở dưới cùng (vì reverseLayout = true)
-                    // Đây là vị trí mà tin nhắn bot tiếp theo sẽ xuất hiện
-                    if (uiState.isLoading) {
-                        item {
-                            TypingAnimationIndicator()
-                        }
-                    }
-                    
-                    items(uiState.messages.reversed()) { message ->
-                        ChatMessageItem(message = message)
-                    }
+            // 1. Danh sách tin nhắn
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                reverseLayout = true,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (uiState.isLoading) {
+                    item { TypingAnimationIndicator() }
+                }
+                items(uiState.messages.reversed()) { message ->
+                    ChatMessageItem(message = message)
                 }
             }
 
-            // 3. Ô nhập liệu
-            ChatInput(
+            // 2. Ô nhập liệu (Đã bỏ nút +)
+            ModernChatInput(
                 text = inputText,
                 onTextChanged = { inputText = it },
                 onSendClick = {
@@ -107,7 +99,6 @@ fun ChatScreen(
                 enabled = !uiState.isLoading
             )
         }
-
     }
 }
 
@@ -117,15 +108,14 @@ fun ChatScreen(
 private fun ChatTopBar(onBackClick: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shadowElevation = 2.dp,
-        color = Color(0xFFFAFCFC)
+        shadowElevation = 0.5.dp,
+        color = Color.White
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
             AppTopBar(onBackClick = onBackClick)
             Column(
@@ -133,20 +123,28 @@ private fun ChatTopBar(onBackClick: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "ChatBot",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = "Trợ lý AI",
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = Color(0xFF1A1A1A)
                 )
-                Text(
-                    text = "Hỗ trợ du lịch 24/7",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    fontSize = 11.sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF4CAF50))
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Online",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        fontSize = 11.sp
+                    )
+                }
             }
-            Spacer(modifier = Modifier.size(36.dp))
+            Spacer(modifier = Modifier.size(46.dp))
         }
     }
 }
@@ -154,101 +152,57 @@ private fun ChatTopBar(onBackClick: () -> Unit) {
 @Composable
 fun ChatMessageItem(message: ChatMessage) {
     val isUser = message.sender == Sender.USER
-    val alignment: Alignment.Horizontal =
-        if (isUser) Alignment.End else Alignment.Start
-    val backgroundColor = if (isUser) 
-        Color(0xFFB5EBFF) // Màu xanh như ban đầu
-    else 
-        Color(0xFFEDFCFF) // Màu cho tin nhắn bot
-    val textColor = if (isUser) 
-        Color.Black
-    else 
-        MaterialTheme.colorScheme.onSurface
-    val timeAlignment = if (isUser) Alignment.End else Alignment.Start
-    val shape = RoundedCornerShape(
-        topStart = 18.dp,
-        topEnd = 18.dp,
-        bottomStart = if (isUser) 18.dp else 4.dp,
-        bottomEnd = if (isUser) 4.dp else 18.dp
-    )
+    val alignment = if (isUser) Alignment.End else Alignment.Start
+    val backgroundColor = if (isUser) AppPrimaryColor else BotBubbleColor
+    val contentColor = if (isUser) Color.White else Color(0xFF1A1A1A)
 
-    // Get screen width
+    val bubbleShape = if (isUser) {
+        RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp)
+    } else {
+        RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp)
+    }
+
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
+    val maxBubbleWidth = screenWidth * 0.75f
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom
     ) {
         if (!isUser) {
-            // Avatar với shadow
-            Card(
-                modifier = Modifier.size(36.dp),
-                shape = CircleShape,
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.avatar),
-                    contentDescription = "Bot Avatar",
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+            Image(
+                painter = painterResource(id = R.drawable.avatar),
+                contentDescription = "Bot",
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.size(32.dp).clip(CircleShape).background(Color.LightGray)
+            )
             Spacer(modifier = Modifier.width(8.dp))
         }
 
-        Column(
-            horizontalAlignment = alignment,
-            modifier = Modifier
-                .widthIn(max = screenWidth * 0.75f)
-        ) {
-            // Message bubble với elevation
-            Card(
-                modifier = Modifier,
-                shape = shape,
-                colors = CardDefaults.cardColors(containerColor = backgroundColor),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        Column(horizontalAlignment = alignment) {
+            Surface(
+                shape = bubbleShape,
+                color = backgroundColor,
+                modifier = Modifier.widthIn(max = maxBubbleWidth),
+                shadowElevation = 0.dp
             ) {
                 Text(
                     text = message.text,
-                    color = textColor,
+                    color = contentColor,
                     fontSize = 15.sp,
-                    lineHeight = 20.sp,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                    lineHeight = 22.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.align(timeAlignment)
-            ) {
-                Text(
-                    text = message.time,
-                    color = Color.Gray.copy(alpha = 0.7f),
-                    fontSize = 10.sp
-                )
-                if (isUser && message.isSent) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Sent",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(12.dp)
-                    )
-                }
-            }
-        }
-        
-        if (isUser) {
-            Spacer(modifier = Modifier.width(8.dp))
         }
     }
 }
 
+// === PHẦN CẬP NHẬT: ĐÃ BỎ NÚT DẤU CỘNG ===
 @Composable
-private fun ChatInput(
+private fun ModernChatInput(
     text: String,
     onTextChanged: (String) -> Unit,
     onSendClick: () -> Unit,
@@ -256,108 +210,129 @@ private fun ChatInput(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
+        color = Color.White,
         shadowElevation = 8.dp,
-        color = Color(0xFFFAFCFC),
-        tonalElevation = 1.dp
+        tonalElevation = 2.dp
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TextField(
-                value = text,
-                onValueChange = onTextChanged,
-                placeholder = { 
-                    Text(
-                        "Nhập tin nhắn...", 
-                        color = Color.Gray.copy(alpha = 0.6f),
-                        fontSize = 15.sp
-                    ) 
-                },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(24.dp),
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                ),
-                maxLines = 4,
-                enabled = enabled,
-                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            FloatingActionButton(
-                onClick = onSendClick,
-                modifier = Modifier.size(44.dp),
-                containerColor = if (enabled && text.isNotBlank()) 
-                    MaterialTheme.colorScheme.primary 
-                else 
-                    MaterialTheme.colorScheme.surfaceContainerHighest,
-                contentColor = if (enabled && text.isNotBlank()) 
-                    MaterialTheme.colorScheme.onPrimary 
-                else 
-                    Color.Gray.copy(alpha = 0.5f)
+            // 1. Ô nhập liệu dạng "Viên thuốc"
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(InputBgColor, RoundedCornerShape(24.dp))
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Send,
-                    contentDescription = "Gửi",
-                    modifier = Modifier.size(20.dp)
+                TextField(
+                    value = text,
+                    onValueChange = onTextChanged,
+                    placeholder = {
+                        Text(
+                            "Hỏi tôi về chuyến đi...",
+                            color = Color.Gray.copy(alpha = 0.6f),
+                            fontSize = 14.sp
+                        )
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 40.dp, max = 100.dp),
+                    // --- SỬA LỖI TẠI ĐÂY ---
+                    colors = TextFieldDefaults.colors(
+                        // Trạng thái bình thường
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = AppPrimaryColor,
+
+                        // Trạng thái Disabled (khi AI đang trả lời) -> Ép về trong suốt
+                        disabledContainerColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        disabledTextColor = Color.Gray, // Màu chữ khi bị khóa (tùy chọn)
+                        disabledPlaceholderColor = Color.Gray.copy(alpha = 0.6f) // Màu placeholder khi bị khóa
+                    ),
+                    maxLines = 4,
+                    enabled = enabled,
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp)
                 )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // 2. Nút Gửi
+            val isSendEnabled = enabled && text.isNotBlank()
+            // Nếu đang loading (enabled = false), ta vẫn giữ màu xám nhạt (E0E0E0) chứ không để nó bị tối đi theo mặc định
+            val buttonColor = if (isSendEnabled) AppPrimaryColor else Color(0xFFE0E0E0)
+            val iconColor = if (isSendEnabled) Color.White else Color.Gray
+
+            IconButton(
+                onClick = onSendClick,
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(buttonColor, CircleShape)
+                    .padding(4.dp),
+                enabled = isSendEnabled
+            ) {
+                // Nếu đang loading, có thể hiển thị CircularProgressIndicator nhỏ thay vì icon Send
+                if (!enabled && text.isNotBlank()) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.Gray,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Gửi",
+                        tint = iconColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
         }
     }
 }
 
-// Typing animation indicator - vị trí avatar bot tiếp theo (trong LazyColumn, ở vị trí tin nhắn bot sẽ xuất hiện)
 @Composable
 private fun TypingAnimationIndicator() {
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.typing))
-    
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.Start,
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Avatar bot
-        Card(
-            modifier = Modifier.size(36.dp),
-            shape = CircleShape,
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.avatar),
-                contentDescription = "Bot Avatar",
-                modifier = Modifier.fillMaxSize()
-            )
-        }
+        Image(
+            painter = painterResource(id = R.drawable.avatar),
+            contentDescription = "Bot",
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.size(32.dp).clip(CircleShape).background(Color.LightGray)
+        )
         Spacer(modifier = Modifier.width(8.dp))
-        
-        // Lottie typing animation
-        Box(
-            modifier = Modifier.size(50.dp)
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = BotBubbleColor,
+            modifier = Modifier.height(36.dp)
         ) {
-            LottieAnimation(
-                composition = composition,
-                iterations = Int.MAX_VALUE,
-                modifier = Modifier.fillMaxSize()
-            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.padding(horizontal = 12.dp)
+            ) {
+                if (composition != null) {
+                    LottieAnimation(
+                        composition = composition,
+                        iterations = LottieConstants.IterateForever,
+                        modifier = Modifier.size(40.dp)
+                    )
+                } else {
+                    Text("...", fontWeight = FontWeight.Bold, color = Color.Gray)
+                }
+            }
         }
-    }
-}
-
-
-// --- PREVIEW ---
-@Preview(showBackground = true)
-@Composable
-fun ChatScreenPreview() {
-    SmarttravelTheme {
-        val navController = rememberNavController()
-        ChatScreen(navController = navController)
     }
 }

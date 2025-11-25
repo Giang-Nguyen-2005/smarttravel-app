@@ -1,51 +1,63 @@
 package com.example.smarttravel.ui.screens.plan_detail
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+// Đã xóa import automirrored gây lỗi
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.MonetizationOn
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.smarttravel.R
 import com.example.smarttravel.data.model.TravelPlan
+import com.example.smarttravel.ui.components.AppTopBar
+import com.example.smarttravel.ui.components.MapDestination
 import com.example.smarttravel.ui.components.PrimaryButton
 import com.example.smarttravel.ui.components.TravelPlanMapView
-import com.example.smarttravel.ui.components.MapDestination
-import com.example.smarttravel.ui.theme.SmarttravelTheme
 import com.example.smarttravel.ui.viewmodel.PlanDetailViewModel
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import android.content.Intent
-import android.net.Uri
+
+// --- COLOR PALETTE ---
+val AppPrimary = Color(0xFF037CAC)
+val BackgroundLight = Color(0xFFF5F7FA)
+val TextDark = Color(0xFF1A1A1A)
+val TextGray = Color(0xFF757575)
+val CardBorder = Color(0xFFEEEEEE)
 
 @Composable
 fun PlanDetailScreen(
@@ -55,75 +67,59 @@ fun PlanDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        when {
-            uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            uiState.error != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Lỗi: ${uiState.error}",
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadPlan() }) {
-                            Text("Thử lại")
-                        }
+    Scaffold(
+        containerColor = BackgroundLight,
+        bottomBar = {
+            if (uiState.plan != null) {
+                PlanBottomBar(
+                    onShareClick = {
+                        val planDays = parsePlanDetail(uiState.plan!!.planDetail)
+                        sharePlan(context, uiState.plan!!, uiState.destination, planDays)
                     }
-                }
-            }
-            uiState.plan != null -> {
-                PlanDetailContent(
-                    navController = navController,
-                    plan = uiState.plan!!,
-                    destination = uiState.destination,
-                    onDeleteClick = { showDeleteDialog = true },
-                    viewModel = viewModel
                 )
             }
         }
-        
-        // Dialog xác nhận xóa
-        if (showDeleteDialog) {
-            AlertDialog(
-                onDismissRequest = { showDeleteDialog = false },
-                title = { Text("Xóa kế hoạch") },
-                text = { Text("Bạn có chắc chắn muốn xóa kế hoạch này? Hành động này không thể hoàn tác.") },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showDeleteDialog = false
-                            viewModel.deletePlan(
-                                onSuccess = {
-                                    navController.popBackStack()
-                                },
-                                onError = { error ->
-                                    android.util.Log.e("PlanDetailScreen", "Error deleting plan: $error")
-                                }
-                            )
-                        }
-                    ) {
-                        Text("Xóa", color = Color(0xFFE53935))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) {
-                        Text("Hủy")
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            when {
+                uiState.isLoading -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = AppPrimary)
                     }
                 }
-            )
+                uiState.error != null -> {
+                    ErrorView(error = uiState.error!!, onRetry = { viewModel.loadPlan() })
+                }
+                uiState.plan != null -> {
+                    PlanDetailContent(
+                        navController = navController,
+                        plan = uiState.plan!!,
+                        destination = uiState.destination,
+                        viewModel = viewModel
+                    )
+
+                    PlanTopControls(
+                        onBackClick = { navController.popBackStack() },
+                        onDeleteClick = { showDeleteDialog = true }
+                    )
+                }
+            }
         }
+    }
+
+    if (showDeleteDialog) {
+        DeleteConfirmationDialog(
+            onConfirm = {
+                showDeleteDialog = false
+                viewModel.deletePlan(
+                    onSuccess = { navController.popBackStack() },
+                    onError = { /* Handle error */ }
+                )
+            },
+            onDismiss = { showDeleteDialog = false }
+        )
     }
 }
 
@@ -131,19 +127,12 @@ fun PlanDetailScreen(
 fun PlanDetailContent(
     navController: NavController,
     plan: TravelPlan,
-    destination: com.example.smarttravel.model.Destination? = null,
-    onDeleteClick: () -> Unit = {},
-    viewModel: PlanDetailViewModel? = null
+    destination: com.example.smarttravel.model.Destination?,
+    viewModel: PlanDetailViewModel
 ) {
-    // Parse planDetail từ Firestore
-    val planDays = remember(plan.planDetail) {
-        parsePlanDetail(plan.planDetail)
-    }
-    
-    // State để lưu ngày được chọn (null = hiển thị tất cả)
+    val planDays = remember(plan.planDetail) { parsePlanDetail(plan.planDetail) }
     var selectedDayIndex by remember { mutableStateOf<Int?>(null) }
-    
-    // Filter planDays theo ngày được chọn
+
     val displayedDays = remember(planDays, selectedDayIndex) {
         if (selectedDayIndex != null && selectedDayIndex!! in planDays.indices) {
             listOf(planDays[selectedDayIndex!!])
@@ -151,268 +140,519 @@ fun PlanDetailContent(
             planDays
         }
     }
-    
-    // Format dates
-    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-    val dateRange = if (plan.startDate != null && plan.endDate != null) {
-        val start = plan.startDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        val end = plan.endDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        "${start.format(dateFormatter)} - ${end.format(dateFormatter)}"
-    } else {
-        "Chưa có ngày"
-    }
-    
-    val duration = if (plan.startDate != null && plan.endDate != null) {
-        val start = plan.startDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        val end = plan.endDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        val days = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1
-        "$days ngày ${days - 1} đêm"
-    } else {
-        "Chưa xác định"
-    }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-        ) {
-            // 1. Ảnh bìa
-            item {
-                ImageHeader(
-                    imageUrl = plan.coverImageUrl,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
-                )
-            }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 20.dp)
+    ) {
+        item {
+            HeroImageSection(imageUrl = plan.coverImageUrl, title = plan.title)
+        }
 
-            // 2. Header thông tin
-            item {
-                PlanInfoHeader(
-                    title = plan.title,
-                    dateRange = dateRange
-                )
-            }
+        item {
+            InfoGridSection(plan)
+        }
 
-            // 3. Thông tin tổng quan
-            item {
-                OverviewSection(
-                    duration = duration,
-                    participants = plan.companion,
-                    budget = plan.budget
-                )
-            }
-            
-            // 3.5. Tổng tiền ước tính
-            item {
-                val (title, priceText) = remember(planDays) {
-                    calculateTotalPrice(planDays)
-                }
+        item {
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                val (_, priceText) = remember(planDays) { calculateTotalPrice(planDays) }
                 if (priceText.isNotEmpty()) {
-                    TotalPriceSection(title = title, totalPrice = priceText)
+                    CompactPriceCard(priceText)
                 }
-            }
 
-            // 3.5. Bản đồ lịch trình
-            item {
-                val mapDestinations = remember(planDays, destination) {
-                    extractMapDestinations(planDays, destination)
-                }
+                Spacer(modifier = Modifier.height(24.dp))
+
+                val mapDestinations = remember(planDays, destination) { extractMapDestinations(planDays, destination) }
                 if (mapDestinations.isNotEmpty()) {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                        Text(
-                            text = "Bản đồ lịch trình",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        TravelPlanMapView(
-                            destinations = mapDestinations,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp)),
-                            showRoute = true
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Map, null, tint = AppPrimary, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Bản đồ lịch trình", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
                     }
-                }
-            }
-
-            // 3.6. Thanh chọn ngày
-            if (planDays.isNotEmpty() && planDays.size > 1) {
-                item {
-                    DaySelectorBar(
-                        planDays = planDays,
-                        selectedDayIndex = selectedDayIndex,
-                        onDaySelected = { index ->
-                            selectedDayIndex = when {
-                                index == -1 -> null // Reset về "Tất cả"
-                                selectedDayIndex == index -> null // Click lại để bỏ chọn
-                                else -> index
-                            }
-                        }
-                    )
-                }
-            }
-
-            // 4. Lịch trình chi tiết theo ngày
-            if (displayedDays.isNotEmpty()) {
-                itemsIndexed(displayedDays) { displayedIndex, day ->
-                    // Tìm index gốc của day trong planDays
-                    val originalIndex = planDays.indexOfFirst { 
-                        it.day == day.day && it.date == day.date 
-                    }
-                    val dayNumber = if (originalIndex >= 0) originalIndex + 1 else displayedIndex + 1
-                    val dayIndex = if (originalIndex >= 0) originalIndex else displayedIndex
-                    PlanDayItem(
-                        day = day, 
-                        dayNumber = dayNumber,
-                        dayIndex = dayIndex,
-                        viewModel = viewModel
-                    )
-                }
-            } else {
-                item {
-                    Box(
+                    Spacer(modifier = Modifier.height(12.dp))
+                    TravelPlanMapView(
+                        destinations = mapDestinations,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = Color.Gray
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "Đang tạo gợi ý AI...",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = Color.Gray
-                            )
-                        }
-                    }
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(1.dp, CardBorder, RoundedCornerShape(16.dp)),
+                        showRoute = true
+                    )
                 }
+                Spacer(modifier = Modifier.height(24.dp))
             }
+        }
 
-            // 5. Nút Chia sẻ
+        if (planDays.size > 1) {
             item {
-                val context = LocalContext.current
-                PrimaryButton(
-                    text = "Chia sẻ Kế hoạch",
-                    onClick = { 
-                        sharePlan(
-                            context = context,
-                            plan = plan,
-                            destination = destination,
-                            planDays = planDays
-                        )
-                    },
-                    modifier = Modifier.padding(16.dp)
+                DaySelectorBar(
+                    planDays = planDays,
+                    selectedDayIndex = selectedDayIndex,
+                    onDaySelected = { index ->
+                        selectedDayIndex = if (index == -1 || selectedDayIndex == index) null else index
+                    }
                 )
             }
         }
 
-        // 6. Nút Back và Xóa
-        PlanTopControls(
-            onBackClick = { navController.popBackStack() },
-            onDeleteClick = onDeleteClick
+        if (displayedDays.isNotEmpty()) {
+            itemsIndexed(displayedDays) { index, day ->
+                val originalIndex = planDays.indexOfFirst { it.day == day.day && it.date == day.date }
+                val realIndex = if (originalIndex >= 0) originalIndex else index
+
+                TimelineDaySection(
+                    day = day,
+                    dayIndex = realIndex,
+                    viewModel = viewModel
+                )
+            }
+        } else {
+            item { EmptyStateView() }
+        }
+    }
+}
+
+@Composable
+fun HeroImageSection(imageUrl: String, title: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(320.dp)
+    ) {
+        NetworkOrLocalImage(
+            url = imageUrl,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                        startY = 400f
+                    )
+                )
+        )
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 16.dp, end = 16.dp, bottom = 40.dp)
         )
     }
 }
 
-// Parse giá từ string (có thể là range hoặc số cụ thể)
-private fun parsePrice(priceString: String): Pair<Long, Long>? {
-    if (priceString.isEmpty() || priceString.contains("Miễn phí", ignoreCase = true)) {
-        return null
-    }
-    
-    // Loại bỏ các ký tự không cần thiết
-    var cleanPrice = priceString
-        .replace("VNĐ", "", ignoreCase = true)
-        .replace("/người", "", ignoreCase = true)
-        .replace("/đêm", "", ignoreCase = true)
-        .replace("đ", "", ignoreCase = true)
-        .trim()
-    
-    // Xử lý range (ví dụ: "50.000 - 150.000")
-    if (cleanPrice.contains("-")) {
-        val parts = cleanPrice.split("-").map { it.trim() }
-        if (parts.size == 2) {
-            val min = extractNumber(parts[0])
-            val max = extractNumber(parts[1])
-            if (min != null && max != null) {
-                return Pair(min, max)
-            }
+@Composable
+fun PlanTopControls(onBackClick: () -> Unit, onDeleteClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 48.dp, start = 16.dp, end = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // --- SỬA LỖI: Dùng Icons.Default.ArrowBack thay vì AutoMirrored ---
+        AppTopBar(
+            onBackClick = onBackClick,
+            containerColor = Color.White.copy(alpha = 0.9f),
+            iconTint = TextDark
+        )
+
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .background(color = Color.White.copy(alpha = 0.9f), shape = CircleShape)
+                .clickable { onDeleteClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.DeleteOutline,
+                contentDescription = "Delete",
+                tint = Color.Red,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
-    
-    // Xử lý số cụ thể
-    val number = extractNumber(cleanPrice)
-    return number?.let { Pair(it, it) }
 }
 
-// Trích xuất số từ string (loại bỏ dấu chấm, phẩy)
-private fun extractNumber(text: String): Long? {
-    val cleaned = text.replace(".", "").replace(",", "").trim()
-    return cleaned.toLongOrNull()
-}
+@Composable
+fun InfoGridSection(plan: TravelPlan) {
+    val durationString = remember(plan.startDate, plan.endDate) {
+        if (plan.startDate != null && plan.endDate != null) {
+            val start = plan.startDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+            val end = plan.endDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+            val days = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1
+            "$days ngày ${days - 1} đêm"
+        } else "Chưa xác định"
+    }
 
-// Tính tổng tiền ước tính từ tất cả activities và hotels
-private fun calculateTotalPrice(planDays: List<PlanDayData>): Pair<String, String> {
-    var minTotal: Long = 0
-    var maxTotal: Long = 0
-    var hasPrice = false
-    
-    // Thu thập và tính tổng giá từ hotels
-    planDays.forEach { day ->
-        day.hotel?.price?.let { priceStr ->
-            parsePrice(priceStr)?.let { (min, max) ->
-                minTotal += min
-                maxTotal += max
-                hasPrice = true
-            }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .offset(y = (-32).dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(vertical = 20.dp, horizontal = 12.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            InfoColumn(Icons.Outlined.CalendarMonth, "Thời gian", durationString)
+            VerticalDivider()
+            InfoColumn(Icons.Outlined.Groups, "Đồng hành", plan.companion)
+            VerticalDivider()
+            InfoColumn(Icons.Outlined.MonetizationOn, "Ngân sách", plan.budget)
         }
     }
-    
-    // Thu thập và tính tổng giá từ activities
-    planDays.forEach { day ->
-        day.activities.forEach { activity ->
-            activity.price?.let { priceStr ->
-                parsePrice(priceStr)?.let { (min, max) ->
-                    minTotal += min
-                    maxTotal += max
-                    hasPrice = true
+}
+
+@Composable
+fun VerticalDivider() {
+    Box(
+        modifier = Modifier
+            .height(40.dp)
+            .width(1.dp)
+            .background(Color(0xFFEEEEEE))
+    )
+}
+
+@Composable
+fun InfoColumn(icon: ImageVector, label: String, value: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.widthIn(min = 80.dp, max = 110.dp)
+    ) {
+        Icon(icon, null, tint = AppPrimary, modifier = Modifier.size(24.dp))
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(label, fontSize = 11.sp, color = TextGray)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextDark, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+fun CompactPriceCard(priceText: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White, RoundedCornerShape(12.dp))
+            .border(1.dp, AppPrimary.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(AppPrimary.copy(alpha = 0.1f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.Wallet, null, tint = AppPrimary, modifier = Modifier.size(20.dp))
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text("Tổng chi phí ước tính", fontSize = 12.sp, color = TextGray)
+            Text(priceText, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = AppPrimary)
+        }
+    }
+}
+
+@Composable
+fun DaySelectorBar(planDays: List<PlanDayData>, selectedDayIndex: Int?, onDaySelected: (Int) -> Unit) {
+    Surface(color = BackgroundLight, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Row(
+            modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Spacer(modifier = Modifier.width(16.dp))
+
+            FilterChip(
+                selected = selectedDayIndex == null,
+                onClick = { onDaySelected(-1) },
+                label = { Text("Tất cả") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = AppPrimary,
+                    selectedLabelColor = Color.White,
+                    containerColor = Color.White
+                ),
+                border = null,
+                elevation = FilterChipDefaults.filterChipElevation(elevation = 2.dp)
+            )
+
+            planDays.forEachIndexed { index, day ->
+                val shortDate = try {
+                    LocalDate.parse(day.date).format(DateTimeFormatter.ofPattern("dd/MM"))
+                } catch (e: Exception) { day.date }
+
+                FilterChip(
+                    selected = selectedDayIndex == index,
+                    onClick = { onDaySelected(index) },
+                    label = { Text("Ngày ${index + 1} • $shortDate") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = AppPrimary,
+                        selectedLabelColor = Color.White,
+                        containerColor = Color.White
+                    ),
+                    border = null,
+                    elevation = FilterChipDefaults.filterChipElevation(elevation = 2.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+        }
+    }
+}
+
+@Composable
+fun TimelineDaySection(day: PlanDayData, dayIndex: Int, viewModel: PlanDetailViewModel) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 16.dp)) {
+            Box(modifier = Modifier.size(12.dp).background(AppPrimary, CircleShape))
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(text = day.title.uppercase(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = TextDark)
+                Text(text = day.date, style = MaterialTheme.typography.bodySmall, color = TextGray)
+            }
+        }
+        day.hotel?.let { hotel ->
+            TimelineItem(time = "Nghỉ ngơi", isHotel = true, content = { HotelCard(hotel = hotel, dayIndex = dayIndex, viewModel = viewModel) })
+        }
+        day.activities.forEachIndexed { index, activity ->
+            TimelineItem(
+                time = activity.time,
+                isLast = index == day.activities.lastIndex && day.hotel == null,
+                content = { ActivityCard(activity = activity, dayIndex = dayIndex, activityIndex = index, viewModel = viewModel) }
+            )
+        }
+    }
+}
+
+@Composable
+fun TimelineItem(time: String, isHotel: Boolean = false, isLast: Boolean = false, content: @Composable () -> Unit) {
+    IntrinsicHeightRow {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(60.dp)) {
+            Text(text = time, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (isHotel) AppPrimary else TextDark, textAlign = TextAlign.Center)
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(modifier = Modifier.size(if (isHotel) 14.dp else 10.dp).border(2.dp, if (isHotel) AppPrimary else Color(0xFFBDBDBD), CircleShape).background(Color.White, CircleShape))
+            if (!isLast) {
+                Box(modifier = Modifier.width(2.dp).fillMaxHeight().background(Color(0xFFE0E0E0)))
+            }
+        }
+        Box(modifier = Modifier.padding(bottom = 24.dp, start = 8.dp).weight(1f)) {
+            content()
+        }
+    }
+}
+
+@Composable
+fun IntrinsicHeightRow(content: @Composable RowScope.() -> Unit) {
+    Row(modifier = Modifier.height(IntrinsicSize.Min)) { content() }
+}
+
+@Composable
+fun HotelCard(hotel: HotelInfo, dayIndex: Int, viewModel: PlanDetailViewModel) {
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
+    val isGenerating = uiState.generatingAlternative?.let { it.first == dayIndex && it.second == "hotel" } ?: false
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppPrimary.copy(alpha = 0.2f)),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Hotel, null, tint = AppPrimary, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("KHÁCH SẠN", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = AppPrimary)
+                Spacer(modifier = Modifier.weight(1f))
+                if (hotel.rating.isNotEmpty()) {
+                    Icon(Icons.Rounded.Star, null, tint = Color(0xFFFFC107), modifier = Modifier.size(14.dp))
+                    Text(hotel.rating, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextDark)
                 }
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(hotel.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextDark)
+
+            if (hotel.location.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(hotel.location, fontSize = 13.sp, color = TextGray, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+
+            if (hotel.price.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(hotel.price, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppPrimary)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                SuggestionButton(isGenerating = isGenerating, onClick = { viewModel.requestAlternativeSuggestion(dayIndex, "hotel", onSuccess = {}, onError = {}) })
+                SmallMapButton(onClick = { openLocationInGoogleMaps(context, hotel.location, hotel.name) })
+            }
         }
     }
-    
-    if (!hasPrice) {
-        return Pair("", "")
+}
+
+@Composable
+fun ActivityCard(activity: ActivityInfo, dayIndex: Int, activityIndex: Int, viewModel: PlanDetailViewModel) {
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
+    val isGenerating = uiState.generatingAlternative?.let { it.first == dayIndex && it.second == "activity" } ?: false
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(activity.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextDark)
+
+            if (activity.description.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(activity.description, fontSize = 13.sp, color = TextGray, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
+
+            if (activity.recommendedDishes.isNotEmpty() || activity.price != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                    activity.price?.let {
+                        InfoChip(icon = Icons.Default.AttachMoney, text = it, color = Color(0xFF388E3C))
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    activity.recommendedDishes.forEach { dish ->
+                        InfoChip(icon = Icons.Default.RestaurantMenu, text = dish, color = Color(0xFFF57C00))
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                }
+            }
+
+            activity.tips?.let {
+                if (it.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(color = Color(0xFFFFF8E1), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.Top) {
+                            Icon(Icons.Default.Lightbulb, null, tint = Color(0xFFFFA000), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(it, fontSize = 12.sp, color = Color(0xFFFFA000), fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = CardBorder, thickness = 1.dp)
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                SuggestionButton(isGenerating = isGenerating, onClick = { viewModel.requestAlternativeSuggestion(dayIndex, "activity", activityIndex, {}, {}) })
+                SmallMapButton(onClick = { openLocationInGoogleMaps(context, activity.location, activity.name) })
+            }
+        }
     }
-    
-    // Format tổng giá
-    val formattedMin = formatPrice(minTotal)
-    val formattedMax = formatPrice(maxTotal)
-    
-    val totalPriceText = if (minTotal == maxTotal) {
-        formattedMin
+}
+
+@Composable
+fun InfoChip(icon: ImageVector, text: String, color: Color) {
+    Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
+        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(12.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(text, fontSize = 11.sp, color = color, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+fun SmallMapButton(onClick: () -> Unit) {
+    Row(modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onClick() }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("Chỉ đường", fontSize = 12.sp, color = AppPrimary, fontWeight = FontWeight.Bold)
+        // --- SỬA LỖI: Dùng Icons.Default.ArrowForward ---
+        Icon(Icons.Default.ArrowForward, null, tint = AppPrimary, modifier = Modifier.size(14.dp))
+    }
+}
+
+@Composable
+fun SuggestionButton(isGenerating: Boolean, onClick: () -> Unit) {
+    Row(modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(enabled = !isGenerating) { onClick() }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (isGenerating) {
+            CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp, color = TextGray)
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("Đang tìm...", fontSize = 12.sp, color = TextGray)
+        } else {
+            Icon(Icons.Default.Refresh, null, tint = TextGray, modifier = Modifier.size(14.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("Gợi ý khác", fontSize = 12.sp, color = TextGray)
+        }
+    }
+}
+
+@Composable
+fun PlanBottomBar(onShareClick: () -> Unit) {
+    Surface(shadowElevation = 16.dp, color = Color.White) {
+        Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            PrimaryButton(text = "Chia sẻ kế hoạch", onClick = onShareClick, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@Composable
+fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Xóa kế hoạch?", fontWeight = FontWeight.Bold) },
+        text = { Text("Bạn có chắc chắn muốn xóa kế hoạch này? Hành động này không thể hoàn tác.") },
+        confirmButton = { Button(onClick = onConfirm, colors = ButtonDefaults.buttonColors(containerColor = Color.Red)) { Text("Xóa") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Hủy") } },
+        containerColor = Color.White
+    )
+}
+
+@Composable
+fun ErrorView(error: String, onRetry: () -> Unit) {
+    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Icon(Icons.Default.ErrorOutline, null, tint = Color.Red, modifier = Modifier.size(48.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Đã xảy ra lỗi", fontWeight = FontWeight.Bold)
+        Text(error, color = TextGray, textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
+        Button(onClick = onRetry) { Text("Thử lại") }
+    }
+}
+
+@Composable
+fun EmptyStateView() {
+    Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(Icons.Default.AutoAwesome, null, tint = AppPrimary, modifier = Modifier.size(64.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Đang tạo lịch trình AI...", color = TextGray)
+    }
+}
+
+@Composable
+fun NetworkOrLocalImage(url: String, modifier: Modifier = Modifier) {
+    if (url.startsWith("http")) {
+        AsyncImage(model = ImageRequest.Builder(LocalContext.current).data(url).crossfade(true).build(), contentDescription = null, contentScale = ContentScale.Crop, modifier = modifier)
     } else {
-        "$formattedMin - $formattedMax"
+        val ctx = LocalContext.current
+        val id = remember(url) { ctx.resources.getIdentifier(url, "drawable", ctx.packageName) }
+        if (id != 0) Image(painterResource(id), null, contentScale = ContentScale.Crop, modifier = modifier) else Box(modifier.background(Color.LightGray))
     }
-    
-    return Pair("Tổng chi phí ước tính", totalPriceText)
 }
 
-// Format giá tiền
-private fun formatPrice(amount: Long): String {
-    return String.format("%,d VNĐ", amount).replace(",", ".")
-}
+// ======================= LOGIC HELPERS =======================
 
-// Parse planDetail từ Firestore
+data class PlanDayData(val day: Int, val date: String, val title: String, val hotel: HotelInfo?, val activities: List<ActivityInfo>)
+data class HotelInfo(val name: String, val location: String, val price: String, val rating: String, val description: String)
+data class ActivityInfo(val time: String, val type: String, val name: String, val location: String, val description: String, val recommendedDishes: List<String> = emptyList(), val tips: String? = null, val price: String? = null)
+
 @Suppress("UNCHECKED_CAST")
 private fun parsePlanDetail(planDetail: List<Map<String, Any>>): List<PlanDayData> {
     return planDetail.mapNotNull { dayMap ->
@@ -422,7 +662,7 @@ private fun parsePlanDetail(planDetail: List<Map<String, Any>>): List<PlanDayDat
             val title = dayMap["title"] as? String ?: ""
             val hotelMap = dayMap["hotel"] as? Map<String, Any>
             val activitiesList = dayMap["activities"] as? List<Map<String, Any>> ?: emptyList()
-            
+
             val hotel = hotelMap?.let {
                 HotelInfo(
                     name = it["name"] as? String ?: "",
@@ -432,980 +672,99 @@ private fun parsePlanDetail(planDetail: List<Map<String, Any>>): List<PlanDayDat
                     description = it["description"] as? String ?: ""
                 )
             }
-            
+
             val activities = activitiesList.mapNotNull { activityMap ->
-                val time = activityMap["time"] as? String ?: ""
-                val type = activityMap["type"] as? String ?: ""
-                val name = activityMap["name"] as? String ?: ""
-                val location = activityMap["location"] as? String ?: ""
-                val description = activityMap["description"] as? String ?: ""
-                val recommendedDishes = (activityMap["recommendedDishes"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
-                val tips = activityMap["tips"] as? String
-                val price = activityMap["price"] as? String
-                
                 ActivityInfo(
-                    time = time,
-                    type = type,
-                    name = name,
-                    location = location,
-                    description = description,
-                    recommendedDishes = recommendedDishes,
-                    tips = tips,
-                    price = price
+                    time = activityMap["time"] as? String ?: "",
+                    type = activityMap["type"] as? String ?: "",
+                    name = activityMap["name"] as? String ?: "",
+                    location = activityMap["location"] as? String ?: "",
+                    description = activityMap["description"] as? String ?: "",
+                    recommendedDishes = (activityMap["recommendedDishes"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList(),
+                    tips = activityMap["tips"] as? String,
+                    price = activityMap["price"] as? String
                 )
             }
-            
-            PlanDayData(
-                day = day,
-                date = date,
-                title = title,
-                hotel = hotel,
-                activities = activities
-            )
-        } catch (e: Exception) {
-            null
-        }
+            PlanDayData(day, date, title, hotel, activities)
+        } catch (e: Exception) { null }
     }
 }
 
-/**
- * Trích xuất các địa điểm từ plan để hiển thị trên bản đồ
- * Thêm destination chính và các địa điểm từ activities/hotels nếu có location
- */
-private fun extractMapDestinations(
-    planDays: List<PlanDayData>,
-    destination: com.example.smarttravel.model.Destination?
-): List<MapDestination> {
-    val destinations = mutableListOf<MapDestination>()
-    val addedLocations = mutableSetOf<String>() // Để tránh trùng lặp
-    
-    // Thêm destination chính nếu có tọa độ
-    destination?.let { dest ->
-        if (dest.latitude != 0.0 && dest.longitude != 0.0) {
-            val key = "${dest.latitude},${dest.longitude}"
-            if (key !in addedLocations) {
-                destinations.add(
-                    MapDestination(
-                        name = dest.name,
-                        location = dest.location_name,
-                        latitude = dest.latitude,
-                        longitude = dest.longitude
-                    )
-                )
-                addedLocations.add(key)
+private fun calculateTotalPrice(planDays: List<PlanDayData>): Pair<String, String> {
+    var minTotal: Long = 0
+    var maxTotal: Long = 0
+    var hasPrice = false
+
+    fun parse(price: String?) {
+        price?.let { p ->
+            if (p.isNotEmpty() && !p.contains("Miễn phí", true)) {
+                val clean = p.replace(Regex("[^0-9-]"), "")
+                if (clean.contains("-")) {
+                    val parts = clean.split("-")
+                    if (parts.size == 2) {
+                        minTotal += parts[0].toLongOrNull() ?: 0
+                        maxTotal += parts[1].toLongOrNull() ?: 0
+                        hasPrice = true
+                    }
+                } else {
+                    val v = clean.toLongOrNull() ?: 0
+                    minTotal += v
+                    maxTotal += v
+                    hasPrice = true
+                }
             }
         }
     }
-    
-    // Thêm các địa điểm từ hotels và activities
-    // Lưu ý: Vì không có tọa độ từ activities/hotels, chúng ta sẽ chỉ thêm vào danh sách
-    // để hiển thị trên bản đồ nếu có tọa độ. Hiện tại chỉ thêm destination chính.
-    // Có thể mở rộng sau bằng cách sử dụng Geocoding API.
-    
-    return destinations
+
+    planDays.forEach { day ->
+        parse(day.hotel?.price)
+        day.activities.forEach { parse(it.price) }
+    }
+
+    if (!hasPrice) return Pair("", "")
+    val minStr = String.format("%,d VNĐ", minTotal).replace(",", ".")
+    val maxStr = String.format("%,d VNĐ", maxTotal).replace(",", ".")
+    return Pair("Tổng chi phí", if (minTotal == maxTotal) minStr else "$minStr - $maxStr")
 }
 
-/**
- * Mở địa điểm trong Google Maps bằng location string
- */
+private fun extractMapDestinations(planDays: List<PlanDayData>, destination: com.example.smarttravel.model.Destination?): List<MapDestination> {
+    val list = mutableListOf<MapDestination>()
+    destination?.let {
+        if (it.latitude != 0.0 && it.longitude != 0.0) {
+            list.add(MapDestination(it.name, it.location_name, it.latitude, it.longitude))
+        }
+    }
+    return list
+}
+
 private fun openLocationInGoogleMaps(context: android.content.Context, location: String, name: String) {
     try {
-        // Encode location và name để tránh lỗi với ký tự đặc biệt
-        val encodedLocation = Uri.encode(location)
-        val encodedName = Uri.encode(name)
-        
-        // Tạo URI cho Google Maps với location string
-        val gmmIntentUri = Uri.parse("geo:0,0?q=$encodedLocation($encodedName)")
-        
-        // Thử mở Google Maps app trước
-        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
-            setPackage("com.google.android.apps.maps")
-        }
-        
-        // Nếu Google Maps không có, mở bằng trình duyệt
-        if (mapIntent.resolveActivity(context.packageManager) != null) {
-            context.startActivity(mapIntent)
+        val query = Uri.encode("$location($name)")
+        val uri = Uri.parse("geo:0,0?q=$query")
+        val intent = Intent(Intent.ACTION_VIEW, uri).apply { setPackage("com.google.android.apps.maps") }
+        if (intent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(intent)
         } else {
-            // Fallback: mở trong trình duyệt
-            val webIntent = Intent(
-                Intent.ACTION_VIEW,
-                Uri.parse("https://www.google.com/maps/search/?api=1&query=$encodedLocation")
-            )
-            context.startActivity(webIntent)
+            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
         }
-    } catch (e: Exception) {
-        android.util.Log.e("PlanDetailScreen", "Error opening Google Maps: ${e.message}", e)
-    }
+    } catch (e: Exception) { }
 }
 
-/**
- * Format kế hoạch thành text đẹp để chia sẻ
- */
-private fun formatPlanForSharing(
-    plan: TravelPlan,
-    destination: com.example.smarttravel.model.Destination?,
-    planDays: List<PlanDayData>
-): String {
-    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-    val dateRange = if (plan.startDate != null && plan.endDate != null) {
-        val start = plan.startDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        val end = plan.endDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        "${start.format(dateFormatter)} - ${end.format(dateFormatter)}"
-    } else {
-        "Chưa có ngày"
-    }
-    
-    val duration = if (plan.startDate != null && plan.endDate != null) {
-        val start = plan.startDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        val end = plan.endDate.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        val days = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1
-        "$days ngày ${days - 1} đêm"
-    } else {
-        "Chưa xác định"
-    }
-    
-    val destinationName = destination?.name ?: plan.title.replace("Chuyến đi đến ", "")
-    
-    val sb = StringBuilder()
-    sb.appendLine("🗺️ ${plan.title}")
-    sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    sb.appendLine()
-    sb.appendLine("📅 Thời gian: $dateRange ($duration)")
-    sb.appendLine("👥 Người đồng hành: ${plan.companion}")
-    sb.appendLine("💰 Ngân sách: ${plan.budget}")
-    if (plan.purposes.isNotEmpty()) {
-        sb.appendLine("🎯 Mục đích: ${plan.purposes.joinToString(", ")}")
-    }
-    sb.appendLine()
-    sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    sb.appendLine()
-    
-    if (planDays.isEmpty()) {
-        sb.appendLine("📝 Lịch trình đang được tạo...")
-    } else {
-        sb.appendLine("📋 LỊCH TRÌNH CHI TIẾT:")
-        sb.appendLine()
-        
-        planDays.forEachIndexed { index, day ->
-            sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            sb.appendLine("📌 ${day.title}")
-            sb.appendLine("   Ngày: ${day.date}")
-            sb.appendLine()
-            
-            // Thông tin khách sạn
-            day.hotel?.let { hotel ->
-                sb.appendLine("🏨 Khách sạn:")
-                sb.appendLine("   • Tên: ${hotel.name}")
-                sb.appendLine("   • Địa chỉ: ${hotel.location}")
-                sb.appendLine("   • Giá: ${hotel.price}")
-                sb.appendLine("   • Xếp hạng: ${hotel.rating}")
-                if (hotel.description.isNotEmpty()) {
-                    sb.appendLine("   • Mô tả: ${hotel.description}")
-                }
-                sb.appendLine()
-            }
-            
-            // Các hoạt động
-            if (day.activities.isNotEmpty()) {
-                sb.appendLine("🎯 Hoạt động trong ngày:")
-                day.activities.forEach { activity ->
-                    val activityType = when (activity.type) {
-                        "breakfast" -> "🍳 Bữa sáng"
-                        "lunch" -> "🍽️ Bữa trưa"
-                        "dinner" -> "🍴 Bữa tối"
-                        "attraction" -> "🏛️ Tham quan"
-                        "activity" -> "🎮 Hoạt động"
-                        "entertainment" -> "🎪 Giải trí"
-                        "rest" -> "😴 Nghỉ ngơi"
-                        else -> "📍 Hoạt động"
-                    }
-                    sb.appendLine("   $activityType - ${activity.time}")
-                    sb.appendLine("   • ${activity.name}")
-                    if (activity.location.isNotEmpty()) {
-                        sb.appendLine("   • Địa chỉ: ${activity.location}")
-                    }
-                    if (activity.description.isNotEmpty()) {
-                        sb.appendLine("   • Mô tả: ${activity.description}")
-                    }
-                    if (activity.price != null && activity.price.isNotEmpty()) {
-                        sb.appendLine("   • Giá: ${activity.price}")
-                    }
-                    if (activity.recommendedDishes.isNotEmpty()) {
-                        sb.appendLine("   • Món đề xuất: ${activity.recommendedDishes.joinToString(", ")}")
-                    }
-                    if (activity.tips != null && activity.tips.isNotEmpty()) {
-                        sb.appendLine("   • Mẹo: ${activity.tips}")
-                    }
-                    sb.appendLine()
-                }
-            }
-            
-            if (index < planDays.size - 1) {
-                sb.appendLine()
-            }
+private fun sharePlan(context: android.content.Context, plan: TravelPlan, destination: com.example.smarttravel.model.Destination?, planDays: List<PlanDayData>) {
+    val text = StringBuilder().apply {
+        appendLine("🗺️ ${plan.title}")
+        appendLine("📅 ${plan.companion} • ${plan.budget}")
+        appendLine("--- LỊCH TRÌNH ---")
+        planDays.forEach { day ->
+            appendLine("\n📌 ${day.title} (${day.date})")
+            day.hotel?.let { appendLine("🏨 Khách sạn: ${it.name}") }
+            day.activities.forEach { act -> appendLine("📍 ${act.time}: ${act.name}") }
         }
+    }.toString()
+
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
     }
-    
-    sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    sb.appendLine()
-    sb.appendLine("📱 Được tạo bởi SmartTravel App")
-    
-    return sb.toString()
-}
-
-/**
- * Chia sẻ kế hoạch qua Android Share Intent
- */
-private fun sharePlan(
-    context: android.content.Context,
-    plan: TravelPlan,
-    destination: com.example.smarttravel.model.Destination?,
-    planDays: List<PlanDayData>
-) {
-    try {
-        val shareText = formatPlanForSharing(plan, destination, planDays)
-        
-        val shareIntent = Intent().apply {
-            action = Intent.ACTION_SEND
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, shareText)
-            putExtra(Intent.EXTRA_SUBJECT, plan.title)
-        }
-        
-        val chooserIntent = Intent.createChooser(shareIntent, "Chia sẻ kế hoạch du lịch")
-        context.startActivity(chooserIntent)
-    } catch (e: Exception) {
-        android.util.Log.e("PlanDetailScreen", "Error sharing plan: ${e.message}", e)
-    }
-}
-
-// Data classes
-data class PlanDayData(
-    val day: Int,
-    val date: String,
-    val title: String,
-    val hotel: HotelInfo?,
-    val activities: List<ActivityInfo>
-)
-
-data class HotelInfo(
-    val name: String,
-    val location: String,
-    val price: String,
-    val rating: String,
-    val description: String
-)
-
-data class ActivityInfo(
-    val time: String,
-    val type: String,
-    val name: String,
-    val location: String,
-    val description: String,
-    val recommendedDishes: List<String> = emptyList(),
-    val tips: String? = null,
-    val price: String? = null
-)
-
-// --- CÁC COMPONENT CON ---
-
-@Composable
-fun ImageHeader(imageUrl: String, modifier: Modifier = Modifier) {
-    Box(modifier = modifier) {
-        if (imageUrl.isNotEmpty()) {
-            val isNetworkImage = imageUrl.startsWith("http") || imageUrl.startsWith("https://")
-            if (isNetworkImage) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(imageUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Cover Image",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                val context = LocalContext.current
-                val resId = context.resources.getIdentifier(imageUrl, "drawable", context.packageName)
-                val painter = if (resId != 0) 
-                    painterResource(id = resId) 
-                else 
-                    painterResource(id = R.drawable.ic_launcher_foreground)
-                Image(
-                    painter = painter,
-                    contentDescription = "Cover Image",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.LightGray),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Image,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = Color.Gray
-                )
-            }
-        }
-        // Lớp phủ Gradient
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
-                        startY = 400f
-                    )
-                )
-        )
-    }
-}
-
-@Composable
-fun PlanTopControls(
-    onBackClick: () -> Unit,
-    onDeleteClick: () -> Unit = {}
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 48.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier
-                .size(36.dp)
-                .background(Color.White.copy(alpha = 0.3f), CircleShape)
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White
-            )
-        }
-        
-        // Nút xóa
-        if (onDeleteClick != {}) {
-            IconButton(
-                onClick = onDeleteClick,
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(Color.White.copy(alpha = 0.3f), CircleShape)
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Xóa kế hoạch",
-                    tint = Color.White
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PlanInfoHeader(title: String, dateRange: String) {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = dateRange,
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
-        )
-    }
-}
-
-@Composable
-fun OverviewSection(duration: String, participants: String, budget: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceAround
-    ) {
-        OverviewItem(icon = Icons.Default.CalendarMonth, text = duration)
-        OverviewItem(icon = Icons.Default.Group, text = participants)
-        OverviewItem(icon = Icons.Default.MonetizationOn, text = budget)
-    }
-    HorizontalDivider(
-        modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp),
-        color = Color.LightGray.copy(alpha = 0.3f)
-    )
-}
-
-@Composable
-fun OverviewItem(icon: ImageVector, text: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            imageVector = icon,
-            contentDescription = text,
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = text, fontSize = 14.sp, color = Color.Gray)
-    }
-}
-
-@Composable
-fun TotalPriceSection(title: String, totalPrice: String) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.MonetizationOn,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            // Hiển thị giá tiền bên dưới
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = totalPrice,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 32.dp) // Căn lề với icon và text phía trên
-            )
-        }
-    }
-}
-
-@Composable
-fun DaySelectorBar(
-    planDays: List<PlanDayData>,
-    selectedDayIndex: Int?,
-    onDaySelected: (Int) -> Unit
-) {
-    val scrollState = rememberScrollState()
-    
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(scrollState),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Nút "Tất cả"
-            DaySelectorButton(
-                label = "Tất cả",
-                isSelected = selectedDayIndex == null,
-                onClick = { onDaySelected(-1) } // -1 để reset về null
-            )
-            
-            // Các nút chọn ngày
-            planDays.forEachIndexed { index, day ->
-                // Format date từ "2025-11-19" thành "19/11"
-                val formattedDate = try {
-                    val date = LocalDate.parse(day.date)
-                    date.format(DateTimeFormatter.ofPattern("dd/MM"))
-                } catch (e: Exception) {
-                    day.date
-                }
-                
-                DaySelectorButton(
-                    label = "Ngày ${index + 1}",
-                    subtitle = formattedDate,
-                    isSelected = selectedDayIndex == index,
-                    onClick = { onDaySelected(index) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun DaySelectorButton(
-    label: String,
-    subtitle: String? = null,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val backgroundColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        Color(0xFFF5F5F5)
-    }
-    val contentColor = if (isSelected) {
-        Color.White
-    } else {
-        Color.Black
-    }
-    
-    Column(
-        modifier = Modifier
-            .clickable { onClick() }
-            .clip(RoundedCornerShape(12.dp))
-            .background(backgroundColor)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = label,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            fontSize = 14.sp,
-            color = contentColor
-        )
-        if (subtitle != null && subtitle.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = subtitle,
-                fontSize = 11.sp,
-                color = contentColor.copy(alpha = 0.8f)
-            )
-        }
-    }
-}
-
-@Composable
-fun PlanDayItem(
-    day: PlanDayData, 
-    dayNumber: Int,
-    dayIndex: Int,
-    viewModel: PlanDetailViewModel? = null
-) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-        // Tiêu đề ngày
-        Text(
-            text = day.title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = day.date,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Thông tin khách sạn
-        day.hotel?.let { hotel ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Hotel,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Khách sạn",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = hotel.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    val context = LocalContext.current
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = hotel.location,
-                                fontSize = 14.sp,
-                                color = Color.Gray
-                            )
-                        }
-                        // Nút mở Google Maps
-                        TextButton(
-                            onClick = {
-                                openLocationInGoogleMaps(context, hotel.location, hotel.name)
-                            },
-                            modifier = Modifier.padding(start = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Map,
-                                contentDescription = "Mở trong Google Maps",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Bản đồ",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                    if (hotel.rating.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = Color(0xFFFFC107),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = hotel.rating,
-                                fontSize = 14.sp,
-                                color = Color.Gray
-                            )
-                            if (hotel.price.isNotEmpty()) {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "• ${hotel.price}",
-                                    fontSize = 14.sp,
-                                    color = Color.Gray
-                                )
-                            }
-                        }
-                    }
-                    if (hotel.description.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = hotel.description,
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-                    }
-                    
-                    // Nút "Gợi ý khác"
-                    if (viewModel != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        val uiState by viewModel.uiState.collectAsState()
-                        val context = LocalContext.current
-                        val isGenerating = uiState.generatingAlternative?.let { 
-                            it.first == dayIndex && it.second == "hotel" 
-                        } ?: false
-                        
-                        TextButton(
-                            onClick = {
-                                viewModel.requestAlternativeSuggestion(
-                                    dayIndex = dayIndex,
-                                    itemType = "hotel",
-                                    onSuccess = { /* Plan sẽ tự động update qua Flow */ },
-                                    onError = { error ->
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            error,
-                                            android.widget.Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                )
-                            },
-                            enabled = !isGenerating,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            if (isGenerating) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Đang tạo gợi ý...", fontSize = 12.sp)
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.AutoAwesome,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Gợi ý khác", fontSize = 12.sp)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Danh sách hoạt động
-        Column {
-            day.activities.forEachIndexed { activityIndex, activity ->
-                ActivityItem(
-                    activity = activity,
-                    dayIndex = dayIndex,
-                    activityIndex = activityIndex,
-                    viewModel = viewModel
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-        }
-        
-        HorizontalDivider(
-            modifier = Modifier.padding(top = 16.dp),
-            color = Color.LightGray.copy(alpha = 0.3f)
-        )
-    }
-}
-
-@Composable
-fun ActivityItem(
-    activity: ActivityInfo,
-    dayIndex: Int,
-    activityIndex: Int,
-    viewModel: PlanDetailViewModel? = null
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Icon theo type
-                val icon = when (activity.type) {
-                    "breakfast", "lunch", "dinner" -> Icons.Default.Restaurant
-                    "attraction" -> Icons.Default.Explore
-                    "activity", "entertainment" -> Icons.Default.SportsSoccer
-                    "hotel" -> Icons.Default.Hotel
-                    else -> Icons.Default.Place
-                }
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = activity.time,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = activity.name,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp
-                )
-            }
-            
-            if (activity.location.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                val context = LocalContext.current
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = Color.Gray,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = activity.location,
-                            fontSize = 13.sp,
-                            color = Color.Gray
-                        )
-                    }
-                    // Nút mở Google Maps
-                    TextButton(
-                        onClick = {
-                            openLocationInGoogleMaps(context, activity.location, activity.name)
-                        },
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Map,
-                            contentDescription = "Mở trong Google Maps",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Bản đồ",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-            
-            if (activity.description.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = activity.description,
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-            }
-            
-            // Món ăn được đề xuất
-            if (activity.recommendedDishes.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.RestaurantMenu,
-                        contentDescription = null,
-                        tint = Color(0xFFFF9800),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Món đề xuất: ${activity.recommendedDishes.joinToString(", ")}",
-                        fontSize = 13.sp,
-                        color = Color(0xFFFF9800),
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-            
-            // Price
-            if (activity.price != null && activity.price.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.MonetizationOn,
-                        contentDescription = null,
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Giá: ${activity.price}",
-                        fontSize = 13.sp,
-                        color = Color(0xFF4CAF50),
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-            
-            // Tips
-            activity.tips?.let { tips ->
-                if (tips.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.Top) {
-                        Icon(
-                            imageVector = Icons.Default.Lightbulb,
-                            contentDescription = null,
-                            tint = Color(0xFFFFC107),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = tips,
-                            fontSize = 13.sp,
-                            color = Color(0xFFFFC107),
-                            fontStyle = FontStyle.Italic
-                        )
-                    }
-                }
-            }
-            
-            // Nút "Gợi ý khác"
-            if (viewModel != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                val uiState by viewModel.uiState.collectAsState()
-                val context = LocalContext.current
-                val isGenerating = uiState.generatingAlternative?.let { 
-                    it.first == dayIndex && it.second == "activity"
-                } ?: false
-                
-                TextButton(
-                    onClick = {
-                        viewModel.requestAlternativeSuggestion(
-                            dayIndex = dayIndex,
-                            itemType = "activity",
-                            activityIndex = activityIndex,
-                            onSuccess = { /* Plan sẽ tự động update qua Flow */ },
-                            onError = { error ->
-                                android.widget.Toast.makeText(
-                                    context,
-                                    error,
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        )
-                    },
-                    enabled = !isGenerating,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (isGenerating) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Đang tạo gợi ý...", fontSize = 12.sp)
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Gợi ý khác", fontSize = 12.sp)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PlanDetailScreenPreview() {
-    SmarttravelTheme {
-        val navController = rememberNavController()
-        // Preview sẽ không hoạt động vì cần planId, nhưng giữ lại để không lỗi compile
-    }
+    context.startActivity(Intent.createChooser(intent, "Chia sẻ lịch trình"))
 }

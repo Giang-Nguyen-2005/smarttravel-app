@@ -54,16 +54,13 @@ fun RegisterScreen(
     val saveState by viewModel.saveState.collectAsState()
     val context = LocalContext.current
 
+    // Không cần LaunchedEffect nữa vì đã navigate ngay trong onClick
+    // Chỉ xử lý error nếu có
     LaunchedEffect(saveState) {
         when (val state = saveState) {
-            is SaveState.Success -> {
-                Toast.makeText(context, "Đã tạo kế hoạch thành công!", Toast.LENGTH_SHORT).show()
-                viewModel.resetSaveState()
-                navController.navigate(Screen.Calendar.route) {
-                    popUpTo(Screen.PlanRegisterFlow.route) { inclusive = true }
-                }
-            }
             is SaveState.Error -> {
+                // Nếu có lỗi, quay lại màn hình trước
+                navController.popBackStack()
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                 viewModel.resetSaveState()
             }
@@ -81,17 +78,19 @@ fun RegisterScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     PrimaryButton(
-                        text = when (saveState) {
-                            is SaveState.Loading -> "Đang lưu..."
-                            is SaveState.GeneratingAI -> "Đang tạo lịch trình AI..." // Giả sử bạn có state này
-                            else -> "Xác nhận hành trình"
-                        },
+                        text = "Xác nhận hành trình",
                         onClick = {
-                            if (saveState !is SaveState.Loading) {
+                            if (saveState !is SaveState.Loading && saveState !is SaveState.GeneratingAI) {
+                                // Navigate đến màn hình AI Generating ngay lập tức
+                                // Pass planId tạm thời là "temp" (sẽ được update sau)
+                                navController.navigate(Screen.AiGenerating.createRoute("temp")) {
+                                    popUpTo(Screen.PlanRegisterFlow.route) { inclusive = false }
+                                }
+                                // Bắt đầu save plan
                                 viewModel.savePlan()
                             }
                         },
-                        enabled = saveState !is SaveState.Loading,
+                        enabled = saveState !is SaveState.Loading && saveState !is SaveState.GeneratingAI,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
