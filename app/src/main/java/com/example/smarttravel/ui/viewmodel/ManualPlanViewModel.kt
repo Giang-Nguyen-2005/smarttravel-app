@@ -148,11 +148,11 @@ class ManualPlanViewModel @Inject constructor(
                     )
                 }
                 
+                // Không tạo hotel object nếu không có hotel được chọn
                 mapOf(
                     "day" to dayData.day,
                     "date" to dateStr,
                     "title" to "Ngày ${dayData.day}",
-                    "hotel" to mapOf<String, Any>(),
                     "activities" to activities
                 )
             }

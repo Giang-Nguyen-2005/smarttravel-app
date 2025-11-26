@@ -663,14 +663,22 @@ private fun parsePlanDetail(planDetail: List<Map<String, Any>>): List<PlanDayDat
             val hotelMap = dayMap["hotel"] as? Map<String, Any>
             val activitiesList = dayMap["activities"] as? List<Map<String, Any>> ?: emptyList()
 
+            // Chỉ tạo hotel nếu hotelMap không null và không rỗng
             val hotel = hotelMap?.let {
-                HotelInfo(
-                    name = it["name"] as? String ?: "",
-                    location = it["location"] as? String ?: "",
-                    price = it["price"] as? String ?: "",
-                    rating = it["rating"] as? String ?: "",
-                    description = it["description"] as? String ?: ""
-                )
+                val name = it["name"] as? String ?: ""
+                val location = it["location"] as? String ?: ""
+                // Chỉ tạo hotel nếu có ít nhất một thông tin (name hoặc location)
+                if (name.isNotEmpty() || location.isNotEmpty()) {
+                    HotelInfo(
+                        name = name,
+                        location = location,
+                        price = it["price"] as? String ?: "",
+                        rating = it["rating"] as? String ?: "",
+                        description = it["description"] as? String ?: ""
+                    )
+                } else {
+                    null
+                }
             }
 
             val activities = activitiesList.mapNotNull { activityMap ->

@@ -213,15 +213,25 @@ private fun DaysOfWeekHeader(firstDayOfWeek: DayOfWeek) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         val daysOfWeek = daysOfWeek(firstDayOfWeek)
-        daysOfWeek.forEach { dayOfWeek ->
-            Text(
-                text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("vi")),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.width(40.dp)
-            )
+        daysOfWeek.forEachIndexed { index, dayOfWeek ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .aspectRatio(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("vi")),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+            }
+            // Thêm spacing giữa các items (trừ item cuối)
+            if (index < daysOfWeek.size - 1) {
+                Spacer(modifier = Modifier.width(0.dp))
+            }
         }
     }
 }
@@ -250,21 +260,29 @@ private fun DayCell(
     }
     Box(
         modifier = Modifier
-            .width(40.dp)
+            .fillMaxWidth()
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(8.dp))
-            .background(backgroundColor)
             .clickable(
                 enabled = isSelectable,
                 onClick = { onClick(date) }
             ),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = day.date.dayOfMonth.toString(),
-            color = textColor,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
+        // Box nhỏ hơn cho background màu xanh
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(8.dp))
+                .background(backgroundColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = day.date.dayOfMonth.toString(),
+                color = textColor,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }

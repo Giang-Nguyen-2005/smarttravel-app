@@ -127,48 +127,6 @@ fun DateSelectionScreen(
                 }
             }
             
-            // Hiển thị ngày đã chọn
-            if (selectedStartDate != null) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "Ngày bắt đầu: ${selectedStartDate!!.format(dateFormatter)}",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            if (selectedEndDate != null && selectedEndDate != selectedStartDate) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Ngày kết thúc: ${selectedEndDate!!.format(dateFormatter)}",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                        TextButton(
-                            onClick = {
-                                selectedStartDate = null
-                                selectedEndDate = null
-                            }
-                        ) {
-                            Text("Xóa")
-                        }
-                    }
-                }
-            }
-            
             // Lịch
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -277,15 +235,25 @@ private fun DaysOfWeekHeader(firstDayOfWeek: DayOfWeek) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         val daysOfWeek = daysOfWeek(firstDayOfWeek)
-        daysOfWeek.forEach { dayOfWeek ->
-            Text(
-                text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("vi")),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.width(40.dp)
-            )
+        daysOfWeek.forEachIndexed { index, dayOfWeek ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .aspectRatio(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("vi")),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+            }
+            // Thêm spacing giữa các items (trừ item cuối)
+            if (index < daysOfWeek.size - 1) {
+                Spacer(modifier = Modifier.width(0.dp))
+            }
         }
     }
 }
@@ -316,21 +284,29 @@ private fun DayCell(
     }
     Box(
         modifier = Modifier
-            .width(40.dp)
+            .fillMaxWidth()
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(8.dp))
-            .background(backgroundColor)
             .clickable(
                 enabled = isSelectable,
                 onClick = { onClick(date) }
             ),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = day.date.dayOfMonth.toString(),
-            color = textColor,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
+        // Box nhỏ hơn cho background màu xanh
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(8.dp))
+                .background(backgroundColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = day.date.dayOfMonth.toString(),
+                color = textColor,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
