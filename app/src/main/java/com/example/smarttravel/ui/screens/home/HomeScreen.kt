@@ -36,6 +36,10 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.smarttravel.R
 import com.example.smarttravel.data.model.TravelPlan
 import com.example.smarttravel.model.Category
@@ -376,22 +380,31 @@ fun AiSuggestionCard(
     isLoading: Boolean,
     onClick: () -> Unit
 ) {
+    val aiLoadingComposition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.robot))
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(150.dp)
+            // SỬA Ở ĐÂY: Thay height() bằng heightIn(min = ...)
+            // Giúp thẻ tự động giãn chiều cao nếu chữ dài, nhưng không thấp hơn 150dp
+            .heightIn(min = 150.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        // Sử dụng màu gradient hoặc màu nổi bật cho AI
         colors = CardDefaults.cardColors(containerColor = Color(0xFFEDF7FF))
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth() // Đổi fillMaxSize thành fillMaxWidth để tránh lỗi layout khi chiều cao auto
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    // Thêm dòng này để đảm bảo Column luôn fill chiều cao của Row
+                    // giúp Spacer(weight = 1f) hoạt động đúng khi nội dung ngắn
+                    .height(IntrinsicSize.Min)
+            ) {
                 Text(
                     text = "Gợi ý hôm nay ✨",
                     color = Color(0xFF037CAC),
@@ -399,12 +412,12 @@ fun AiSuggestionCard(
                     fontSize = 16.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = Color(0xFF037CAC)
+                    LottieAnimation(
+                        composition = aiLoadingComposition,
+                        iterations = LottieConstants.IterateForever,
+                        modifier = Modifier.size(48.dp)
                     )
                 } else if (topDestination != null) {
                     Text(
@@ -433,8 +446,13 @@ fun AiSuggestionCard(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                
+
+                // Spacer này sẽ đẩy dòng "Xem chi tiết" xuống đáy
                 Spacer(modifier = Modifier.weight(1f))
+
+                // Thêm một chút khoảng cách an toàn nếu cần
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Text(
                     text = "Xem chi tiết →",
                     color = Color(0xFF037CAC),
@@ -443,9 +461,10 @@ fun AiSuggestionCard(
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            // Ảnh minh họa cho AI (có thể thay bằng robot hoặc icon phù hợp)
+
+            // Icon bên phải
             Icon(
-                painter = painterResource(id = R.drawable.icon_chat), // Tạm dùng icon chat
+                painter = painterResource(id = R.drawable.icon_chat),
                 contentDescription = "AI Suggestion",
                 tint = Color(0xFF037CAC).copy(alpha = 0.8f),
                 modifier = Modifier

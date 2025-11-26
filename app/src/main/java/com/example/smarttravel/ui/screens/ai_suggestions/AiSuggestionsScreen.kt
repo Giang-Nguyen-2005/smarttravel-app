@@ -35,6 +35,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.smarttravel.R
 import com.example.smarttravel.model.Destination
 import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.viewmodel.HomeViewModel
@@ -42,7 +47,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 // --- MÀU SẮC ĐỒNG BỘ VỚI APP ---
-val AppPrimaryColor = Color(0xFF037CAC) // Xanh chủ đạo của app [cite: 195]
+val AppPrimaryColor = Color(0xFF037CAC) // Xanh chủ đạo của app
 val AppSecondaryColor = Color(0xFF00C6FF) // Xanh sáng để tạo Gradient
 val TextDark = Color(0xFF1A1A1A)
 val TextLight = Color(0xFF757575)
@@ -120,52 +125,57 @@ fun AiSuggestionsScreen(
                         }
                     }
 
-                    // --- TOP PICK (HERO CARD) ---
-                    if (!aiSuggestionsState.isLoading && aiSuggestionsState.destinations.isNotEmpty()) {
-                        val topPick = aiSuggestionsState.destinations.first()
+                    // --- STATES: LOADING (Đưa lên ưu tiên để check trước) ---
+                    if (aiSuggestionsState.isLoading) {
                         item {
-                            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                                SectionTitle(title = "Phù hợp nhất", icon = Icons.Rounded.AutoAwesome)
-                                Spacer(modifier = Modifier.height(16.dp))
-                                HeroDestinationCard(
-                                    destination = topPick,
-                                    onClick = { navController.navigate(Screen.Detail.createRoute(topPick.id)) }
-                                )
+                            // Gọi LoadingView ở đây
+                            LoadingView()
+                        }
+                    } else if (aiSuggestionsState.error != null) {
+                        item { SimpleStateView(icon = Icons.Default.ErrorOutline, message = "Lỗi: ${aiSuggestionsState.error}") }
+                    } else if (aiSuggestionsState.destinations.isEmpty()) {
+                        item { SimpleStateView(icon = Icons.Default.TravelExplore, message = "Chưa tìm thấy gợi ý phù hợp.") }
+                    } else {
+                        // --- NẾU CÓ DỮ LIỆU MỚI HIỆN CÁC PHẦN DƯỚI ---
+
+                        // --- TOP PICK (HERO CARD) ---
+                        if (aiSuggestionsState.destinations.isNotEmpty()) {
+                            val topPick = aiSuggestionsState.destinations.first()
+                            item {
+                                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                                    SectionTitle(title = "Phù hợp nhất", icon = Icons.Rounded.AutoAwesome)
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    HeroDestinationCard(
+                                        destination = topPick,
+                                        onClick = { navController.navigate(Screen.Detail.createRoute(topPick.id)) }
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    // --- DANH SÁCH PHỤ ---
-                    if (!aiSuggestionsState.isLoading && aiSuggestionsState.destinations.size > 1) {
-                        val otherPicks = aiSuggestionsState.destinations.drop(1)
-                        item {
-                            Column {
-                                PaddingBox {
-                                    SectionTitle(title = "Khám phá thêm", icon = Icons.Default.Explore)
-                                }
-                                Spacer(modifier = Modifier.height(16.dp))
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 20.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    items(otherPicks) { destination ->
-                                        VerticalDestinationCard(
-                                            destination = destination,
-                                            onClick = { navController.navigate(Screen.Detail.createRoute(destination.id)) }
-                                        )
+                        // --- DANH SÁCH PHỤ ---
+                        if (aiSuggestionsState.destinations.size > 1) {
+                            val otherPicks = aiSuggestionsState.destinations.drop(1)
+                            item {
+                                Column {
+                                    PaddingBox {
+                                        SectionTitle(title = "Khám phá thêm", icon = Icons.Default.Explore)
+                                    }
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 20.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        items(otherPicks) { destination ->
+                                            VerticalDestinationCard(
+                                                destination = destination,
+                                                onClick = { navController.navigate(Screen.Detail.createRoute(destination.id)) }
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-
-                    // --- STATES ---
-                    if (aiSuggestionsState.isLoading) {
-                        item { LoadingView() }
-                    } else if (aiSuggestionsState.error != null) {
-                        item { SimpleStateView(icon = Icons.Default.ErrorOutline, message = "Lỗi: ${aiSuggestionsState.error}") }
-                    } else if (aiSuggestionsState.destinations.isEmpty() && !aiSuggestionsState.isLoading) {
-                        item { SimpleStateView(icon = Icons.Default.TravelExplore, message = "Chưa tìm thấy gợi ý phù hợp.") }
                     }
                 }
             }
@@ -491,8 +501,33 @@ fun NetworkOrLocalImage(url: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun LoadingView() {
-    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = AppPrimaryColor)
+    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.robot))
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(500.dp), // Chiếm chiều cao lớn để đẩy xuống giữa [cite: 195]
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        LottieAnimation(
+            composition = composition,
+            iterations = LottieConstants.IterateForever,
+            modifier = Modifier.size(280.dp) // To hơn (gấp đôi cũ) [cite: 195]
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "AI đang suy nghĩ...",
+            style = MaterialTheme.typography.titleMedium,
+            color = AppPrimaryColor,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = "Đang tìm kiếm địa điểm tốt nhất cho bạn",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextLight,
+            modifier = Modifier.padding(top = 8.dp)
+        )
     }
 }
 

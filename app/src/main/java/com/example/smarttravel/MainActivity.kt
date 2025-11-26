@@ -5,30 +5,32 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
-import com.example.smarttravel.navigation.AppNavigation // Import AppNavigation
+import com.example.smarttravel.navigation.AppNavigation
 import com.example.smarttravel.ui.theme.SmarttravelTheme
-import dagger.hilt.android.AndroidEntryPoint // <-- THÊM DÒNG NÀY
+import dagger.hilt.android.AndroidEntryPoint
 
-@AndroidEntryPoint // <-- Đánh dấu Activity này là entry point cho Hilt
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge() // Dùng cho full screen content
+        enableEdgeToEdge()
         setContent {
             SmarttravelTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .safeDrawingPadding(), // Thêm dòng này
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    AppNavigation(navController = navController) // Sử dụng AppNavigation của bạn
+                    AppNavigation(navController = navController)
                 }
             }
         }

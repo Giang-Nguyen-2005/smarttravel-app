@@ -31,6 +31,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.smarttravel.R
 import com.example.smarttravel.navigation.Screen
+import com.example.smarttravel.ui.components.AppBottomBar
 import com.example.smarttravel.ui.theme.SmarttravelTheme
 import com.example.smarttravel.ui.viewmodel.AuthViewModel
 import com.example.smarttravel.ui.viewmodel.ProfileViewModel
@@ -83,7 +84,11 @@ fun ProfileScreen(
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
 
-    Scaffold { paddingValues ->
+    Scaffold(
+        bottomBar = {
+            AppBottomBar(navController = navController, currentRoute = Screen.Profile.route)
+        }
+    ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()

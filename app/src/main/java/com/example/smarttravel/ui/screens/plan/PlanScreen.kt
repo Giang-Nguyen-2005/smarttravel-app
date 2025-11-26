@@ -38,6 +38,7 @@ import coil.request.ImageRequest
 import com.example.smarttravel.R
 import com.example.smarttravel.data.model.TravelPlan
 import com.example.smarttravel.navigation.Screen
+import com.example.smarttravel.ui.components.AppBottomBar
 import com.example.smarttravel.ui.screens.home.HomeTopBar
 import com.example.smarttravel.ui.theme.SmarttravelTheme
 import com.example.smarttravel.ui.viewmodel.PlanListViewModel
@@ -112,6 +113,9 @@ fun PlanScreen(
                     )
                 }
             }
+        },
+        bottomBar = {
+            AppBottomBar(navController = navController, currentRoute = Screen.Calendar.route)
         },
         floatingActionButton = {
             FloatingActionButton(

@@ -15,12 +15,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class GeneratingAlternativeState(
+    val dayIndex: Int,
+    val itemType: String,      // "hotel" hoặc "activity"
+    val activityIndex: Int? = null
+)
+
 data class PlanDetailUiState(
     val plan: TravelPlan? = null,
     val destination: Destination? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
-    val generatingAlternative: Pair<Int, String>? = null // (dayIndex, itemType) đang được generate
+    val generatingAlternative: GeneratingAlternativeState? = null // item đang được generate
 )
 
 @HiltViewModel
@@ -150,9 +156,13 @@ class PlanDetailViewModel @Inject constructor(
             return
         }
         
-        // Set loading state
+        // Set loading state (lưu cả activityIndex nếu là activity)
         _uiState.value = _uiState.value.copy(
-            generatingAlternative = Pair(dayIndex, itemType)
+            generatingAlternative = GeneratingAlternativeState(
+                dayIndex = dayIndex,
+                itemType = itemType,
+                activityIndex = activityIndex
+            )
         )
         
         viewModelScope.launch {

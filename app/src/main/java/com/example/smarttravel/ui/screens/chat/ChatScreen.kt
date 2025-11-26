@@ -66,7 +66,6 @@ fun ChatScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .imePadding() // Quan trọng: Đẩy nội dung lên khi bàn phím hiện
         ) {
             // 1. Danh sách tin nhắn
             LazyColumn(
@@ -209,7 +208,10 @@ private fun ModernChatInput(
     enabled: Boolean = true
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .imePadding() // Đảm bảo ô nhập nằm ngay trên bàn phím
+            .navigationBarsPadding(), // Tránh bị che bởi navigation bar
         color = Color.White,
         shadowElevation = 8.dp,
         tonalElevation = 2.dp

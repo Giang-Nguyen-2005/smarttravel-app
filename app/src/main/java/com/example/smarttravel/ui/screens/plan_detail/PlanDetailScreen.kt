@@ -41,6 +41,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.smarttravel.R
 import com.example.smarttravel.data.model.TravelPlan
 import com.example.smarttravel.ui.components.AppTopBar
@@ -461,7 +465,9 @@ fun IntrinsicHeightRow(content: @Composable RowScope.() -> Unit) {
 fun HotelCard(hotel: HotelInfo, dayIndex: Int, viewModel: PlanDetailViewModel) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val isGenerating = uiState.generatingAlternative?.let { it.first == dayIndex && it.second == "hotel" } ?: false
+    val isGenerating = uiState.generatingAlternative?.let {
+        it.dayIndex == dayIndex && it.itemType == "hotel"
+    } ?: false
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -507,7 +513,11 @@ fun HotelCard(hotel: HotelInfo, dayIndex: Int, viewModel: PlanDetailViewModel) {
 fun ActivityCard(activity: ActivityInfo, dayIndex: Int, activityIndex: Int, viewModel: PlanDetailViewModel) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val isGenerating = uiState.generatingAlternative?.let { it.first == dayIndex && it.second == "activity" } ?: false
+    val isGenerating = uiState.generatingAlternative?.let {
+        it.dayIndex == dayIndex &&
+        it.itemType == "activity" &&
+        it.activityIndex == activityIndex
+    } ?: false
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -582,9 +592,19 @@ fun SmallMapButton(onClick: () -> Unit) {
 
 @Composable
 fun SuggestionButton(isGenerating: Boolean, onClick: () -> Unit) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.load))
+
     Row(modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(enabled = !isGenerating) { onClick() }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
         if (isGenerating) {
-            CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp, color = TextGray)
+            if (composition != null) {
+                LottieAnimation(
+                    composition = composition,
+                    iterations = LottieConstants.IterateForever,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp, color = TextGray)
+            }
             Spacer(modifier = Modifier.width(4.dp))
             Text("Đang tìm...", fontSize = 12.sp, color = TextGray)
         } else {
