@@ -1,6 +1,8 @@
 package com.example.smarttravel.ui.screens.add_plan
 
+import android.content.Context
 import android.content.Intent
+import android.location.Geocoder
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,9 +37,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.example.smarttravel.ui.viewmodel.ManualPlanViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.MapEventsOverlay
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.events.MapEvent
+import java.io.File
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -78,6 +94,7 @@ fun AddActivityFormScreen(
     var address by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var showTimePicker by remember { mutableStateOf(false) }
+    var showLocationPicker by remember { mutableStateOf(false) }
     
     // Parse time từ string để khởi tạo time picker
     val initialTime = remember(time) {
@@ -122,19 +139,19 @@ fun AddActivityFormScreen(
                 color = MaterialTheme.colorScheme.surfaceContainerLowest,
                 shadowElevation = 0.dp
             ) {
-                Row(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                         .statusBarsPadding()
-                        .padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(top = 8.dp)
                 ) {
                     IconButton(
                         onClick = { navController.popBackStack() },
                         modifier = Modifier
                             .size(40.dp)
                             .background(Color(0xFFE0E0E0), CircleShape)
+                            .align(Alignment.CenterStart)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -143,12 +160,11 @@ fun AddActivityFormScreen(
                             modifier = Modifier.size(20.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = "Thêm hoạt động",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
             }
@@ -174,20 +190,38 @@ fun AddActivityFormScreen(
                     Box(
                         modifier = Modifier.fillMaxWidth()
                     ) {
+                        val isTimeSelected = time.isNotEmpty()
+                        
                         OutlinedTextField(
                             value = time.ifEmpty { "" },
                             onValueChange = { },
                             modifier = Modifier.fillMaxWidth(),
                             placeholder = { Text("Chọn thời gian") },
                             leadingIcon = {
-                                Icon(Icons.Default.Schedule, contentDescription = null)
+                                Icon(
+                                    Icons.Default.Schedule, 
+                                    contentDescription = null,
+                                    tint = if (isTimeSelected) Color.Black else Color.Unspecified
+                                )
                             },
                             trailingIcon = {
-                                Icon(Icons.Default.AccessTime, contentDescription = "Chọn thời gian")
+                                Icon(
+                                    Icons.Default.AccessTime, 
+                                    contentDescription = "Chọn thời gian",
+                                    tint = if (isTimeSelected) Color.Black else Color.Unspecified
+                                )
                             },
                             readOnly = true,
-                            enabled = false,
+                            enabled = true,
                             singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = MaterialTheme.colorScheme.outline,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedTextColor = if (isTimeSelected) Color.Black else MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = if (isTimeSelected) Color.Black else MaterialTheme.colorScheme.onSurface
+                            )
                         )
                         Box(
                             modifier = Modifier
@@ -271,17 +305,18 @@ fun AddActivityFormScreen(
                         )
                         Button(
                             onClick = {
-                                // Mở Google Maps để chọn địa chỉ
-                                openGoogleMapsForLocation(context)
+                                // Hiển thị dialog map để chọn vị trí
+                                showLocationPicker = true
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondary
+                                containerColor = Color(0xFF2196F3) // Màu xanh dương
                             )
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Map,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
+                                tint = Color.White
                             )
                         }
                     }
@@ -378,6 +413,17 @@ fun AddActivityFormScreen(
                 timePickerState = timePickerState
             )
         }
+        
+        // Location Picker Dialog
+        if (showLocationPicker) {
+            LocationPickerDialog(
+                onDismiss = { showLocationPicker = false },
+                onConfirm = { selectedAddress ->
+                    address = selectedAddress
+                    showLocationPicker = false
+                }
+            )
+        }
     }
 }
 
@@ -422,21 +468,224 @@ fun CategoryChip(
     }
 }
 
-private fun openGoogleMapsForLocation(context: android.content.Context) {
-    try {
-        // Mở Google Maps ở chế độ chọn vị trí
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q="))
-        intent.setPackage("com.google.android.apps.maps")
-        if (intent.resolveActivity(context.packageManager) != null) {
-            context.startActivity(intent)
-        } else {
-            // Nếu không có Google Maps, mở trình duyệt
-            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps"))
-            context.startActivity(browserIntent)
-        }
-    } catch (e: Exception) {
-        android.util.Log.e("AddActivityForm", "Error opening Google Maps: ${e.message}")
+@Composable
+fun LocationPickerDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var selectedLat by remember { mutableStateOf<Double?>(null) }
+    var selectedLng by remember { mutableStateOf<Double?>(null) }
+    var selectedAddress by remember { mutableStateOf("") }
+    var isLoadingAddress by remember { mutableStateOf(false) }
+    var mapView by remember { mutableStateOf<MapView?>(null) }
+    
+    // Cấu hình Osmdroid
+    LaunchedEffect(Unit) {
+        Configuration.getInstance().load(
+            context,
+            context.getSharedPreferences("osmdroid", Context.MODE_PRIVATE)
+        )
+        Configuration.getInstance().userAgentValue = context.packageName
+        
+        val osmdroidBasePath = File(context.cacheDir, "osmdroid")
+        osmdroidBasePath.mkdirs()
+        Configuration.getInstance().osmdroidBasePath = osmdroidBasePath
     }
+    
+    // Hàm reverse geocoding để lấy địa chỉ từ lat/lng
+    fun getAddressFromLocation(lat: Double, lng: Double) {
+        isLoadingAddress = true
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(lat, lng, 1)
+                withContext(Dispatchers.Main) {
+                    if (addresses != null && addresses.isNotEmpty()) {
+                        val addressObj = addresses[0]
+                        val addressLines = mutableListOf<String>()
+                        
+                        // Lấy địa chỉ từ getAddressLine
+                        for (i in 0..addressObj.maxAddressLineIndex) {
+                            addressObj.getAddressLine(i)?.let { addressLines.add(it) }
+                        }
+                        
+                        selectedAddress = if (addressLines.isNotEmpty()) {
+                            addressLines.joinToString(", ")
+                        } else {
+                            // Fallback: ghép các thành phần địa chỉ
+                            val parts = listOfNotNull(
+                                addressObj.featureName,
+                                addressObj.thoroughfare,
+                                addressObj.subLocality,
+                                addressObj.locality,
+                                addressObj.adminArea,
+                                addressObj.countryName
+                            )
+                            parts.joinToString(", ")
+                        }
+                    } else {
+                        selectedAddress = "$lat, $lng"
+                    }
+                    isLoadingAddress = false
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    selectedAddress = "$lat, $lng"
+                    isLoadingAddress = false
+                    android.util.Log.e("LocationPicker", "Error getting address: ${e.message}")
+                }
+            }
+        }
+    }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Chọn vị trí",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Map View
+                var currentMarker by remember { mutableStateOf<Marker?>(null) }
+                
+                // Callback để xử lý khi chọn vị trí
+                val onLocationSelected: (GeoPoint) -> Unit = { geoPoint ->
+                    selectedLat = geoPoint.latitude
+                    selectedLng = geoPoint.longitude
+                    getAddressFromLocation(geoPoint.latitude, geoPoint.longitude)
+                }
+                
+                AndroidView(
+                    factory = { ctx ->
+                        MapView(ctx).apply {
+                            setTileSource(TileSourceFactory.MAPNIK)
+                            setMultiTouchControls(true)
+                            minZoomLevel = 3.0
+                            maxZoomLevel = 19.0
+                            
+                            // Đặt vị trí mặc định (Việt Nam)
+                            controller.setZoom(15.0)
+                            controller.setCenter(GeoPoint(10.762622, 106.660172)) // Tọa độ Hồ Chí Minh
+                            
+                            mapView = this
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp),
+                    update = { view ->
+                        // Xóa overlay cũ nếu có
+                        val existingOverlay = view.overlays.find { it is MapEventsOverlay }
+                        existingOverlay?.let { view.overlays.remove(it) }
+                        
+                        // Thêm MapEventsOverlay để xử lý click
+                        val mapEventsReceiver = object : MapEventsReceiver {
+                            override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                                p?.let { geoPoint ->
+                                    // Xóa marker cũ
+                                    currentMarker?.let { marker ->
+                                        view.overlays.remove(marker)
+                                    }
+                                    
+                                    // Tạo marker mới
+                                    val marker = Marker(view).apply {
+                                        position = geoPoint
+                                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                    }
+                                    view.overlays.add(marker)
+                                    currentMarker = marker
+                                    
+                                    // Gọi callback để cập nhật state
+                                    onLocationSelected(geoPoint)
+                                    
+                                    view.invalidate()
+                                }
+                                return true
+                            }
+                            
+                            override fun longPressHelper(p: GeoPoint?): Boolean {
+                                return false
+                            }
+                        }
+                        
+                        val mapEventsOverlay = MapEventsOverlay(mapEventsReceiver)
+                        view.overlays.add(0, mapEventsOverlay)
+                    }
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Hiển thị địa chỉ đã chọn
+                if (isLoadingAddress) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Đang lấy địa chỉ...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                } else if (selectedAddress.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFE3F2FD)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp)
+                        ) {
+                            Text(
+                                text = "Địa chỉ đã chọn:",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.Gray
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = selectedAddress,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "Nhấn vào bản đồ để chọn vị trí",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (selectedAddress.isNotEmpty()) {
+                        onConfirm(selectedAddress)
+                    }
+                },
+                enabled = selectedAddress.isNotEmpty() && !isLoadingAddress,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("Xác nhận")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Hủy")
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -463,10 +712,14 @@ fun TimePickerDialog(
                 TimePicker(
                     state = timePickerState,
                     colors = TimePickerDefaults.colors(
-                        clockDialSelectedContentColor = MaterialTheme.colorScheme.primary,
-                        clockDialColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectorColor = MaterialTheme.colorScheme.primary,
-                        periodSelectorBorderColor = MaterialTheme.colorScheme.primary
+                        clockDialSelectedContentColor = Color(0xFF000000), // Màu xanh cyan
+                        clockDialColor = Color(0xFF9BDEFD), // Màu xanh cyan nhạt cho nền
+                        selectorColor = Color(0xFFFFFFFF), // Màu xanh cyan cho selector
+                        periodSelectorBorderColor = Color(0xFF000000), // Màu xanh cyan cho border
+                        timeSelectorSelectedContainerColor = Color(0xFF9BDEFD), // Màu nền xanh cyan nhạt cho giờ/phút đã chọn
+                        timeSelectorUnselectedContainerColor = Color(0xFFFFFFFF), // Màu nền xám nhạt cho giờ/phút chưa chọn
+                        timeSelectorSelectedContentColor = Color(0xFF000000), // Màu text xanh cyan cho giờ/phút đã chọn
+                        timeSelectorUnselectedContentColor = Color(0xFF000000) // Màu text xám cho giờ/phút chưa chọn
                     )
                 )
             }
