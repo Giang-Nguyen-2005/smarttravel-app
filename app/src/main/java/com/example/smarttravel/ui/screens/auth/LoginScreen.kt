@@ -44,8 +44,9 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(navController: NavController) {
+    val colorScheme = MaterialTheme.colorScheme
     val authViewModel: AuthViewModel = hiltViewModel()
-    val authState = authViewModel.authState
+    val authState by authViewModel.authState.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -92,7 +93,8 @@ fun LoginScreen(navController: NavController) {
 
     // --- Handle Auth state ---
     LaunchedEffect(authState) {
-        when (authState) {
+        val currentState = authState // Lưu vào biến local để smart cast
+        when (currentState) {
 
             // ✅ Đăng nhập thành công
             is AuthViewModel.AuthState.Success -> {
@@ -121,12 +123,12 @@ fun LoginScreen(navController: NavController) {
             // 🔹 Luồng A: Google trùng email, cần nhập mật khẩu để link
             is AuthViewModel.AuthState.NeedPasswordForLink -> {
                 showLinkDialog = true
-                linkEmail = authState.email
-                linkIdToken = authState.idToken
+                linkEmail = currentState.email
+                linkIdToken = currentState.idToken
             }
 
             is AuthViewModel.AuthState.Error -> {
-                Toast.makeText(context, authState.message, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, currentState.message, Toast.LENGTH_LONG).show()
                 authViewModel.resetAuthState()
             }
 
@@ -160,10 +162,10 @@ fun LoginScreen(navController: NavController) {
                 .fillMaxSize()
                 .padding(top = 120.dp)
         ) {
-            Text("Đăng nhập", fontWeight = FontWeight.Bold, fontSize = 30.sp)
+            Text("Đăng nhập", fontWeight = FontWeight.Bold, fontSize = 30.sp, color = colorScheme.onBackground)
             Text(
                 "Vui lòng đăng nhập để tiếp tục khám phá",
-                color = Color.Gray,
+                color = colorScheme.onSurfaceVariant,
                 fontSize = 18.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 20.dp, bottom = 40.dp)
@@ -198,7 +200,7 @@ fun LoginScreen(navController: NavController) {
                 contentAlignment = Alignment.CenterEnd
             ) {
                 TextButton(onClick = { navController.navigate(Screen.ResetPassword.route) }) {
-                    Text("Quên mật khẩu?", color = Color(0xFF1E88E5), fontSize = 18.sp)
+                    Text("Quên mật khẩu?", color = colorScheme.primary, fontSize = 18.sp)
                 }
             }
 
@@ -214,14 +216,14 @@ fun LoginScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(30.dp))
 
             Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Text("Chưa có tài khoản? ", color = Color.Gray, fontSize = 18.sp)
+                Text("Chưa có tài khoản? ", color = colorScheme.onSurfaceVariant, fontSize = 18.sp)
                 TextButton(onClick = { navController.navigate(Screen.Register.route) }) {
-                    Text("Đăng Ký", color = Color(0xFF1E88E5), fontSize = 20.sp)
+                    Text("Đăng Ký", color = colorScheme.primary, fontSize = 20.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
-            Text("Hoặc đăng nhập với", color = Color.Gray, fontSize = 18.sp)
+            Text("Hoặc đăng nhập với", color = colorScheme.onSurfaceVariant, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(30.dp))
 
             Row(

@@ -32,10 +32,12 @@ fun DestinationCard(
     rating: Double,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+    
     Card(
         modifier = modifier.width(220.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -91,6 +93,7 @@ fun DestinationCard(
                 text = title,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
+                color = colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -106,12 +109,13 @@ fun DestinationCard(
                 Text(
                     text = "$rating",
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onSurface
                 )
                 Text(
                     text = " ($location)",
                     fontSize = 14.sp,
-                    color = Color.Gray,
+                    color = colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

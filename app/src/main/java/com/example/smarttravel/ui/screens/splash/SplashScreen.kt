@@ -2,6 +2,7 @@ package com.example.smarttravel.ui.screens.splash
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -83,19 +84,20 @@ fun SplashScreen(navController: NavController) {
 // CODE UI ---
 @Composable
 fun SplashScreenUI() {
+    val colorScheme = MaterialTheme.colorScheme
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.travel_bus))
     val progress by animateLottieCompositionAsState(composition)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF037CAC)),
+            .background(colorScheme.primary),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "Smart Travel",
-                color = Color.White,
+                color = colorScheme.onPrimary,
                 fontSize = 42.sp,
                 fontWeight = FontWeight.Bold
             )

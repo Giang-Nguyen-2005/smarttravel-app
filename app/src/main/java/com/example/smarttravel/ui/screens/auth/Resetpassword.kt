@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,10 +32,10 @@ import com.example.smarttravel.ui.viewmodel.AuthViewModel
 
 @Composable
 fun ResetPasswordScreen(navController: NavController) {
-
+    val colorScheme = MaterialTheme.colorScheme
     // --- SỬ DỤNG VIEWMODEL ---
     val authViewModel: AuthViewModel = hiltViewModel()
-    val authState = authViewModel.authState
+    val authState by authViewModel.authState.collectAsState()
     val email = authViewModel.email
     val context = LocalContext.current
 
@@ -42,13 +43,14 @@ fun ResetPasswordScreen(navController: NavController) {
 
     // --- XỬ LÝ KẾT QUẢ TỪ VIEWMODEL ---
     LaunchedEffect(authState) {
-        when (authState) {
+        val currentState = authState // Lưu vào biến local để smart cast
+        when (currentState) {
             is AuthViewModel.AuthState.Success -> {
                 showDialog = true // Mở dialog khi thành công
                 // ViewModel sẽ được reset khi dialog đóng
             }
             is AuthViewModel.AuthState.Error -> {
-                Toast.makeText(context, authState.message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, currentState.message, Toast.LENGTH_SHORT).show()
                 authViewModel.resetAuthState()
             }
             else -> {} // Idle or Loading
@@ -80,11 +82,12 @@ fun ResetPasswordScreen(navController: NavController) {
             Text(
                 text = "Quên mật khẩu",
                 fontWeight = FontWeight.Bold,
-                fontSize = 28.sp
+                fontSize = 28.sp,
+                color = colorScheme.onBackground
             )
             Text(
                 text = "Vui lòng nhập email để đặt lại mật khẩu",
-                color = Color.Gray,
+                color = colorScheme.onSurfaceVariant,
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 16.dp, bottom = 36.dp)
@@ -154,13 +157,13 @@ fun EmailSentDialog(
                     modifier = Modifier
                         .size(60.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF2196F3)),
+                        .background(colorScheme.primary),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Email,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = colorScheme.onPrimary,
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -169,19 +172,20 @@ fun EmailSentDialog(
                     text = "Kiểm tra email của bạn",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
+                    color = colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Chúng tôi đã gửi hướng dẫn khôi phục mật khẩu đến:\n$email",
-                    color = Color.Gray,
+                    color = colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center
                 )
             }
         },
         shape = MaterialTheme.shapes.large,
-        containerColor = Color.White
+        containerColor = colorScheme.surface
     )
 }
 

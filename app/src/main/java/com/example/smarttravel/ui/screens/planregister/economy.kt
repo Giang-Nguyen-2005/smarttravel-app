@@ -26,6 +26,7 @@ import com.example.smarttravel.ui.viewmodel.PlanViewModel
 
 @Composable
 fun EconomyScreen(navController: NavController, viewModel: PlanViewModel) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
     val selectedOption = uiState.budget
     
@@ -45,14 +46,14 @@ fun EconomyScreen(navController: NavController, viewModel: PlanViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(colorScheme.background)
                 .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             // --- HEADER CỐ ĐỊNH (STICKY HEADER) - CĂN GIỮA TUYỆT ĐỐI THANH TIẾN ĐỘ ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(colorScheme.surface)
                     .padding(horizontal = 24.dp)
                     .padding(top = 60.dp, bottom = 16.dp)
             ) {
@@ -74,7 +75,7 @@ fun EconomyScreen(navController: NavController, viewModel: PlanViewModel) {
                             .height(6.dp)
                             .clip(RoundedCornerShape(3.dp)),
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color(0xFFE0E0E0),
+                        trackColor = colorScheme.surfaceVariant,
                         strokeCap = ProgressIndicatorDefaults.LinearStrokeCap
                     )
                 }
@@ -175,7 +176,7 @@ fun EconomyScreen(navController: NavController, viewModel: PlanViewModel) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White) // Thêm nền trắng cho nút bấm cố định
+                    .background(colorScheme.surface) // Nền cho nút bấm cố định
                     .padding(16.dp)
             ) {
                 PrimaryButton(
@@ -212,13 +213,14 @@ fun BudgetCard(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor = if (isSelected) Color(0xFF037CAC) else Color.Transparent
+    val colorScheme = MaterialTheme.colorScheme
+    val borderColor = if (isSelected) colorScheme.primary else Color.Transparent
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF5F5F5))
+            .background(colorScheme.surfaceVariant)
             .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .padding(16.dp)
@@ -234,7 +236,7 @@ fun BudgetCard(
             Text(
                 text = description,
                 fontSize = 14.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             // Hiển thị giá bên dưới subtitle
             if (price != null) {

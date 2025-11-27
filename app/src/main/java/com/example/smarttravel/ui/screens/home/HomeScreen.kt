@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,8 +64,11 @@ fun HomeScreen(
     val selectedCategory by homeViewModel.selectedCategory.collectAsState()
     val userProfile by homeViewModel.userProfile.collectAsState()
 
+    val colorScheme = MaterialTheme.colorScheme
+    
     // Sử dụng Scaffold để chứa AppBottomBar
     Scaffold(
+        containerColor = colorScheme.background,
         bottomBar = {
             AppBottomBar(navController = navController, currentRoute = Screen.Home.route)
         }
@@ -72,7 +76,7 @@ fun HomeScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(colorScheme.background)
                 .padding(paddingValues), // Tránh nội dung bị BottomBar che khuất
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
@@ -139,9 +143,17 @@ fun HomeScreen(
                         CircularProgressIndicator()
                     }
                 } else if (destinationState.error != null) {
-                    Text("Lỗi: ${destinationState.error}", modifier = Modifier.padding(16.dp), color = Color.Red)
+                    Text(
+                        "Lỗi: ${destinationState.error}", 
+                        modifier = Modifier.padding(16.dp), 
+                        color = MaterialTheme.colorScheme.error
+                    )
                 } else if (destinationState.destinations.isEmpty()) {
-                    Text("Không tìm thấy địa điểm phù hợp.", modifier = Modifier.padding(16.dp), color = Color.Gray)
+                    Text(
+                        "Không tìm thấy địa điểm phù hợp.", 
+                        modifier = Modifier.padding(16.dp), 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 } else {
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 16.dp),
@@ -228,6 +240,8 @@ fun HomeTopBar(
     avatarUrl: String,
     onNotificationClick: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+    
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -238,7 +252,7 @@ fun HomeTopBar(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
-                .background(Color(0xFFD9D9D9).copy(alpha = 0.5f))
+                .background(colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -272,12 +286,12 @@ fun HomeTopBar(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFEEEEEE).copy(alpha = 0.8f))
+                .background(colorScheme.surfaceVariant.copy(alpha = 0.8f))
         ) {
             Icon(
                 imageVector = Icons.Default.NotificationsNone,
                 contentDescription = "Thông báo",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = colorScheme.onSurfaceVariant
             )
         }
     }
@@ -332,9 +346,10 @@ fun CategoryChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val backgroundColor = if (isSelected) Color.White else Color(0xFFF5F5F5)
-    val contentColor = if (isSelected) Color(0xFF037CAC) else Color(0xFF00838F)
-    val borderColor = if (isSelected) Color(0xFF037CAC) else Color(0xFFEEEEEE)
+    val colorScheme = MaterialTheme.colorScheme
+    val backgroundColor = if (isSelected) colorScheme.surface else colorScheme.surfaceVariant
+    val contentColor = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant
+    val borderColor = if (isSelected) colorScheme.primary else colorScheme.outline.copy(alpha = 0.5f)
     Surface(
         modifier = Modifier
             .height(50.dp)
@@ -358,14 +373,14 @@ fun CategoryChip(
                 Icon(
                     painter = painterResource(id = categoryIconRes),
                     contentDescription = categoryName,
-                    tint = if (isSelected) Color.White else contentColor,
+                    tint = if (isSelected) colorScheme.onPrimary else contentColor,
                     modifier = Modifier.size(18.dp)
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = categoryName,
-                color = Color.Black,
+                color = if (isSelected) colorScheme.onSurface else colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium,
                 fontSize = 16.sp
             )
@@ -380,6 +395,7 @@ fun AiSuggestionCard(
     isLoading: Boolean,
     onClick: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val aiLoadingComposition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.robot))
 
     Card(
@@ -390,7 +406,9 @@ fun AiSuggestionCard(
             .heightIn(min = 150.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFEDF7FF))
+        colors = CardDefaults.cardColors(
+            containerColor = colorScheme.primaryContainer.copy(alpha = 0.3f)
+        )
     ) {
         Row(
             modifier = Modifier
@@ -407,7 +425,7 @@ fun AiSuggestionCard(
             ) {
                 Text(
                     text = "Gợi ý hôm nay ✨",
-                    color = Color(0xFF037CAC),
+                    color = colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
@@ -422,7 +440,7 @@ fun AiSuggestionCard(
                 } else if (topDestination != null) {
                     Text(
                         text = "Dựa trên sở thích của bạn: ${topDestination.name}!",
-                        color = Color.Black,
+                        color = colorScheme.onSurface,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
                         maxLines = 2,
@@ -431,7 +449,7 @@ fun AiSuggestionCard(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = topDestination.location_name,
-                        color = Color.Gray,
+                        color = colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -439,7 +457,7 @@ fun AiSuggestionCard(
                 } else {
                     Text(
                         text = "Cập nhật sở thích để nhận gợi ý cá nhân hóa",
-                        color = Color.Black,
+                        color = colorScheme.onSurface,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
                         maxLines = 2,
@@ -455,7 +473,7 @@ fun AiSuggestionCard(
 
                 Text(
                     text = "Xem chi tiết →",
-                    color = Color(0xFF037CAC),
+                    color = colorScheme.primary,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp
                 )
@@ -466,7 +484,7 @@ fun AiSuggestionCard(
             Icon(
                 painter = painterResource(id = R.drawable.icon_chat),
                 contentDescription = "AI Suggestion",
-                tint = Color(0xFF037CAC).copy(alpha = 0.8f),
+                tint = colorScheme.primary.copy(alpha = 0.8f),
                 modifier = Modifier
                     .size(80.dp)
                     .background(Color.White, CircleShape)
@@ -494,7 +512,8 @@ fun RecentPlanSection(
             Text(
                 text = "Tiếp tục kế hoạch",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onBackground
             )
             Text(
                 text = "Xem tất cả",
@@ -512,7 +531,7 @@ fun RecentPlanSection(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Row(
@@ -526,7 +545,7 @@ fun RecentPlanSection(
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = "Đang tải...",
-                        color = Color.Gray,
+                        color = colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
                 }
@@ -567,7 +586,7 @@ fun RecentPlanSection(
                     .padding(horizontal = 16.dp)
                     .clickable { onPlanClick(recentPlan.id) },
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Row(
@@ -577,13 +596,13 @@ fun RecentPlanSection(
                     Box(
                         modifier = Modifier
                             .size(50.dp)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                            .background(colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.CalendarMonth,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = colorScheme.primary
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
@@ -592,13 +611,14 @@ fun RecentPlanSection(
                             text = recentPlan.title,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
+                            color = colorScheme.onSurface,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "$dateRange • $status",
-                            color = Color.Gray,
+                            color = colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
                     }
@@ -612,7 +632,7 @@ fun RecentPlanSection(
                     .padding(horizontal = 16.dp)
                     .clickable { onClick() },
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Row(
@@ -622,13 +642,13 @@ fun RecentPlanSection(
                     Box(
                         modifier = Modifier
                             .size(50.dp)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                            .background(colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.CalendarMonth,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = colorScheme.primary
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
@@ -636,12 +656,13 @@ fun RecentPlanSection(
                         Text(
                             text = "Chưa có kế hoạch",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
+                            fontSize = 16.sp,
+                            color = colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Tạo kế hoạch mới để bắt đầu",
-                            color = Color.Gray,
+                            color = colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
                     }

@@ -37,4 +37,10 @@ interface AuthRepository {
     suspend fun unsaveDestination(destinationId: String): Result<Unit>
     fun getSavedDestinationIds(): Flow<List<String>>
 
+    // Đổi mật khẩu
+    suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit>
+    
+    // Xóa tài khoản
+    suspend fun deleteAccount(password: String?): Result<Unit>
+
 }

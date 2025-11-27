@@ -37,21 +37,23 @@ import com.example.smarttravel.ui.viewmodel.AuthViewModel
 
 @Composable
 fun RegisterScreen(navController: NavController) {
+    val colorScheme = MaterialTheme.colorScheme
     var showLinkDialog by remember { mutableStateOf(false) }
     val authViewModel: AuthViewModel = hiltViewModel() // Sử dụng HiltViewModel
-    val authState = authViewModel.authState
+    val authState by authViewModel.authState.collectAsState()
     val context = LocalContext.current
 
     // Cần LaunchedEffect để xử lý các sự kiện từ ViewModel
     LaunchedEffect(authState) {
-        when (authState) {
+        val currentState = authState // Lưu vào biến local để smart cast
+        when (currentState) {
             is AuthViewModel.AuthState.Success -> {
                 // Thay vì tự động đi Home, hiển thị dialog hỏi link Google
                 showLinkDialog = true
                 authViewModel.resetAuthState()
             }
             is AuthViewModel.AuthState.Error -> {
-                Toast.makeText(context, authState.message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, currentState.message, Toast.LENGTH_SHORT).show()
                 authViewModel.resetAuthState()
             }
             else -> {}
@@ -93,11 +95,12 @@ fun RegisterScreen(navController: NavController) {
             Text(
                 text = "Đăng ký",
                 fontWeight = FontWeight.Bold,
-                fontSize = 30.sp
+                fontSize = 30.sp,
+                color = colorScheme.onBackground
             )
             Text(
                 text = "Tạo tài khoản mới để khám phá ứng dụng",
-                color = Color.Gray,
+                color = colorScheme.onSurfaceVariant,
                 fontSize = 18.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 20.dp, bottom = 40.dp)
@@ -169,7 +172,7 @@ fun RegisterScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Đã có tài khoản? ", color = Color.Gray, fontSize = 18.sp)
+                Text("Đã có tài khoản? ", color = colorScheme.onSurfaceVariant, fontSize = 18.sp)
                 TextButton(
                     onClick = { navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Register.route) { inclusive = true } // Xóa Register khỏi back stack
@@ -177,12 +180,12 @@ fun RegisterScreen(navController: NavController) {
                     }},
                     contentPadding = PaddingValues(0.dp)
                 ) {
-                    Text("Đăng nhập", color = Color(0xFF1E88E5), fontSize = 20.sp)
+                    Text("Đăng nhập", color = colorScheme.primary, fontSize = 20.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
-            Text("Hoặc đăng ký với", color = Color.Gray, fontSize = 18.sp)
+            Text("Hoặc đăng ký với", color = colorScheme.onSurfaceVariant, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(30.dp))
 
             Row(

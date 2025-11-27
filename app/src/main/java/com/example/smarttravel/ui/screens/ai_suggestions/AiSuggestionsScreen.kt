@@ -46,17 +46,12 @@ import com.example.smarttravel.ui.viewmodel.HomeViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-// --- MÀU SẮC ĐỒNG BỘ VỚI APP ---
-val AppPrimaryColor = Color(0xFF037CAC) // Xanh chủ đạo của app
-val AppSecondaryColor = Color(0xFF00C6FF) // Xanh sáng để tạo Gradient
-val TextDark = Color(0xFF1A1A1A)
-val TextLight = Color(0xFF757575)
-
 @Composable
 fun AiSuggestionsScreen(
     navController: NavController,
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val aiSuggestionsState by homeViewModel.aiSuggestionsState.collectAsState()
     val userProfile by homeViewModel.userProfile.collectAsState()
 
@@ -69,7 +64,7 @@ fun AiSuggestionsScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF5F7FA) // Nền sáng nhẹ
+        containerColor = colorScheme.background
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
             // 1. Background Gradient Xanh (Mềm mại hơn)
@@ -80,7 +75,7 @@ fun AiSuggestionsScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                AppPrimaryColor.copy(alpha = 0.15f), // Xanh nhạt
+                                colorScheme.primary.copy(alpha = 0.15f), // Xanh nhạt
                                 Color.Transparent
                             )
                         )
@@ -108,13 +103,13 @@ fun AiSuggestionsScreen(
                                 text = "Gợi ý thông minh",
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = TextDark
+                                color = colorScheme.onBackground
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "Dành riêng cho chuyến đi tiếp theo của bạn",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TextLight
+                                color = colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(16.dp))
 
@@ -187,6 +182,7 @@ fun AiSuggestionsScreen(
 
 @Composable
 fun CustomHeader(navController: NavController) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -197,15 +193,15 @@ fun CustomHeader(navController: NavController) {
             onClick = { navController.popBackStack() },
             modifier = Modifier
                 .size(44.dp)
-                .background(Color.White, CircleShape)
-                .border(1.dp, Color(0xFFEEEEEE), CircleShape)
+                .background(colorScheme.surface, CircleShape)
+                .border(1.dp, colorScheme.outline.copy(alpha = 0.5f), CircleShape)
                 // Đổ bóng nhẹ
-                .shadow(2.dp, CircleShape, spotColor = Color.Black.copy(alpha = 0.1f))
+                .shadow(elevation = 2.dp, shape = CircleShape)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
-                tint = TextDark,
+                tint = colorScheme.onSurface,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -221,11 +217,12 @@ fun PaddingBox(content: @Composable () -> Unit) {
 
 @Composable
 fun SectionTitle(title: String, icon: ImageVector) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = AppPrimaryColor, // Dùng màu xanh App
+            tint = colorScheme.primary,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
@@ -233,20 +230,21 @@ fun SectionTitle(title: String, icon: ImageVector) {
             text = title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = TextDark
+            color = colorScheme.onBackground
         )
     }
 }
 
 @Composable
 fun BlueInsightCard(interests: List<String>) {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(Color.White)
+            .background(colorScheme.surface)
             // Viền xanh nhạt tinh tế
-            .border(1.dp, AppPrimaryColor.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
+            .border(1.dp, colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.Top) {
@@ -255,13 +253,13 @@ fun BlueInsightCard(interests: List<String>) {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(AppPrimaryColor.copy(alpha = 0.1f)), // Nền xanh nhạt
+                    .background(colorScheme.primaryContainer.copy(alpha = 0.3f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Rounded.AutoAwesome,
                     contentDescription = null,
-                    tint = AppPrimaryColor,
+                    tint = colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -270,7 +268,7 @@ fun BlueInsightCard(interests: List<String>) {
                 Text(
                     text = "AI Phân tích sở thích",
                     style = MaterialTheme.typography.labelLarge,
-                    color = AppPrimaryColor, // Chữ xanh
+                    color = colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -278,14 +276,14 @@ fun BlueInsightCard(interests: List<String>) {
                     Text(
                         text = "Gợi ý dựa trên: ${interests.take(3).joinToString(", ")}...",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextLight,
+                        color = colorScheme.onSurfaceVariant,
                         lineHeight = 20.sp
                     )
                 } else {
                     Text(
                         text = "Đang tìm hiểu sở thích du lịch của bạn...",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextLight
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -295,15 +293,16 @@ fun BlueInsightCard(interests: List<String>) {
 
 @Composable
 fun HeroDestinationCard(destination: Destination, onClick: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(320.dp)
             // Đổ bóng xanh nhẹ
-            .shadow(16.dp, RoundedCornerShape(28.dp), ambientColor = AppPrimaryColor.copy(alpha = 0.2f), spotColor = AppPrimaryColor.copy(alpha = 0.2f))
+            .shadow(elevation = 16.dp, shape = RoundedCornerShape(28.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             val imageUrl = destination.images.firstOrNull() ?: "ha_long"
@@ -330,20 +329,20 @@ fun HeroDestinationCard(destination: Destination, onClick: () -> Unit) {
                     .padding(20.dp)
                     .align(Alignment.TopEnd)
                     .clip(RoundedCornerShape(50))
-                    .background(Color.White.copy(alpha = 0.95f))
+                    .background(colorScheme.surface.copy(alpha = 0.95f))
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Rounded.AutoAwesome,
                         contentDescription = null,
-                        tint = AppPrimaryColor,
+                        tint = colorScheme.primary,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "98% Match",
-                        color = AppPrimaryColor,
+                        color = colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
                     )
@@ -396,7 +395,7 @@ fun HeroDestinationCard(destination: Destination, onClick: () -> Unit) {
                 Button(
                     onClick = onClick,
                     // Nút màu xanh chuẩn của app
-                    colors = ButtonDefaults.buttonColors(containerColor = AppPrimaryColor),
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.height(40.dp)
@@ -410,13 +409,14 @@ fun HeroDestinationCard(destination: Destination, onClick: () -> Unit) {
 
 @Composable
 fun VerticalDestinationCard(destination: Destination, onClick: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier
             .width(180.dp)
             .height(260.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
@@ -451,17 +451,18 @@ fun VerticalDestinationCard(destination: Destination, onClick: () -> Unit) {
                     text = destination.name,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
+                    color = colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, null, tint = TextLight, modifier = Modifier.size(12.dp))
+                    Icon(Icons.Default.LocationOn, null, tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
                         text = destination.location_name,
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextLight,
+                        color = colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -516,16 +517,17 @@ fun LoadingView() {
             modifier = Modifier.size(280.dp) // To hơn (gấp đôi cũ) [cite: 195]
         )
         Spacer(modifier = Modifier.height(24.dp))
+        val colorScheme = MaterialTheme.colorScheme
         Text(
             text = "AI đang suy nghĩ...",
             style = MaterialTheme.typography.titleMedium,
-            color = AppPrimaryColor,
+            color = colorScheme.primary,
             fontWeight = FontWeight.Bold
         )
         Text(
             text = "Đang tìm kiếm địa điểm tốt nhất cho bạn",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextLight,
+            color = colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp)
         )
     }
@@ -533,12 +535,13 @@ fun LoadingView() {
 
 @Composable
 fun SimpleStateView(icon: ImageVector, message: String) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(
         modifier = Modifier.fillMaxWidth().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(icon, null, tint = TextLight, modifier = Modifier.size(48.dp))
+        Icon(icon, null, tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
         Spacer(modifier = Modifier.height(16.dp))
-        Text(message, color = TextLight, style = MaterialTheme.typography.bodyMedium)
+        Text(message, color = colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
     }
 }

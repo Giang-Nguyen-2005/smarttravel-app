@@ -51,6 +51,7 @@ fun AddPlanActivitiesScreen(
     endDate: String? = null,
     viewModel: ManualPlanViewModel
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
     val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     val displayFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale("vi"))
@@ -107,12 +108,12 @@ fun AddPlanActivitiesScreen(
                         onClick = { navController.popBackStack() },
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color(0xFFE0E0E0), CircleShape)
+                            .background(colorScheme.surfaceVariant, CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Quay lại",
-                            tint = Color(0xFF1A1A1A),
+                            tint = colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -121,6 +122,7 @@ fun AddPlanActivitiesScreen(
                         text = "Thêm kế hoạch",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -131,14 +133,14 @@ fun AddPlanActivitiesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.White)
+                .background(colorScheme.background)
         ) {
             // Input tên kế hoạch
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
@@ -147,7 +149,8 @@ fun AddPlanActivitiesScreen(
                     Text(
                         text = "Tên kế hoạch",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
@@ -241,14 +244,15 @@ fun AddPlanActivitiesScreen(
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = Color.White
+                        color = colorScheme.onPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
                 Text(
                     text = if (uiState.isLoading) "Đang lưu..." else "Lưu kế hoạch",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onPrimary
                 )
             }
         }
@@ -263,9 +267,10 @@ fun DayActivitiesCard(
     onActivityClick: (Int) -> Unit,
     onDeleteActivity: (Int) -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -274,13 +279,14 @@ fun DayActivitiesCard(
             Text(
                 text = "Ngày thứ ${dayData.day}",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = dayData.date.format(displayFormatter),
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                color = colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -288,7 +294,7 @@ fun DayActivitiesCard(
                 Text(
                     text = "Chưa có hoạt động nào",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
+                    color = colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             } else {
@@ -329,12 +335,13 @@ fun ActivityItem(
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(8.dp),
-        color = Color(0xFFF5F7FA)
+        color = colorScheme.surfaceVariant
     ) {
         Row(
             modifier = Modifier
@@ -348,21 +355,22 @@ fun ActivityItem(
                     Text(
                         text = activity.time,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                 }
                 Text(
                     text = activity.name.ifEmpty { "Hoạt động chưa có tên" },
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = colorScheme.onSurface
                 )
                 if (activity.address.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = activity.address,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -373,7 +381,7 @@ fun ActivityItem(
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Xóa",
-                    tint = Color(0xFFE53935),
+                    tint = colorScheme.error,
                     modifier = Modifier.size(20.dp)
                 )
             }

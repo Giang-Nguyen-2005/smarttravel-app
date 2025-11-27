@@ -68,7 +68,8 @@ fun OtpTextField(
                             )
                             .padding(top = 14.dp), // Căn chỉnh chữ theo chiều dọc
                         textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.headlineMedium
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     if (index < otpCount - 1) {

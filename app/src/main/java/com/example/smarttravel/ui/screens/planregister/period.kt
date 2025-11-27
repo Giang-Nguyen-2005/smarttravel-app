@@ -37,6 +37,7 @@ fun PeriodScreen(
     navController: NavController,
     viewModel: PlanViewModel
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
 
     var startDate by remember { mutableStateOf<LocalDate?>(uiState.startDate) }
@@ -62,14 +63,14 @@ fun PeriodScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(colorScheme.background)
                 .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             // --- HEADER CỐ ĐỊNH (STICKY HEADER) - CĂN GIỮA TUYỆT ĐỐI THANH TIẾN ĐỘ ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(colorScheme.surface)
                     .padding(horizontal = 24.dp)
                     .padding(top = 60.dp, bottom = 16.dp)
             ) {
@@ -91,7 +92,7 @@ fun PeriodScreen(
                             .height(6.dp)
                             .clip(RoundedCornerShape(3.dp)),
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color(0xFFE0E0E0),
+                        trackColor = colorScheme.surfaceVariant,
                         strokeCap = ProgressIndicatorDefaults.LinearStrokeCap
                     )
                 }
@@ -120,7 +121,7 @@ fun PeriodScreen(
                     Text(
                         text = "Chọn ngày cho chuyến đi của bạn. Điều này giúp chúng tôi lập kế hoạch hành trình hoàn chỉnh.",
                         fontSize = 16.sp,
-                        color = Color.Gray
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
                 item {
@@ -128,7 +129,7 @@ fun PeriodScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFF5F5F5))
+                            .background(colorScheme.surfaceVariant)
                             .padding(vertical = 16.dp)
                     ) {
                         CalendarHeader(month = headerMonth)
@@ -171,7 +172,7 @@ fun PeriodScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White) // Thêm nền trắng cho nút bấm cố định
+                    .background(colorScheme.surface) // Nền cho nút bấm cố định
                     .padding(16.dp)
             ) {
                 PrimaryButton(
@@ -191,12 +192,14 @@ fun PeriodScreen(
 // ... Giữ nguyên các hàm CalendarHeader, DaysOfWeekHeader, DayCell ...
 @Composable
 private fun CalendarHeader(month: YearMonth) {
+    val colorScheme = MaterialTheme.colorScheme
     val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("vi"))
     Text(
         text = month.format(formatter)
             .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
         fontSize = 18.sp,
         fontWeight = FontWeight.SemiBold,
+        color = colorScheme.onSurface,
         textAlign = TextAlign.Center,
         modifier = Modifier
             .fillMaxWidth()
@@ -206,6 +209,7 @@ private fun CalendarHeader(month: YearMonth) {
 
 @Composable
 private fun DaysOfWeekHeader(firstDayOfWeek: DayOfWeek) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -224,7 +228,7 @@ private fun DaysOfWeekHeader(firstDayOfWeek: DayOfWeek) {
                     text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("vi")),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.Gray,
+                    color = colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
             }
@@ -243,20 +247,21 @@ private fun DayCell(
     endDate: LocalDate?,
     onClick: (LocalDate) -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val date = day.date
     val isSelectable = day.position == DayPosition.MonthDate && date >= LocalDate.now()
     val isStartDate = date == startDate
     val isEndDate = date == endDate
     val inRange = startDate != null && endDate != null && date > startDate && date < endDate
     val backgroundColor = when {
-        isStartDate || isEndDate -> MaterialTheme.colorScheme.primary
-        inRange -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        isStartDate || isEndDate -> colorScheme.primary
+        inRange -> colorScheme.primary.copy(alpha = 0.1f)
         else -> Color.Transparent
     }
     val textColor = when {
-        isStartDate || isEndDate -> Color.White
-        !isSelectable -> Color.Gray.copy(alpha = 0.5f)
-        else -> Color.Black
+        isStartDate || isEndDate -> colorScheme.onPrimary
+        !isSelectable -> colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        else -> colorScheme.onSurface
     }
     Box(
         modifier = Modifier

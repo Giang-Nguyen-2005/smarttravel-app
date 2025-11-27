@@ -23,8 +23,8 @@ fun AppTopBar(
     onBackClick: () -> Unit,
     title: String? = null,
     modifier: Modifier = Modifier,
-    containerColor: Color = Color(0xFFE0E0E0), // nền xám nhạt
-    iconTint: Color = Color(0xFF1A1A1A) // icon màu đen đậm
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant, // nền theo theme
+    iconTint: Color = MaterialTheme.colorScheme.onSurface // icon theo theme
 ) {
     Box(
         modifier = modifier

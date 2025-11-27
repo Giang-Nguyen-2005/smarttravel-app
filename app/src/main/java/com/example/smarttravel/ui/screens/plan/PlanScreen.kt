@@ -30,6 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -54,6 +55,7 @@ fun PlanScreen(
     navController: NavController,
     viewModel: PlanListViewModel = hiltViewModel()
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var showAllPlans by remember { mutableStateOf(false) }
@@ -95,12 +97,12 @@ fun PlanScreen(
                         onClick = { navController.popBackStack() },
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color(0xFFE0E0E0), CircleShape)
+                            .background(colorScheme.surfaceVariant, CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Quay lại",
-                            tint = Color(0xFF1A1A1A),
+                            tint = colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -109,6 +111,7 @@ fun PlanScreen(
                         text = "Kế hoạch",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -122,8 +125,8 @@ fun PlanScreen(
                 onClick = {
                     navController.navigate(Screen.AddPlanDateSelection.route)
                 },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
+                containerColor = colorScheme.primary,
+                contentColor = colorScheme.onPrimary
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -136,7 +139,7 @@ fun PlanScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.White),
+                .background(colorScheme.background),
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
 
@@ -272,7 +275,7 @@ fun WeeklyCalendarSection(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp) // Giảm padding dọc
             .clip(RoundedCornerShape(16.dp)) // Bo góc mềm mại hơn
-            .background(Color(0xFFF1F7F8)) // Nền xám nhạt cho cả khu vực lịch
+            .background(MaterialTheme.colorScheme.surfaceVariant) // Nền cho cả khu vực lịch
             .padding(16.dp)
 
     ) {
@@ -337,16 +340,17 @@ fun DateItem(
     isToday: Boolean,
     onClick: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val backgroundColor = when {
-        isSelected -> MaterialTheme.colorScheme.primary // Màu xanh khi chọn
+        isSelected -> colorScheme.primary // Màu primary khi chọn
         else -> Color.Transparent // Nền trong suốt
     }
     val contentColor = when {
-        isSelected -> Color.White // Chữ trắng khi chọn
-        isToday -> MaterialTheme.colorScheme.primary // Chữ xanh cho ngày hôm nay
-        else -> Color.Black // Chữ đen cho ngày thường
+        isSelected -> colorScheme.onPrimary // Chữ trên primary khi chọn
+        isToday -> colorScheme.primary // Chữ primary cho ngày hôm nay
+        else -> colorScheme.onSurface // Chữ cho ngày thường
     }
-    val dayOfWeekColor = if (isSelected) Color.White.copy(alpha = 0.8f) else Color.Gray
+    val dayOfWeekColor = if (isSelected) colorScheme.onPrimary.copy(alpha = 0.8f) else colorScheme.onSurfaceVariant
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -461,7 +465,7 @@ fun PlanItemCard(
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -503,13 +507,13 @@ fun PlanItemCard(
                     modifier = Modifier
                         .size(80.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color.LightGray),
+                        .background(colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.CalendarMonth,
                         contentDescription = null,
-                        tint = Color.Gray,
+                        tint = colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -518,22 +522,22 @@ fun PlanItemCard(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(plan.title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(plan.title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(dateRange, color = Color.Gray, fontSize = 14.sp)
+                Text(dateRange, color = colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 if (plan.planDetail.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
                             contentDescription = null,
-                            tint = Color(0xFFFFC107),
+                            tint = Color(0xFFFFC107), // Giữ màu vàng cho icon AI
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             "Có gợi ý AI",
-                            color = Color(0xFFFFC107),
+                            color = Color(0xFFFFC107), // Giữ màu vàng cho text AI
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -549,7 +553,7 @@ fun PlanItemCard(
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Xóa kế hoạch",
-                    tint = Color(0xFFE53935),
+                    tint = colorScheme.error,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -557,8 +561,8 @@ fun PlanItemCard(
             if (showDeleteDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },
-                    title = { Text("Xóa kế hoạch") },
-                    text = { Text("Bạn có chắc chắn muốn xóa kế hoạch này? Hành động này không thể hoàn tác.") },
+                    title = { Text("Xóa kế hoạch", color = colorScheme.onSurface) },
+                    text = { Text("Bạn có chắc chắn muốn xóa kế hoạch này? Hành động này không thể hoàn tác.", color = colorScheme.onSurfaceVariant) },
                     confirmButton = {
                         TextButton(
                             onClick = {
@@ -566,7 +570,7 @@ fun PlanItemCard(
                                 onDelete()
                             }
                         ) {
-                            Text("Xóa", color = Color(0xFFE53935))
+                            Text("Xóa", color = colorScheme.error)
                         }
                     },
                     dismissButton = {

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,15 +29,16 @@ fun SocialButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Button(
         onClick = onClick,
         shape = CircleShape,
         modifier = modifier
             .size(65.dp)
-            .border(1.dp, Color.LightGray.copy(alpha = 0.5f), CircleShape),
+            .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color.White,
-            contentColor = Color.Black
+            containerColor = colorScheme.surface,
+            contentColor = colorScheme.onSurface
         ),
         contentPadding = PaddingValues(12.dp)
     ) {

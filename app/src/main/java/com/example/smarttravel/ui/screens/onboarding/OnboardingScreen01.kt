@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,10 +31,11 @@ fun OnboardingScreen01(
     onSkip: () -> Unit = {},
     onStartClick: () -> Unit = {}
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(colorScheme.background)
     ) {
         // toàn bộ nội dung thả vào Column (chừa chỗ cho nút phía dưới)
         Column(
@@ -58,7 +60,7 @@ fun OnboardingScreen01(
 
                 Text(
                     text = "Skip",
-                    color = Color(0xFFCAE9FF),
+                    color = colorScheme.primaryContainer,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier
@@ -81,14 +83,14 @@ fun OnboardingScreen01(
                     text = buildAnnotatedString {
                         withStyle(
                             style = SpanStyle(
-                                color = Color(0xFF1B1E28),
+                                color = colorScheme.onBackground,
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         ) { append("Cuộc đời ngắn ngủi, thế giới thì ") }
                         withStyle(
                             style = SpanStyle(
-                                color = Color(0xFFFF7C1E),
+                                color = colorScheme.tertiary,
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -104,7 +106,7 @@ fun OnboardingScreen01(
 
                 Text(
                     text = "Du Lịch Thông Minh giúp bạn khám phá những hành trình độc đáo, đáng tin cậy đến mọi miền.",
-                    color = Color(0xFF7C838D),
+                    color = colorScheme.onSurfaceVariant,
                     fontSize = 16.sp,
                     lineHeight = 27.sp,
                     letterSpacing = 1.sp,
@@ -125,7 +127,7 @@ fun OnboardingScreen01(
                             .width(35.dp)
                             .height(7.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF0D6EFD))
+                            .background(colorScheme.primary)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
@@ -133,7 +135,7 @@ fun OnboardingScreen01(
                             .width(13.dp)
                             .height(7.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFCAE9FF))
+                            .background(colorScheme.primaryContainer)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
@@ -141,7 +143,7 @@ fun OnboardingScreen01(
                             .width(7.dp)
                             .height(7.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFCAE9FF))
+                            .background(colorScheme.primaryContainer)
                     )
                 }
             }

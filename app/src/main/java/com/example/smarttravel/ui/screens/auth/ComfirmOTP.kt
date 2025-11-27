@@ -2,6 +2,7 @@ package com.example.smarttravel.ui.screens.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,7 +60,7 @@ fun ConfirmOTPScreen(
                 text = "Xác Minh OTP",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -67,7 +68,7 @@ fun ConfirmOTPScreen(
             // 📨 Mô tả
             Text(
                 text = "Vui lòng kiểm tra email của bạn để lấy mã xác minh",
-                color = Color.Gray,
+                color = colorScheme.onSurfaceVariant,
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 12.dp)
@@ -112,13 +113,13 @@ fun ConfirmOTPScreen(
             ) {
                 Text(
                     text = "Gửi Lại Mã",
-                    color = Color(0xFF007BFF),
+                    color = colorScheme.primary,
                     fontWeight = FontWeight.Medium,
                     fontSize = 16.sp
                 )
                 Text(
                     text = String.format("0:%02d", timer),
-                    color = Color.Gray,
+                    color = colorScheme.onSurfaceVariant,
                     fontSize = 14.sp
                 )
             }

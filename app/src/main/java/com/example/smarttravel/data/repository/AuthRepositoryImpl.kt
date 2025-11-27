@@ -2,6 +2,8 @@ package com.example.smarttravel.data.repository
 
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
@@ -251,5 +253,103 @@ class AuthRepositoryImpl @Inject constructor(
             }
         }
         awaitClose { listener.remove() }
+    }
+
+    override suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> {
+        return try {
+            val currentUser = firebaseAuth.currentUser
+                ?: return Result.failure(Exception("Người dùng chưa đăng nhập"))
+            
+            // Kiểm tra nếu user có email/password provider
+            val email = currentUser.email
+                ?: return Result.failure(Exception("Tài khoản không có email"))
+            
+            // Xác thực mật khẩu hiện tại
+            try {
+                val credential = EmailAuthProvider.getCredential(email, currentPassword)
+                currentUser.reauthenticate(credential).await()
+            } catch (e: FirebaseAuthInvalidCredentialsException) {
+                // Mật khẩu cũ sai
+                return Result.failure(Exception("Mật khẩu hiện tại không đúng. Vui lòng kiểm tra lại."))
+            } catch (e: FirebaseAuthException) {
+                // Kiểm tra error code
+                when (e.errorCode) {
+                    "ERROR_WRONG_PASSWORD", "wrong-password", "ERROR_INVALID_CREDENTIAL" -> {
+                        return Result.failure(Exception("Mật khẩu hiện tại không đúng. Vui lòng kiểm tra lại."))
+                    }
+                    else -> {
+                        return Result.failure(Exception("Xác thực thất bại: ${e.message}"))
+                    }
+                }
+            } catch (e: Exception) {
+                // Kiểm tra message có chứa "wrong" hoặc "invalid" không
+                val errorMsg = e.message?.lowercase() ?: ""
+                if (errorMsg.contains("wrong") || errorMsg.contains("invalid") || errorMsg.contains("incorrect")) {
+                    return Result.failure(Exception("Mật khẩu hiện tại không đúng. Vui lòng kiểm tra lại."))
+                }
+                return Result.failure(Exception("Xác thực thất bại: ${e.message}"))
+            }
+            
+            // Đổi mật khẩu mới
+            currentUser.updatePassword(newPassword).await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteAccount(password: String?): Result<Unit> {
+        return try {
+            val currentUser = firebaseAuth.currentUser
+                ?: return Result.failure(Exception("Người dùng chưa đăng nhập"))
+            
+            val uid = currentUser.uid
+            
+            // Nếu có password, xác thực lại trước khi xóa
+            if (password != null) {
+                val email = currentUser.email
+                    ?: return Result.failure(Exception("Tài khoản không có email"))
+                
+                try {
+                    val credential = EmailAuthProvider.getCredential(email, password)
+                    currentUser.reauthenticate(credential).await()
+                } catch (e: FirebaseAuthInvalidCredentialsException) {
+                    // Mật khẩu sai
+                    return Result.failure(Exception("Mật khẩu không đúng. Vui lòng kiểm tra lại."))
+                } catch (e: FirebaseAuthException) {
+                    // Kiểm tra error code
+                    when (e.errorCode) {
+                        "ERROR_WRONG_PASSWORD", "wrong-password", "ERROR_INVALID_CREDENTIAL" -> {
+                            return Result.failure(Exception("Mật khẩu không đúng. Vui lòng kiểm tra lại."))
+                        }
+                        else -> {
+                            return Result.failure(Exception("Xác thực thất bại: ${e.message}"))
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Kiểm tra message có chứa "wrong" hoặc "invalid" không
+                    val errorMsg = e.message?.lowercase() ?: ""
+                    if (errorMsg.contains("wrong") || errorMsg.contains("invalid") || errorMsg.contains("incorrect")) {
+                        return Result.failure(Exception("Mật khẩu không đúng. Vui lòng kiểm tra lại."))
+                    }
+                    return Result.failure(Exception("Xác thực thất bại: ${e.message}"))
+                }
+            }
+            
+            // Xóa dữ liệu trong Firestore
+            try {
+                firestore.collection("users").document(uid).delete().await()
+            } catch (e: Exception) {
+                android.util.Log.e("AuthRepositoryImpl", "Error deleting user data: ${e.message}")
+            }
+            
+            // Xóa tài khoản Firebase Auth
+            currentUser.delete().await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

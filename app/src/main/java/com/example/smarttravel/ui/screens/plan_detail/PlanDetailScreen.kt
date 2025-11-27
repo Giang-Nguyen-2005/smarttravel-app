@@ -14,18 +14,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-// Đã xóa import automirrored gây lỗi
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MonetizationOn
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -56,25 +55,19 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-// --- COLOR PALETTE ---
-val AppPrimary = Color(0xFF037CAC)
-val BackgroundLight = Color(0xFFF5F7FA)
-val TextDark = Color(0xFF1A1A1A)
-val TextGray = Color(0xFF757575)
-val CardBorder = Color(0xFFEEEEEE)
-
 @Composable
 fun PlanDetailScreen(
     navController: NavController,
     planId: String,
     viewModel: PlanDetailViewModel = hiltViewModel()
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = colorScheme.background,
         bottomBar = {
             if (uiState.plan != null) {
                 PlanBottomBar(
@@ -90,7 +83,7 @@ fun PlanDetailScreen(
             when {
                 uiState.isLoading -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = AppPrimary)
+                        CircularProgressIndicator(color = colorScheme.primary)
                     }
                 }
                 uiState.error != null -> {
@@ -169,9 +162,9 @@ fun PlanDetailContent(
                 val mapDestinations = remember(planDays, destination) { extractMapDestinations(planDays, destination) }
                 if (mapDestinations.isNotEmpty()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Map, null, tint = AppPrimary, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Map, null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Bản đồ lịch trình", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text("Bản đồ lịch trình", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colorScheme.onBackground)
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     TravelPlanMapView(
@@ -180,7 +173,7 @@ fun PlanDetailContent(
                             .fillMaxWidth()
                             .height(200.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .border(1.dp, CardBorder, RoundedCornerShape(16.dp)),
+                            .border(1.dp, colorScheme.outlineVariant, RoundedCornerShape(16.dp)),
                         showRoute = true
                     )
                 }
@@ -219,6 +212,7 @@ fun PlanDetailContent(
 
 @Composable
 fun HeroImageSection(imageUrl: String, title: String) {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -233,7 +227,7 @@ fun HeroImageSection(imageUrl: String, title: String) {
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                        colors = listOf(Color.Transparent, colorScheme.scrim.copy(alpha = 0.8f)),
                         startY = 400f
                     )
                 )
@@ -253,30 +247,30 @@ fun HeroImageSection(imageUrl: String, title: String) {
 
 @Composable
 fun PlanTopControls(onBackClick: () -> Unit, onDeleteClick: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 48.dp, start = 16.dp, end = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // --- SỬA LỖI: Dùng Icons.Default.ArrowBack thay vì AutoMirrored ---
         AppTopBar(
             onBackClick = onBackClick,
-            containerColor = Color.White.copy(alpha = 0.9f),
-            iconTint = TextDark
+            containerColor = colorScheme.surface.copy(alpha = 0.9f),
+            iconTint = colorScheme.onSurface
         )
 
         Box(
             modifier = Modifier
                 .size(46.dp)
-                .background(color = Color.White.copy(alpha = 0.9f), shape = CircleShape)
+                .background(color = colorScheme.surface.copy(alpha = 0.9f), shape = CircleShape)
                 .clickable { onDeleteClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.DeleteOutline,
                 contentDescription = "Delete",
-                tint = Color.Red,
+                tint = colorScheme.error,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -294,13 +288,14 @@ fun InfoGridSection(plan: TravelPlan) {
         } else "Chưa xác định"
     }
 
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .offset(y = (-32).dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(
@@ -320,11 +315,12 @@ fun InfoGridSection(plan: TravelPlan) {
 
 @Composable
 fun VerticalDivider() {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .height(40.dp)
             .width(1.dp)
-            .background(Color(0xFFEEEEEE))
+            .background(colorScheme.outlineVariant)
     )
 }
 
@@ -334,11 +330,11 @@ fun InfoColumn(icon: ImageVector, label: String, value: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.widthIn(min = 80.dp, max = 110.dp)
     ) {
-        Icon(icon, null, tint = AppPrimary, modifier = Modifier.size(24.dp))
+        Icon(icon, null, tint = colorScheme.primary, modifier = Modifier.size(24.dp))
         Spacer(modifier = Modifier.height(6.dp))
-        Text(label, fontSize = 11.sp, color = TextGray)
+        Text(label, fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(2.dp))
-        Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextDark, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+        Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
     }
 }
 
@@ -347,30 +343,30 @@ fun CompactPriceCard(priceText: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(12.dp))
-            .border(1.dp, AppPrimary.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+            .background(colorScheme.surface, RoundedCornerShape(12.dp))
+            .border(1.dp, colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .background(AppPrimary.copy(alpha = 0.1f), CircleShape),
+                .background(colorScheme.primary.copy(alpha = 0.1f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Wallet, null, tint = AppPrimary, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Wallet, null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text("Tổng chi phí ước tính", fontSize = 12.sp, color = TextGray)
-            Text(priceText, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = AppPrimary)
+            Text("Tổng chi phí ước tính", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+            Text(priceText, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
         }
     }
 }
 
 @Composable
 fun DaySelectorBar(planDays: List<PlanDayData>, selectedDayIndex: Int?, onDaySelected: (Int) -> Unit) {
-    Surface(color = BackgroundLight, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
         Row(
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
@@ -384,9 +380,9 @@ fun DaySelectorBar(planDays: List<PlanDayData>, selectedDayIndex: Int?, onDaySel
                 onClick = { onDaySelected(-1) },
                 label = { Text("Tất cả") },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = AppPrimary,
-                    selectedLabelColor = Color.White,
-                    containerColor = Color.White
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = colorScheme.onPrimary,
+                    containerColor = colorScheme.surface
                 ),
                 border = null,
                 elevation = FilterChipDefaults.filterChipElevation(elevation = 2.dp)
@@ -402,9 +398,9 @@ fun DaySelectorBar(planDays: List<PlanDayData>, selectedDayIndex: Int?, onDaySel
                     onClick = { onDaySelected(index) },
                     label = { Text("Ngày ${index + 1} • $shortDate") },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = AppPrimary,
-                        selectedLabelColor = Color.White,
-                        containerColor = Color.White
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = colorScheme.onPrimary,
+                        containerColor = colorScheme.surface
                     ),
                     border = null,
                     elevation = FilterChipDefaults.filterChipElevation(elevation = 2.dp)
@@ -419,11 +415,11 @@ fun DaySelectorBar(planDays: List<PlanDayData>, selectedDayIndex: Int?, onDaySel
 fun TimelineDaySection(day: PlanDayData, dayIndex: Int, viewModel: PlanDetailViewModel) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 16.dp)) {
-            Box(modifier = Modifier.size(12.dp).background(AppPrimary, CircleShape))
+            Box(modifier = Modifier.size(12.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text(text = day.title.uppercase(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = TextDark)
-                Text(text = day.date, style = MaterialTheme.typography.bodySmall, color = TextGray)
+                Text(text = day.title.uppercase(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(text = day.date, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         day.hotel?.let { hotel ->
@@ -441,13 +437,14 @@ fun TimelineDaySection(day: PlanDayData, dayIndex: Int, viewModel: PlanDetailVie
 
 @Composable
 fun TimelineItem(time: String, isHotel: Boolean = false, isLast: Boolean = false, content: @Composable () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     IntrinsicHeightRow {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(60.dp)) {
-            Text(text = time, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (isHotel) AppPrimary else TextDark, textAlign = TextAlign.Center)
+            Text(text = time, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (isHotel) colorScheme.primary else colorScheme.onSurface, textAlign = TextAlign.Center)
             Spacer(modifier = Modifier.height(8.dp))
-            Box(modifier = Modifier.size(if (isHotel) 14.dp else 10.dp).border(2.dp, if (isHotel) AppPrimary else Color(0xFFBDBDBD), CircleShape).background(Color.White, CircleShape))
+            Box(modifier = Modifier.size(if (isHotel) 14.dp else 10.dp).border(2.dp, if (isHotel) colorScheme.primary else colorScheme.outlineVariant, CircleShape).background(colorScheme.surface, CircleShape))
             if (!isLast) {
-                Box(modifier = Modifier.width(2.dp).fillMaxHeight().background(Color(0xFFE0E0E0)))
+                Box(modifier = Modifier.width(2.dp).fillMaxHeight().background(MaterialTheme.colorScheme.outlineVariant))
             }
         }
         Box(modifier = Modifier.padding(bottom = 24.dp, start = 8.dp).weight(1f)) {
@@ -463,6 +460,7 @@ fun IntrinsicHeightRow(content: @Composable RowScope.() -> Unit) {
 
 @Composable
 fun HotelCard(hotel: HotelInfo, dayIndex: Int, viewModel: PlanDetailViewModel) {
+    val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val isGenerating = uiState.generatingAlternative?.let {
@@ -470,34 +468,34 @@ fun HotelCard(hotel: HotelInfo, dayIndex: Int, viewModel: PlanDetailViewModel) {
     } ?: false
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppPrimary.copy(alpha = 0.2f)),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.2f)),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Hotel, null, tint = AppPrimary, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Hotel, null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("KHÁCH SẠN", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = AppPrimary)
+                Text("KHÁCH SẠN", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
                 Spacer(modifier = Modifier.weight(1f))
                 if (hotel.rating.isNotEmpty()) {
                     Icon(Icons.Rounded.Star, null, tint = Color(0xFFFFC107), modifier = Modifier.size(14.dp))
-                    Text(hotel.rating, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    Text(hotel.rating, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(hotel.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text(hotel.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
 
             if (hotel.location.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(hotel.location, fontSize = 13.sp, color = TextGray, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(hotel.location, fontSize = 13.sp, color = colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
 
             if (hotel.price.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(hotel.price, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppPrimary)
+                Text(hotel.price, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colorScheme.primary)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -511,6 +509,7 @@ fun HotelCard(hotel: HotelInfo, dayIndex: Int, viewModel: PlanDetailViewModel) {
 
 @Composable
 fun ActivityCard(activity: ActivityInfo, dayIndex: Int, activityIndex: Int, viewModel: PlanDetailViewModel) {
+    val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val isGenerating = uiState.generatingAlternative?.let {
@@ -519,32 +518,29 @@ fun ActivityCard(activity: ActivityInfo, dayIndex: Int, activityIndex: Int, view
         it.activityIndex == activityIndex
     } ?: false
 
-    // Lấy thông tin danh mục từ type
     val categoryInfo = remember(activity.type) { getCategoryInfo(activity.type) }
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Tên hoạt động và danh mục
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(activity.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                    
-                    // Hiển thị danh mục nếu có
+                    Text(activity.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+
                     if (categoryInfo != null && activity.type.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         CategoryChip(
                             categoryName = categoryInfo.name,
                             icon = categoryInfo.icon,
-                            color = AppPrimary
+                            color = colorScheme.primary
                         )
                     }
                 }
@@ -560,14 +556,14 @@ fun ActivityCard(activity: ActivityInfo, dayIndex: Int, activityIndex: Int, view
                     Icon(
                         Icons.Default.LocationOn,
                         contentDescription = null,
-                        tint = AppPrimary,
+                        tint = colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = activity.location,
                         fontSize = 13.sp,
-                        color = TextGray,
+                        color = colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
@@ -577,7 +573,7 @@ fun ActivityCard(activity: ActivityInfo, dayIndex: Int, activityIndex: Int, view
 
             if (activity.description.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(activity.description, fontSize = 13.sp, color = TextGray, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Text(activity.description, fontSize = 13.sp, color = colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
 
             if (activity.recommendedDishes.isNotEmpty() || activity.price != null) {
@@ -608,7 +604,7 @@ fun ActivityCard(activity: ActivityInfo, dayIndex: Int, activityIndex: Int, view
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = CardBorder, thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
             Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 SuggestionButton(isGenerating = isGenerating, onClick = { viewModel.requestAlternativeSuggestion(dayIndex, "activity", activityIndex, {}, {}) })
                 SmallMapButton(onClick = { openLocationInGoogleMaps(context, activity.location, activity.name) })
@@ -666,15 +662,16 @@ fun getCategoryInfo(categoryId: String): CategoryInfo? {
 
 @Composable
 fun SmallMapButton(onClick: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onClick() }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text("Chỉ đường", fontSize = 12.sp, color = AppPrimary, fontWeight = FontWeight.Bold)
-        // --- SỬA LỖI: Dùng Icons.Default.ArrowForward ---
-        Icon(Icons.Default.ArrowForward, null, tint = AppPrimary, modifier = Modifier.size(14.dp))
+        Text("Chỉ đường", fontSize = 12.sp, color = colorScheme.primary, fontWeight = FontWeight.Bold)
+        Icon(Icons.Default.ArrowForward, null, tint = colorScheme.primary, modifier = Modifier.size(14.dp))
     }
 }
 
 @Composable
 fun SuggestionButton(isGenerating: Boolean, onClick: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.load))
 
     Row(modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(enabled = !isGenerating) { onClick() }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -686,21 +683,21 @@ fun SuggestionButton(isGenerating: Boolean, onClick: () -> Unit) {
                     modifier = Modifier.size(24.dp)
                 )
             } else {
-                CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp, color = TextGray)
+                CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp, color = colorScheme.onSurfaceVariant)
             }
             Spacer(modifier = Modifier.width(4.dp))
-            Text("Đang tìm...", fontSize = 12.sp, color = TextGray)
+            Text("Đang tìm...", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
         } else {
-            Icon(Icons.Default.Refresh, null, tint = TextGray, modifier = Modifier.size(14.dp))
+            Icon(Icons.Default.Refresh, null, tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text("Gợi ý khác", fontSize = 12.sp, color = TextGray)
+            Text("Gợi ý khác", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable
 fun PlanBottomBar(onShareClick: () -> Unit) {
-    Surface(shadowElevation = 16.dp, color = Color.White) {
+    Surface(shadowElevation = 16.dp, color = MaterialTheme.colorScheme.surface) {
         Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             PrimaryButton(text = "Chia sẻ kế hoạch", onClick = onShareClick, modifier = Modifier.fillMaxWidth())
         }
@@ -709,33 +706,36 @@ fun PlanBottomBar(onShareClick: () -> Unit) {
 
 @Composable
 fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Xóa kế hoạch?", fontWeight = FontWeight.Bold) },
         text = { Text("Bạn có chắc chắn muốn xóa kế hoạch này? Hành động này không thể hoàn tác.") },
-        confirmButton = { Button(onClick = onConfirm, colors = ButtonDefaults.buttonColors(containerColor = Color.Red)) { Text("Xóa") } },
+        confirmButton = { Button(onClick = onConfirm, colors = ButtonDefaults.buttonColors(containerColor = colorScheme.error)) { Text("Xóa") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Hủy") } },
-        containerColor = Color.White
+        containerColor = colorScheme.surface
     )
 }
 
 @Composable
 fun ErrorView(error: String, onRetry: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Icon(Icons.Default.ErrorOutline, null, tint = Color.Red, modifier = Modifier.size(48.dp))
+        Icon(Icons.Default.ErrorOutline, null, tint = colorScheme.error, modifier = Modifier.size(48.dp))
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Đã xảy ra lỗi", fontWeight = FontWeight.Bold)
-        Text(error, color = TextGray, textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
+        Text("Đã xảy ra lỗi", fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+        Text(error, color = colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
         Button(onClick = onRetry) { Text("Thử lại") }
     }
 }
 
 @Composable
 fun EmptyStateView() {
+    val colorScheme = MaterialTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(Icons.Default.AutoAwesome, null, tint = AppPrimary, modifier = Modifier.size(64.dp))
+        Icon(Icons.Default.AutoAwesome, null, tint = colorScheme.primary, modifier = Modifier.size(64.dp))
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Đang tạo lịch trình AI...", color = TextGray)
+        Text("Đang tạo lịch trình AI...", color = colorScheme.onSurfaceVariant)
     }
 }
 
@@ -766,11 +766,9 @@ private fun parsePlanDetail(planDetail: List<Map<String, Any>>): List<PlanDayDat
             val hotelMap = dayMap["hotel"] as? Map<String, Any>
             val activitiesList = dayMap["activities"] as? List<Map<String, Any>> ?: emptyList()
 
-            // Chỉ tạo hotel nếu hotelMap không null và không rỗng
             val hotel = hotelMap?.let {
                 val name = it["name"] as? String ?: ""
                 val location = it["location"] as? String ?: ""
-                // Chỉ tạo hotel nếu có ít nhất một thông tin (name hoặc location)
                 if (name.isNotEmpty() || location.isNotEmpty()) {
                     HotelInfo(
                         name = name,
@@ -850,7 +848,6 @@ private fun extractMapDestinations(planDays: List<PlanDayData>, destination: com
 
 private fun openLocationInGoogleMaps(context: android.content.Context, location: String, name: String) {
     try {
-        // Chỉ truyền địa chỉ vào thanh tìm kiếm, không kèm tên
         val encodedLocation = Uri.encode(location)
         val uri = Uri.parse("geo:0,0?q=$encodedLocation")
         val intent = Intent(Intent.ACTION_VIEW, uri).apply { setPackage("com.google.android.apps.maps") }

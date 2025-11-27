@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.MonetizationOn
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,17 +40,12 @@ import com.example.smarttravel.ui.components.PrimaryButton
 import com.example.smarttravel.ui.viewmodel.PlanViewModel
 import com.example.smarttravel.ui.viewmodel.SaveState
 
-// --- MÀU SẮC THEME ---
-private val AppPrimaryColor = Color(0xFF037CAC)
-private val BgLightGray = Color(0xFFF5F7FA) // Màu nền cho các box con
-private val TextDark = Color(0xFF1A1A1A)
-private val TextGray = Color(0xFF757575)
-
 @Composable
 fun RegisterScreen(
     navController: NavController,
     viewModel: PlanViewModel
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
     val saveState by viewModel.saveState.collectAsState()
     val context = LocalContext.current
@@ -69,12 +65,12 @@ fun RegisterScreen(
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = colorScheme.background,
         bottomBar = {
             // Nút bấm cố định ở đáy (Tách khỏi LazyColumn để luôn hiển thị)
             Surface(
                 shadowElevation = 8.dp,
-                color = Color.White
+                color = colorScheme.surface
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     PrimaryButton(
@@ -113,7 +109,7 @@ fun RegisterScreen(
                     text = "Tóm tắt chuyến đi",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark,
+                    color = colorScheme.onSurface,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -147,7 +143,7 @@ fun RegisterScreen(
                         text = "Thông tin chi tiết",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextDark,
+                        color = colorScheme.onSurface,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
@@ -187,7 +183,7 @@ fun RegisterScreen(
                         text = "Sở thích & Mong muốn",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextDark,
+                        color = colorScheme.onSurface,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     InterestsSummaryCard(
@@ -211,7 +207,7 @@ fun LocationSummaryCard(
 ) {
     Card(
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -232,7 +228,7 @@ fun LocationSummaryCard(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.LightGray)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     )
                 }
 
@@ -243,13 +239,13 @@ fun LocationSummaryCard(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(12.dp)
-                        .background(Color.White.copy(alpha = 0.8f), CircleShape)
+                        .background(colorScheme.surface.copy(alpha = 0.8f), CircleShape)
                         .size(36.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = "Edit",
-                        tint = AppPrimaryColor,
+                        tint = colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -266,7 +262,7 @@ fun LocationSummaryCard(
                     text = destinationName,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark,
+                    color = colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
                 if (locationName.isNotEmpty()) {
@@ -275,14 +271,14 @@ fun LocationSummaryCard(
                         Icon(
                             imageVector = Icons.Outlined.LocationOn,
                             contentDescription = null,
-                            tint = TextGray,
+                            tint = colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = locationName,
                             fontSize = 14.sp,
-                            color = TextGray
+                            color = colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -298,9 +294,10 @@ fun DetailSummaryItem(
     value: String,
     onEditClick: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = BgLightGray),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onEditClick() } // Cho phép click toàn bộ dòng để sửa
@@ -317,14 +314,14 @@ fun DetailSummaryItem(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .background(Color.White, CircleShape)
+                        .background(colorScheme.surface, CircleShape)
                         .padding(8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = AppPrimaryColor
+                        tint = colorScheme.primary
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
@@ -333,13 +330,13 @@ fun DetailSummaryItem(
                     Text(
                         text = label,
                         fontSize = 12.sp,
-                        color = TextGray
+                        color = colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = value,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = TextDark
+                        color = colorScheme.onSurface
                     )
                 }
             }
@@ -347,7 +344,7 @@ fun DetailSummaryItem(
             Icon(
                 imageVector = Icons.Default.Edit,
                 contentDescription = "Edit",
-                tint = AppPrimaryColor.copy(alpha = 0.6f),
+                tint = colorScheme.primary.copy(alpha = 0.6f),
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -360,9 +357,10 @@ fun InterestsSummaryCard(
     purposes: List<String>,
     onEditClick: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = BgLightGray),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onEditClick() }
@@ -377,20 +375,20 @@ fun InterestsSummaryCard(
                     Icon(
                         imageVector = Icons.Outlined.FavoriteBorder,
                         contentDescription = null,
-                        tint = AppPrimaryColor,
+                        tint = colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "${purposes.size} Sở thích đã chọn",
                         fontSize = 14.sp,
-                        color = TextGray
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Edit",
-                    tint = AppPrimaryColor.copy(alpha = 0.6f),
+                    tint = colorScheme.primary.copy(alpha = 0.6f),
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -401,7 +399,7 @@ fun InterestsSummaryCard(
                 Text(
                     text = "Chưa chọn sở thích nào",
                     fontSize = 14.sp,
-                    color = TextDark,
+                    color = colorScheme.onSurface,
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                 )
             } else {
@@ -412,14 +410,14 @@ fun InterestsSummaryCard(
                 ) {
                     purposes.forEach { purpose ->
                         Surface(
-                            color = Color.White,
+                            color = colorScheme.surface,
                             shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+                            border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.outlineVariant)
                         ) {
                             Text(
                                 text = purpose,
                                 fontSize = 13.sp,
-                                color = TextDark,
+                                color = colorScheme.onSurface,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 fontWeight = FontWeight.Medium
                             )

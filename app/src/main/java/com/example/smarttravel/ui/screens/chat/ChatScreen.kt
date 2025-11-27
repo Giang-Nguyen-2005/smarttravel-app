@@ -33,16 +33,12 @@ import com.example.smarttravel.ui.viewmodel.ChatViewModel
 import com.example.smarttravel.ui.viewmodel.Sender
 import kotlinx.coroutines.launch
 
-// --- MÀU SẮC THEME ---
-private val AppPrimaryColor = Color(0xFF037CAC)
-private val BotBubbleColor = Color(0xFFF2F4F5)
-private val InputBgColor = Color(0xFFF5F7FA)
-
 @Composable
 fun ChatScreen(
     navController: NavController,
     viewModel: ChatViewModel = hiltViewModel()
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     var inputText by remember { mutableStateOf("") }
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -60,7 +56,7 @@ fun ChatScreen(
     Scaffold(
         topBar = { ChatTopBar(onBackClick = { navController.popBackStack() }) },
         // ĐÃ BỎ BOTTOM BAR TẠI ĐÂY
-        containerColor = Color.White
+        containerColor = colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -105,10 +101,11 @@ fun ChatScreen(
 
 @Composable
 private fun ChatTopBar(onBackClick: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shadowElevation = 0.5.dp,
-        color = Color.White
+        color = colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -125,7 +122,7 @@ private fun ChatTopBar(onBackClick: () -> Unit) {
                     text = "Trợ lý AI",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A1A)
+                    color = colorScheme.onSurface
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
@@ -138,7 +135,7 @@ private fun ChatTopBar(onBackClick: () -> Unit) {
                     Text(
                         text = "Online",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
+                        color = colorScheme.onSurfaceVariant,
                         fontSize = 11.sp
                     )
                 }
@@ -150,10 +147,11 @@ private fun ChatTopBar(onBackClick: () -> Unit) {
 
 @Composable
 fun ChatMessageItem(message: ChatMessage) {
+    val colorScheme = MaterialTheme.colorScheme
     val isUser = message.sender == Sender.USER
     val alignment = if (isUser) Alignment.End else Alignment.Start
-    val backgroundColor = if (isUser) AppPrimaryColor else BotBubbleColor
-    val contentColor = if (isUser) Color.White else Color(0xFF1A1A1A)
+    val backgroundColor = if (isUser) colorScheme.primary else colorScheme.surfaceVariant
+    val contentColor = if (isUser) colorScheme.onPrimary else colorScheme.onSurface
 
     val bubbleShape = if (isUser) {
         RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp)
@@ -175,7 +173,7 @@ fun ChatMessageItem(message: ChatMessage) {
                 painter = painterResource(id = R.drawable.avatar),
                 contentDescription = "Bot",
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier.size(32.dp).clip(CircleShape).background(Color.LightGray)
+                modifier = Modifier.size(32.dp).clip(CircleShape).background(colorScheme.surfaceVariant)
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
@@ -207,12 +205,13 @@ private fun ModernChatInput(
     onSendClick: () -> Unit,
     enabled: Boolean = true
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .imePadding() // Đảm bảo ô nhập nằm ngay trên bàn phím
             .navigationBarsPadding(), // Tránh bị che bởi navigation bar
-        color = Color.White,
+        color = colorScheme.surface,
         shadowElevation = 8.dp,
         tonalElevation = 2.dp
     ) {
@@ -226,7 +225,7 @@ private fun ModernChatInput(
             Row(
                 modifier = Modifier
                     .weight(1f)
-                    .background(InputBgColor, RoundedCornerShape(24.dp))
+                    .background(colorScheme.surfaceVariant, RoundedCornerShape(24.dp))
                     .padding(horizontal = 16.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -236,7 +235,7 @@ private fun ModernChatInput(
                     placeholder = {
                         Text(
                             "Hỏi tôi về chuyến đi...",
-                            color = Color.Gray.copy(alpha = 0.6f),
+                            color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                             fontSize = 14.sp
                         )
                     },
@@ -250,7 +249,7 @@ private fun ModernChatInput(
                         unfocusedContainerColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = AppPrimaryColor,
+                        cursorColor = colorScheme.primary,
 
                         // Trạng thái Disabled (khi AI đang trả lời) -> Ép về trong suốt
                         disabledContainerColor = Color.Transparent,
@@ -268,9 +267,9 @@ private fun ModernChatInput(
 
             // 2. Nút Gửi
             val isSendEnabled = enabled && text.isNotBlank()
-            // Nếu đang loading (enabled = false), ta vẫn giữ màu xám nhạt (E0E0E0) chứ không để nó bị tối đi theo mặc định
-            val buttonColor = if (isSendEnabled) AppPrimaryColor else Color(0xFFE0E0E0)
-            val iconColor = if (isSendEnabled) Color.White else Color.Gray
+            // Nếu đang loading (enabled = false), ta vẫn giữ màu xám nhạt chứ không để nó bị tối đi theo mặc định
+            val buttonColor = if (isSendEnabled) colorScheme.primary else colorScheme.surfaceVariant
+            val iconColor = if (isSendEnabled) colorScheme.onPrimary else colorScheme.onSurfaceVariant
 
             IconButton(
                 onClick = onSendClick,
@@ -284,7 +283,7 @@ private fun ModernChatInput(
                 if (!enabled && text.isNotBlank()) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = Color.Gray,
+                        color = colorScheme.onSurfaceVariant,
                         strokeWidth = 2.dp
                     )
                 } else {
@@ -302,6 +301,7 @@ private fun ModernChatInput(
 
 @Composable
 private fun TypingAnimationIndicator() {
+    val colorScheme = MaterialTheme.colorScheme
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.typing))
     Row(
         modifier = Modifier
@@ -313,12 +313,12 @@ private fun TypingAnimationIndicator() {
             painter = painterResource(id = R.drawable.avatar),
             contentDescription = "Bot",
             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-            modifier = Modifier.size(32.dp).clip(CircleShape).background(Color.LightGray)
+            modifier = Modifier.size(32.dp).clip(CircleShape).background(colorScheme.surfaceVariant)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Surface(
             shape = RoundedCornerShape(18.dp),
-            color = BotBubbleColor,
+            color = colorScheme.surfaceVariant,
             modifier = Modifier.height(36.dp)
         ) {
             Box(

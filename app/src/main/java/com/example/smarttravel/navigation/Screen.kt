@@ -56,4 +56,6 @@ sealed class Screen(val route: String) {
         fun createRoute(dayIndex: Int, startDate: String, endDate: String) = "add_activity_form_screen/$dayIndex/$startDate/$endDate"
     }
 
+    object Settings : Screen("settings_screen")
+
 }

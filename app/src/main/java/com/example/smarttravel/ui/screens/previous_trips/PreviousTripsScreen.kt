@@ -53,12 +53,12 @@ fun PreviousTripsScreen(
                         onClick = { navController.popBackStack() },
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color(0xFFE0E0E0), androidx.compose.foundation.shape.CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant, androidx.compose.foundation.shape.CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Quay lại",
-                            tint = Color(0xFF1A1A1A),
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -129,20 +129,20 @@ fun PreviousTripsScreen(
                                 imageVector = Icons.Default.TravelExplore,
                                 contentDescription = null,
                                 modifier = Modifier.size(80.dp),
-                                tint = Color.Gray
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "Chưa có chuyến đi nào",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Các chuyến đi đã kết thúc sẽ xuất hiện ở đây",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 32.dp)
                             )
                         }
@@ -171,7 +171,7 @@ fun PreviousTripsScreen(
                                     Text(
                                         text = "${uiState.plans.size} chuyến đi",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Gray
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }

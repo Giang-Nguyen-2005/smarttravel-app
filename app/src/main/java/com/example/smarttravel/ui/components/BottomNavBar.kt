@@ -26,6 +26,8 @@ import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.theme.SmarttravelTheme
 // --- THÊM IMPORT NÀY ---
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 
 // -------------------- Dữ liệu cho từng mục --------------------
 sealed class AppBottomBarItem(val route: String, val iconRes: Int, val title: String) {
@@ -49,12 +51,14 @@ fun AppBottomBar(
     val chatItem = AppBottomBarItem.Chat
     val profileItem = AppBottomBarItem.Profile
 
+    val colorScheme = MaterialTheme.colorScheme
+    
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding() // Tự động thêm padding để né thanh điều hướng
             .shadow(10.dp, RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)),
-        color = Color.White,
+        color = colorScheme.surface,
         shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
     ) {
         Row(
@@ -229,7 +233,7 @@ private fun RowScope.SearchBottomBarItem(
                 Icon(
                     painter = painterResource(id = item.iconRes),
                     contentDescription = item.title,
-                    tint = Color.White,
+                    tint = colorScheme.onPrimary,
                     modifier = Modifier.size(28.dp)
                 )
             }

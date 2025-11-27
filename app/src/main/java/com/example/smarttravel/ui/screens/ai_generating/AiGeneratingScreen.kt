@@ -75,6 +75,7 @@ fun AiGeneratingScreen(
 
 @Composable
 fun AiGeneratingScreenUI() {
+    val colorScheme = MaterialTheme.colorScheme
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.bot))
     val progress by animateLottieCompositionAsState(
         composition = composition,
@@ -208,13 +209,13 @@ fun AiGeneratingScreenUI() {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(50))
+                    .background(colorScheme.surface.copy(alpha = 0.3f), RoundedCornerShape(50))
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Lightbulb,
                     contentDescription = null,
-                    tint = Color(0xFFFFE082), // Màu vàng
+                    tint = Color(0xFFFFE082), // Màu vàng - giữ nguyên cho nổi bật
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))

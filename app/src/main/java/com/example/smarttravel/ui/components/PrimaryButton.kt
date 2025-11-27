@@ -24,12 +24,13 @@ fun PrimaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Button(
         onClick = onClick,
         shape = RoundedCornerShape(15.dp), // Bo góc
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF037CAC), // Màu xanh
-            contentColor = Color.White
+            containerColor = colorScheme.primary,
+            contentColor = colorScheme.onPrimary
         ),
         modifier = modifier
             .fillMaxWidth()
@@ -48,7 +49,6 @@ fun PrimaryButton(
 @Composable
 fun PrimaryButtonPreview() {
     SmarttravelTheme(
-        darkTheme = false,
         dynamicColor = false
     ) {
         PrimaryButton(

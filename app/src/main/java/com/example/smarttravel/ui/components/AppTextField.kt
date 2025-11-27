@@ -42,6 +42,7 @@ fun AppTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     enabled: Boolean = true
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -49,11 +50,11 @@ fun AppTextField(
         placeholder = { Text(text = placeholder) },
         shape = RoundedCornerShape(15.dp),
         colors = TextFieldDefaults.colors(
-            unfocusedContainerColor = Color(0xFFE0E0E0),
-            focusedContainerColor = Color(0xFFE0E0E0),
+            unfocusedContainerColor = colorScheme.surfaceVariant,
+            focusedContainerColor = colorScheme.surfaceVariant,
             unfocusedIndicatorColor = Color.Transparent,
             focusedIndicatorColor = Color.Transparent,
-            cursorColor = MaterialTheme.colorScheme.primary
+            cursorColor = colorScheme.primary
         ),
                 singleLine = true,
         trailingIcon = trailingIcon,

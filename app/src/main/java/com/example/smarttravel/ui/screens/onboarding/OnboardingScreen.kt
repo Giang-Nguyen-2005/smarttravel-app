@@ -1,10 +1,15 @@
 package com.example.smarttravel.ui.screens.onboarding
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import com.example.smarttravel.navigation.Screen
 import kotlinx.coroutines.launch
@@ -12,6 +17,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalFoundationApi::class) // Cần cho HorizontalPager
 @Composable
 fun OnboardingScreen(navController: NavController) {
+    val colorScheme = MaterialTheme.colorScheme
 
     // Pager state cho 3 trang
     val pagerState = rememberPagerState(initialPage = 0) {
@@ -29,7 +35,12 @@ fun OnboardingScreen(navController: NavController) {
         }
     }
 
-    HorizontalPager(state = pagerState) { page ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colorScheme.background)
+    ) {
+        HorizontalPager(state = pagerState) { page ->
         when (page) {
             // Trang 1
             0 -> OnboardingScreen01(
@@ -57,5 +68,6 @@ fun OnboardingScreen(navController: NavController) {
                 onStartClick = navigateToLogin // Nút cuối cùng, chuyển đến Login
             )
         }
+    }
     }
 }

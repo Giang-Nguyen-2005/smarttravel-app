@@ -3,7 +3,7 @@ package com.example.smarttravel.ui.viewmodel
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.smarttravel.data.repository.AuthRepositoryImpl
+import com.example.smarttravel.data.repository.AuthRepository
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -12,14 +12,15 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepositoryImpl
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     var email by mutableStateOf("")
     var password by mutableStateOf("")
     var confirmPassword by mutableStateOf("")
-    var authState by mutableStateOf<AuthState>(AuthState.Idle)
-        private set
+    
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
+    val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     sealed class AuthState {
         object Idle : AuthState()
@@ -50,31 +51,31 @@ class AuthViewModel @Inject constructor(
     // --- Actions ---
     fun registerUser() {
         if (password != confirmPassword) {
-            authState = AuthState.Error("Mật khẩu xác nhận không khớp.")
+            _authState.value = AuthState.Error("Mật khẩu xác nhận không khớp.")
             return
         }
-        authState = AuthState.Loading
+        _authState.value = AuthState.Loading
         viewModelScope.launch {
             val result = authRepository.registerUser(email, password)
-            authState = if (result.isSuccess) AuthState.Success
+            _authState.value = if (result.isSuccess) AuthState.Success
             else AuthState.Error(result.exceptionOrNull()?.message ?: "Đăng ký thất bại.")
         }
     }
 
     fun loginUser() {
-        authState = AuthState.Loading
+        _authState.value = AuthState.Loading
         viewModelScope.launch {
             val result = authRepository.loginUser(email, password)
-            authState = if (result.isSuccess) AuthState.Success
+            _authState.value = if (result.isSuccess) AuthState.Success
             else AuthState.Error(result.exceptionOrNull()?.message ?: "Đăng nhập thất bại.")
         }
     }
 
     fun signInWithGoogle(idToken: String, email: String) {
-        authState = AuthState.Loading
+        _authState.value = AuthState.Loading
         viewModelScope.launch {
             val result = authRepository.signInWithGoogle(idToken, email)
-            authState = when {
+            _authState.value = when {
                 result.isSuccess -> AuthState.Success
                 result.exceptionOrNull()?.message == "EXISTING_EMAIL_NEED_LINK" ->
                     AuthState.NeedPasswordForLink(email, idToken) // Luồng A
@@ -85,10 +86,10 @@ class AuthViewModel @Inject constructor(
 
     // Khi người dùng đã có tài khoản email, nhập mật khẩu để link Google
     fun linkGoogleWithPassword(idToken: String, email: String, password: String) {
-        authState = AuthState.Loading
+        _authState.value = AuthState.Loading
         viewModelScope.launch {
             val loginResult = authRepository.loginUser(email, password)
-            authState = if (loginResult.isSuccess) {
+            _authState.value = if (loginResult.isSuccess) {
                 val linkResult = authRepository.linkGoogleAccount(idToken)
                 if (linkResult.isSuccess) AuthState.Success
                 else AuthState.Error(linkResult.exceptionOrNull()?.message ?: "Liên kết Google thất bại.")
@@ -99,10 +100,10 @@ class AuthViewModel @Inject constructor(
     }
 
     fun linkEmailPasswordAccount(email: String, password: String) {
-        authState = AuthState.Loading
+        _authState.value = AuthState.Loading
         viewModelScope.launch {
             val result = authRepository.linkEmailPasswordAccount(email, password)
-            authState = if (result.isSuccess) {
+            _authState.value = if (result.isSuccess) {
                 AuthState.Success
             } else {
                 AuthState.Error(result.exceptionOrNull()?.message ?: "Liên kết mật khẩu thất bại.")
@@ -112,11 +113,35 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         authRepository.logout()
-        authState = AuthState.Idle
+        _authState.value = AuthState.Idle
     }
 
     fun resetAuthState() {
-        authState = AuthState.Idle
+        _authState.value = AuthState.Idle
     }
     fun getCurrentUser() = authRepository.getCurrentUser()
+
+    fun changePassword(currentPassword: String, newPassword: String) {
+        _authState.value = AuthState.Loading
+        viewModelScope.launch {
+            val result = authRepository.changePassword(currentPassword, newPassword)
+            _authState.value = if (result.isSuccess) {
+                AuthState.Success
+            } else {
+                AuthState.Error(result.exceptionOrNull()?.message ?: "Đổi mật khẩu thất bại")
+            }
+        }
+    }
+
+    fun deleteAccount(password: String? = null) {
+        _authState.value = AuthState.Loading
+        viewModelScope.launch {
+            val result = authRepository.deleteAccount(password)
+            _authState.value = if (result.isSuccess) {
+                AuthState.Success
+            } else {
+                AuthState.Error(result.exceptionOrNull()?.message ?: "Xóa tài khoản thất bại")
+            }
+        }
+    }
 }

@@ -90,6 +90,7 @@ import com.example.smarttravel.ui.viewmodel.DetailViewModel
 import java.net.URLEncoder
 // --- THÊM IMPORT NÀY ---
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.MaterialTheme.colorScheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,6 +99,7 @@ fun DetailScreen(
     destinationId: String,
     viewModel: DetailViewModel = hiltViewModel()
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
     var selectedImageIndex by remember { mutableIntStateOf(-1) }
     val scaffoldState = rememberBottomSheetScaffoldState(
@@ -132,7 +134,7 @@ fun DetailScreen(
                     Spacer(modifier = Modifier.fillMaxWidth().height(peekHeight))
                 }
             },
-            sheetContainerColor = Color.White,
+            sheetContainerColor = colorScheme.surface,
             // Hiệu ứng làm mờ nền khi đang xem ảnh (nếu thiết bị hỗ trợ)
             modifier = Modifier.blur(if (selectedImageIndex != -1) 20.dp else 0.dp)
         ) {
@@ -200,7 +202,7 @@ fun GalleryImageViewer(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.9f)) // Nền đen mờ 90%
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.9f)) // Nền overlay mờ 90%
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -259,24 +261,24 @@ fun GalleryImageViewer(
                 .align(Alignment.TopEnd)
                 .padding(16.dp)
                 .padding(top = 32.dp) // Tránh tai thỏ
-                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                .background(colorScheme.surface.copy(alpha = 0.7f), CircleShape)
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "Close",
-                tint = Color.White
+                tint = colorScheme.onSurface
             )
         }
         // Chỉ báo số trang (ví dụ: 1/5) ở dưới đáy
         Text(
             text = "${pagerState.currentPage + 1} / ${images.size}",
-            color = Color.White.copy(alpha = 0.9f),
+            color = colorScheme.onSurface.copy(alpha = 0.9f),
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 48.dp)
-                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                .background(colorScheme.surface.copy(alpha = 0.7f), RoundedCornerShape(16.dp))
                 .padding(horizontal = 12.dp, vertical = 6.dp)
         )
     }
@@ -308,13 +310,14 @@ fun ImageHeader(imageUrl: String, modifier: Modifier = Modifier, onImageClick: (
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.2f))
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.2f))
         )
     }
 }
 
 @Composable
 fun TopControls(onBackClick: () -> Unit, onBookmarkClick: () -> Unit, isBookmarked: Boolean = false) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -326,14 +329,14 @@ fun TopControls(onBackClick: () -> Unit, onBookmarkClick: () -> Unit, isBookmark
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.3f))
+                .background(colorScheme.surface.copy(alpha = 0.7f))
                 .clickable { onBackClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
-                tint = Color.White,
+                tint = colorScheme.onSurface,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -343,7 +346,7 @@ fun TopControls(onBackClick: () -> Unit, onBookmarkClick: () -> Unit, isBookmark
                 .clip(CircleShape)
                 .background(
                     if (isBookmarked) Color(0xFFFFC107).copy(alpha = 0.9f)
-                    else Color.Black.copy(alpha = 0.3f)
+                    else colorScheme.surface.copy(alpha = 0.7f)
                 )
                 .clickable { onBookmarkClick() },
             contentAlignment = Alignment.Center
@@ -351,7 +354,7 @@ fun TopControls(onBackClick: () -> Unit, onBookmarkClick: () -> Unit, isBookmark
             Icon(
                 imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                 contentDescription = "Bookmark",
-                tint = Color.White,
+                tint = colorScheme.onSurface,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -464,7 +467,11 @@ fun ContentSheet(
                 // Tuy nhiên, việc tăng PADDING_FOR_BUTTON đã bù đắp cho điều này.
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.White.copy(alpha = 0f), Color.White, Color.White),
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0f),
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surface
+                        ),
                         startY = 0f,
                         endY = 100f
                     )

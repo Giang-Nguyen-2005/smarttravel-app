@@ -58,10 +58,11 @@ fun SearchScreen(
             AppBottomBar(navController = navController, currentRoute = Screen.Search.route)
         }
     ) { paddingValues ->
+        val colorScheme = MaterialTheme.colorScheme
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(colorScheme.background)
                 .padding(paddingValues)
         ) {
             // 1. Thanh tìm kiếm
@@ -132,14 +133,14 @@ fun ModernSearchBar(
         value = searchText,
         onValueChange = onSearchChanged,
         placeholder = {
-            Text("Tìm địa điểm du lịch", color = Color.Gray, fontSize = 16.sp)
+            Text("Tìm địa điểm du lịch", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp)
         },
         leadingIcon = {
             IconButton(onClick = onBackClick) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.DarkGray
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         },
@@ -149,7 +150,7 @@ fun ModernSearchBar(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Clear",
-                        tint = Color.Gray
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
@@ -161,8 +162,8 @@ fun ModernSearchBar(
             }
         },
         colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFF5F5F5),
-            unfocusedContainerColor = Color(0xFFF5F5F5),
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             cursorColor = MaterialTheme.colorScheme.primary
@@ -209,7 +210,7 @@ fun PreSearchContent(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Clear History",
-                        tint = Color.Gray
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -227,12 +228,12 @@ fun PreSearchContent(
                                 Icons.Default.History,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = Color.Gray
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
                         shape = CircleShape,
                         colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = Color(0xFFF0F0F0)
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
                         ),
                         border = null
                     )
@@ -303,14 +304,14 @@ fun SearchResultsContent(
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = null,
-                tint = Color.LightGray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(80.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Không tìm thấy kết quả nào.",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     } else {

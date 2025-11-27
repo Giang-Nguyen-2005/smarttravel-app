@@ -74,6 +74,7 @@ fun AddActivityFormScreen(
     startDate: String? = null,
     endDate: String? = null
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -150,13 +151,13 @@ fun AddActivityFormScreen(
                         onClick = { navController.popBackStack() },
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color(0xFFE0E0E0), CircleShape)
+                            .background(colorScheme.surfaceVariant, CircleShape)
                             .align(Alignment.CenterStart)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Quay lại",
-                            tint = Color(0xFF1A1A1A),
+                            tint = colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -164,6 +165,7 @@ fun AddActivityFormScreen(
                         text = "Thêm hoạt động",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -174,7 +176,7 @@ fun AddActivityFormScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.White),
+                .background(colorScheme.background),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -184,7 +186,8 @@ fun AddActivityFormScreen(
                     Text(
                         text = "Thời gian",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(
@@ -201,26 +204,26 @@ fun AddActivityFormScreen(
                                 Icon(
                                     Icons.Default.Schedule, 
                                     contentDescription = null,
-                                    tint = if (isTimeSelected) Color.Black else Color.Unspecified
+                                    tint = if (isTimeSelected) colorScheme.onSurface else Color.Unspecified
                                 )
                             },
                             trailingIcon = {
                                 Icon(
                                     Icons.Default.AccessTime, 
                                     contentDescription = "Chọn thời gian",
-                                    tint = if (isTimeSelected) Color.Black else Color.Unspecified
+                                    tint = if (isTimeSelected) colorScheme.onSurface else Color.Unspecified
                                 )
                             },
                             readOnly = true,
                             enabled = true,
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                focusedBorderColor = MaterialTheme.colorScheme.outline,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                focusedTextColor = if (isTimeSelected) Color.Black else MaterialTheme.colorScheme.onSurface,
-                                unfocusedTextColor = if (isTimeSelected) Color.Black else MaterialTheme.colorScheme.onSurface
+                                focusedContainerColor = colorScheme.surface,
+                                unfocusedContainerColor = colorScheme.surface,
+                                focusedBorderColor = colorScheme.outline,
+                                unfocusedBorderColor = colorScheme.outline,
+                                focusedTextColor = if (isTimeSelected) colorScheme.onSurface else colorScheme.onSurfaceVariant,
+                                unfocusedTextColor = if (isTimeSelected) colorScheme.onSurface else colorScheme.onSurfaceVariant
                             )
                         )
                         Box(
@@ -232,7 +235,7 @@ fun AddActivityFormScreen(
                     Text(
                         text = "Nhấn vào ô để chọn thời gian",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
+                        color = colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
@@ -244,7 +247,8 @@ fun AddActivityFormScreen(
                     Text(
                         text = "Tên hoạt động",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
@@ -263,7 +267,8 @@ fun AddActivityFormScreen(
                     Text(
                         text = "Danh mục",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     LazyRow(
@@ -286,7 +291,8 @@ fun AddActivityFormScreen(
                     Text(
                         text = "Địa chỉ",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
@@ -309,21 +315,21 @@ fun AddActivityFormScreen(
                                 showLocationPicker = true
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF2196F3) // Màu xanh dương
+                                containerColor = colorScheme.primary
                             )
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Map,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = Color.White
+                                tint = colorScheme.onPrimary
                             )
                         }
                     }
                     Text(
                         text = "Nhấn nút bản đồ để mở Google Maps và chọn vị trí",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
+                        color = colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
@@ -335,7 +341,8 @@ fun AddActivityFormScreen(
                     Text(
                         text = "Ghi chú (tùy chọn)",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
@@ -433,8 +440,9 @@ fun CategoryChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFFF5F5F5)
-    val contentColor = if (isSelected) Color.White else Color.Black
+    val colorScheme = MaterialTheme.colorScheme
+    val backgroundColor = if (isSelected) colorScheme.primary else colorScheme.surfaceVariant
+    val contentColor = if (isSelected) colorScheme.onPrimary else colorScheme.onSurface
     
     Surface(
         modifier = Modifier
@@ -631,13 +639,13 @@ fun LocationPickerDialog(
                     Text(
                         text = "Đang lấy địa chỉ...",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else if (selectedAddress.isNotEmpty()) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFE3F2FD)
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                         )
                     ) {
                         Column(
@@ -646,13 +654,14 @@ fun LocationPickerDialog(
                             Text(
                                 text = "Địa chỉ đã chọn:",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = selectedAddress,
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -660,7 +669,7 @@ fun LocationPickerDialog(
                     Text(
                         text = "Nhấn vào bản đồ để chọn vị trí",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

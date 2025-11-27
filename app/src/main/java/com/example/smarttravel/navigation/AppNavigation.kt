@@ -46,6 +46,7 @@ import com.example.smarttravel.ui.screens.planregister.PurposeScreen
 import com.example.smarttravel.ui.screens.schedule.PlanScreen
 import com.example.smarttravel.ui.screens.plan_detail.PlanDetailScreen
 import com.example.smarttravel.ui.screens.ai_generating.AiGeneratingScreen
+import com.example.smarttravel.ui.screens.settings.SettingsScreen
 
 // Helper function cho animation transitions hiện đại
 fun <T> AnimatedContentTransitionScope<T>.modernSlideIn() = 
@@ -249,6 +250,17 @@ fun AppNavigation(navController: NavHostController) {
             popExitTransition = { modernPopSlideOut() }
         ) {
             PreviousTripsScreen(navController = navController)
+        }
+
+        // Màn hình Cài đặt
+        composable(
+            route = Screen.Settings.route,
+            enterTransition = { modernSlideIn() },
+            exitTransition = { modernSlideOut() },
+            popEnterTransition = { modernPopSlideIn() },
+            popExitTransition = { modernPopSlideOut() }
+        ) {
+            SettingsScreen(navController = navController)
         }
 
         // Màn hình Search

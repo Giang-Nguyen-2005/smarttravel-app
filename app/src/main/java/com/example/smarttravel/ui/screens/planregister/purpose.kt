@@ -27,6 +27,7 @@ fun PurposeScreen(
     navController: NavController,
     viewModel: PlanViewModel
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
     val selectedPurposes = uiState.purposes // Giả định đây là Set<String> hoặc List<String>
     val selectedCount = selectedPurposes.size
@@ -57,14 +58,14 @@ fun PurposeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(colorScheme.background)
                 .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             // --- HEADER CỐ ĐỊNH (STICKY HEADER) - CĂN GIỮA TUYỆT ĐỐI THANH TIẾN ĐỘ ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(colorScheme.surface)
                     .padding(horizontal = 24.dp)
                     .padding(top = 60.dp, bottom = 16.dp)
             ) {
@@ -86,7 +87,7 @@ fun PurposeScreen(
                             .height(6.dp)
                             .clip(RoundedCornerShape(3.dp)),
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color(0xFFE0E0E0),
+                        trackColor = colorScheme.surfaceVariant,
                         strokeCap = ProgressIndicatorDefaults.LinearStrokeCap
                     )
                 }
@@ -115,7 +116,7 @@ fun PurposeScreen(
                     Text(
                         text = "Hãy chọn những loại hình du lịch bạn yêu thích để AI có thể gợi ý lịch trình phù hợp nhất.",
                         fontSize = 16.sp,
-                        color = Color.Gray
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -124,7 +125,7 @@ fun PurposeScreen(
                         text = "$selectedCount/$maxSelection",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (selectedCount > 0) MaterialTheme.colorScheme.primary else Color.Gray,
+                        color = if (selectedCount > 0) colorScheme.primary else colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
                     )
                 }
@@ -154,7 +155,7 @@ fun PurposeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White) // Thêm nền trắng cho nút bấm cố định
+                    .background(colorScheme.surface) // Nền cho nút bấm cố định
                     .padding(16.dp)
             ) {
                 PrimaryButton(
@@ -184,7 +185,8 @@ fun PurposeCard(
     isSelectable: Boolean, // Thêm tham số mới
     onClick: () -> Unit
 ) {
-    val borderColor = if (isSelected) Color(0xFF037CAC) else Color.Transparent
+    val colorScheme = MaterialTheme.colorScheme
+    val borderColor = if (isSelected) colorScheme.primary else Color.Transparent
 
     // Giảm độ mờ (opacity) nếu không được chọn và không thể chọn (đã đạt max limit)
     val contentAlpha = if (isSelectable) 1f else 0.5f
@@ -193,7 +195,7 @@ fun PurposeCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF5F5F5).copy(alpha = contentAlpha)) // Áp dụng alpha cho nền
+            .background(colorScheme.surfaceVariant.copy(alpha = contentAlpha)) // Áp dụng alpha cho nền
             .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(12.dp))
             // Chỉ cho phép click nếu nó đang selected (để bỏ chọn) hoặc còn slot để chọn
             .clickable(enabled = isSelectable) { onClick() }

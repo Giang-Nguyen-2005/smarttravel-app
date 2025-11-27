@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -160,9 +161,9 @@ fun EditProfileTopBar(
             text = if (isLoading) "Đang..." else "Cập nhật",
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1A1A1A),
+            color = colorScheme.onSurface,
             modifier = Modifier
-                .background(color = Color(0xFFE0E0E0), shape = CircleShape)
+                .background(color = colorScheme.surfaceVariant, shape = CircleShape)
                 .padding(horizontal = 16.dp, vertical = 10.dp)
                 .clickable(enabled = !isLoading) {
                     onUpdateClick()

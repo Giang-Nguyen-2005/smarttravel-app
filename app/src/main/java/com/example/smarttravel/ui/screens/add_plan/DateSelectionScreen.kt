@@ -36,6 +36,7 @@ import java.util.Locale
 fun DateSelectionScreen(
     navController: NavController
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val today = LocalDate.now()
     var selectedStartDate by remember { mutableStateOf<LocalDate?>(null) }
     var selectedEndDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -77,12 +78,12 @@ fun DateSelectionScreen(
                         onClick = { navController.popBackStack() },
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color(0xFFE0E0E0), RoundedCornerShape(20.dp))
+                            .background(colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Quay lại",
-                            tint = Color(0xFF1A1A1A),
+                            tint = colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -91,6 +92,7 @@ fun DateSelectionScreen(
                         text = "Chọn ngày",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -101,14 +103,14 @@ fun DateSelectionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.White)
+                .background(colorScheme.background)
         ) {
             // Hướng dẫn
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F7FA))
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
@@ -116,13 +118,14 @@ fun DateSelectionScreen(
                     Text(
                         text = "Chọn ngày cho kế hoạch của bạn",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Bạn có thể chọn một ngày hoặc nhiều ngày liên tiếp. Chỉ có thể chọn ngày tương lai.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -137,7 +140,7 @@ fun DateSelectionScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFF5F5F5))
+                            .background(colorScheme.surfaceVariant)
                             .padding(vertical = 16.dp)
                     ) {
                         CalendarHeader(month = headerMonth)
@@ -203,7 +206,8 @@ fun DateSelectionScreen(
                     Text(
                         text = "Tiếp tục",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onPrimary
                     )
                 }
             }
@@ -213,12 +217,14 @@ fun DateSelectionScreen(
 
 @Composable
 private fun CalendarHeader(month: YearMonth) {
+    val colorScheme = MaterialTheme.colorScheme
     val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("vi"))
     Text(
         text = month.format(formatter)
             .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
         fontSize = 18.sp,
         fontWeight = FontWeight.SemiBold,
+        color = colorScheme.onSurface,
         textAlign = TextAlign.Center,
         modifier = Modifier
             .fillMaxWidth()
@@ -228,6 +234,7 @@ private fun CalendarHeader(month: YearMonth) {
 
 @Composable
 private fun DaysOfWeekHeader(firstDayOfWeek: DayOfWeek) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -246,7 +253,7 @@ private fun DaysOfWeekHeader(firstDayOfWeek: DayOfWeek) {
                     text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("vi")),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.Gray,
+                    color = colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
             }
@@ -265,6 +272,7 @@ private fun DayCell(
     endDate: LocalDate?,
     onClick: (LocalDate) -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val date = day.date
     val today = LocalDate.now()
     // Chỉ cho phép chọn ngày tương lai (từ hôm nay trở đi)
@@ -273,14 +281,14 @@ private fun DayCell(
     val isEndDate = date == endDate
     val inRange = startDate != null && endDate != null && date > startDate && date < endDate
     val backgroundColor = when {
-        isStartDate || isEndDate -> MaterialTheme.colorScheme.primary
-        inRange -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        isStartDate || isEndDate -> colorScheme.primary
+        inRange -> colorScheme.primary.copy(alpha = 0.1f)
         else -> Color.Transparent
     }
     val textColor = when {
-        isStartDate || isEndDate -> Color.White
-        !isSelectable -> Color.Gray.copy(alpha = 0.5f)
-        else -> Color.Black
+        isStartDate || isEndDate -> colorScheme.onPrimary
+        !isSelectable -> colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        else -> colorScheme.onSurface
     }
     Box(
         modifier = Modifier

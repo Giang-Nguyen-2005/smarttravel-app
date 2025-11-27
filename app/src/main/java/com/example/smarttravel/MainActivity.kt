@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.example.smarttravel.navigation.AppNavigation
-import com.example.smarttravel.ui.theme.SmarttravelTheme
+import com.example.smarttravel.ui.theme.ThemeWrapper
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            SmarttravelTheme {
+            ThemeWrapper {
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()
@@ -34,14 +34,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    SmarttravelTheme {
-        val navController = rememberNavController()
-        AppNavigation(navController = navController)
     }
 }

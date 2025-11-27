@@ -12,9 +12,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +27,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import android.os.Build
+import android.content.pm.PackageManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -60,16 +65,17 @@ fun RoundIconButton(
     contentDescription: String,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     IconButton(
         onClick = onClick,
         modifier = modifier
             .size(46.dp)
-            .background(Color(0xFFE0E0E0), CircleShape)
+            .background(colorScheme.surfaceVariant, CircleShape)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = Color(0xFF1A1A1A),
+            tint = colorScheme.onSurface,
             modifier = Modifier.size(20.dp)
         )
     }
@@ -82,7 +88,40 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val userProfile by viewModel.userProfile.collectAsState()
+    
+    // Lấy version từ PackageManager
+    val appVersion = remember {
+        try {
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
+            val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageInfo.longVersionCode.toString()
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.versionCode.toString()
+            }
+            "${packageInfo.versionName} (Build $versionCode)"
+        } catch (e: Exception) {
+            "1.0"
+        }
+    }
+    
+    // Cập nhật menu items với version
+    val menuItemsWithVersion = remember(appVersion) {
+        menuItems.map { item ->
+            if (item.title == "Version") {
+                item.copy(subtitle = appVersion)
+            } else {
+                item
+            }
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -97,28 +136,33 @@ fun ProfileScreen(
         ) {
             // Top Bar
             item {
-                Row(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
+                    // Nút back (căn trái)
                     RoundIconButton(
                         onClick = { navController.popBackStack() },
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Quay lại"
+                        contentDescription = "Quay lại",
+                        modifier = Modifier.align(Alignment.CenterStart)
                     )
-                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    // Title căn giữa
                     Text(
                         text = "Profile",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.align(Alignment.Center)
                     )
+                    
+                    // Nút edit (căn phải)
                     RoundIconButton(
                         onClick = { navController.navigate(Screen.EditProfile.route) },
                         icon = Icons.Default.Edit,
-                        contentDescription = "Chỉnh sửa"
+                        contentDescription = "Chỉnh sửa",
+                        modifier = Modifier.align(Alignment.CenterEnd)
                     )
                 }
             }
@@ -145,12 +189,14 @@ fun ProfileScreen(
             // Menu
             item {
                 MenuSection(
-                    items = menuItems,
+                    items = menuItemsWithVersion,
                     onMenuItemClick = { item ->
                         when (item.title) {
                             "Hồ Sơ" -> navController.navigate(Screen.UserProfileDetail.route)
                             "Đã Lưu" -> navController.navigate(Screen.SavedDestinations.route)
                             "Các chuyến đi trước" -> navController.navigate(Screen.PreviousTrips.route)
+                            "Cài đặt" -> navController.navigate(Screen.Settings.route)
+                            "Version" -> { /* Không có hành động, chỉ hiển thị thông tin */ }
                             "Đăng xuất" -> {
                                 authViewModel.logout()
                                 // Điều hướng về màn hình Login và xóa toàn bộ stack
@@ -252,7 +298,7 @@ fun AvatarSection(userName: String, userEmail: String, avatarUrl: String?) {
                 modifier = Modifier
                     .size(110.dp)
                     .clip(CircleShape)
-                    .background(Color.LightGray),
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentScale = ContentScale.Crop
             )
         } else {
@@ -275,7 +321,7 @@ fun AvatarSection(userName: String, userEmail: String, avatarUrl: String?) {
         Text(
             text = userEmail,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -286,9 +332,10 @@ fun MenuSection(
     items: List<ProfileMenuItem>,
     onMenuItemClick: (ProfileMenuItem) -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color.White,
+        color = colorScheme.surface,
         shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
     ) {
         Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp)) {
@@ -297,7 +344,7 @@ fun MenuSection(
                 if (index < items.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
-                        color = Color.LightGray.copy(alpha = 0.3f)
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                     )
                 }
             }
@@ -307,6 +354,7 @@ fun MenuSection(
 
 @Composable
 fun ProfileMenuItem(item: ProfileMenuItem, onClick: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -317,7 +365,7 @@ fun ProfileMenuItem(item: ProfileMenuItem, onClick: () -> Unit) {
         Icon(
             imageVector = item.icon,
             contentDescription = item.title,
-            tint = Color.Gray,
+            tint = colorScheme.onSurfaceVariant,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -325,7 +373,7 @@ fun ProfileMenuItem(item: ProfileMenuItem, onClick: () -> Unit) {
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                color = colorScheme.onSurfaceVariant
             )
             item.subtitle?.let {
                 Spacer(modifier = Modifier.height(2.dp))
@@ -333,14 +381,14 @@ fun ProfileMenuItem(item: ProfileMenuItem, onClick: () -> Unit) {
                     text = it,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = colorScheme.onSurface
                 )
             }
         }
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = null,
-            tint = Color.Gray,
+            tint = colorScheme.onSurfaceVariant,
             modifier = Modifier.size(16.dp)
         )
     }
@@ -349,9 +397,10 @@ fun ProfileMenuItem(item: ProfileMenuItem, onClick: () -> Unit) {
 // --- DETAIL MENU SECTION (KHÔNG CÓ ICON >) ---
 @Composable
 fun DetailMenuSection(items: List<ProfileMenuItem>) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = Color.White,
+        color = colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         shadowElevation = 2.dp
     ) {
@@ -365,7 +414,7 @@ fun DetailMenuSection(items: List<ProfileMenuItem>) {
                 if (index < items.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 4.dp),
-                        color = Color.LightGray.copy(alpha = 0.2f),
+                        color = colorScheme.outline.copy(alpha = 0.2f),
                         thickness = 0.5.dp
                     )
                 }
@@ -403,7 +452,7 @@ fun DetailMenuItem(item: ProfileMenuItem) {
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF757575),
+                color = colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Normal
             )
             Spacer(modifier = Modifier.height(6.dp))
