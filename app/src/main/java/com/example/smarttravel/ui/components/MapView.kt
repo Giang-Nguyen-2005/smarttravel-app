@@ -303,11 +303,9 @@ private fun openInExternalMap(
     label: String
 ) {
     try {
-        // Encode label để tránh lỗi với ký tự đặc biệt và tiếng Việt
-        val encodedLabel = Uri.encode(label.ifEmpty { "Địa điểm" })
-        
-        // Format 1: Google Maps với geo URI (chuẩn nhất)
-        val gmmIntentUri = Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude($encodedLabel)")
+        // Chỉ dùng tọa độ trong query, không kèm label/tên
+        // Format 1: Google Maps với geo URI (chuẩn nhất) - chỉ dùng tọa độ
+        val gmmIntentUri = Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude")
         
         // Thử mở Google Maps app trước
         val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
@@ -320,7 +318,7 @@ private fun openInExternalMap(
             return
         }
         
-        // Format 2: Google Maps URL (fallback nếu app không có)
+        // Format 2: Google Maps URL (fallback nếu app không có) - chỉ dùng tọa độ
         val googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=$latitude,$longitude"
         val urlIntent = Intent(Intent.ACTION_VIEW, Uri.parse(googleMapsUrl)).apply {
             setPackage("com.google.android.apps.maps")

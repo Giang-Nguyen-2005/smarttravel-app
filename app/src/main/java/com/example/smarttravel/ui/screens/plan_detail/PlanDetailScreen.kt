@@ -519,6 +519,9 @@ fun ActivityCard(activity: ActivityInfo, dayIndex: Int, activityIndex: Int, view
         it.activityIndex == activityIndex
     } ?: false
 
+    // Lấy thông tin danh mục từ type
+    val categoryInfo = remember(activity.type) { getCategoryInfo(activity.type) }
+
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -526,10 +529,54 @@ fun ActivityCard(activity: ActivityInfo, dayIndex: Int, activityIndex: Int, view
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(activity.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            // Tên hoạt động và danh mục
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(activity.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    
+                    // Hiển thị danh mục nếu có
+                    if (categoryInfo != null && activity.type.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        CategoryChip(
+                            categoryName = categoryInfo.name,
+                            icon = categoryInfo.icon,
+                            color = AppPrimary
+                        )
+                    }
+                }
+            }
+
+            // Hiển thị địa chỉ nếu có
+            if (activity.location.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = AppPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = activity.location,
+                        fontSize = 13.sp,
+                        color = TextGray,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
 
             if (activity.description.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(activity.description, fontSize = 13.sp, color = TextGray, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
 
@@ -578,6 +625,42 @@ fun InfoChip(icon: ImageVector, text: String, color: Color) {
             Spacer(modifier = Modifier.width(4.dp))
             Text(text, fontSize = 11.sp, color = color, fontWeight = FontWeight.Medium)
         }
+    }
+}
+
+@Composable
+fun CategoryChip(categoryName: String, icon: ImageVector, color: Color) {
+    Surface(
+        color = color.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.border(1.dp, color.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(14.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = categoryName,
+                fontSize = 12.sp,
+                color = color,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+data class CategoryInfo(val name: String, val icon: ImageVector)
+
+fun getCategoryInfo(categoryId: String): CategoryInfo? {
+    return when (categoryId) {
+        "activity" -> CategoryInfo("Hoạt động", Icons.Default.Explore)
+        "hotel" -> CategoryInfo("Khách sạn", Icons.Default.Bed)
+        "food" -> CategoryInfo("Ăn Uống", Icons.Default.Restaurant)
+        "walking" -> CategoryInfo("Đi dạo", Icons.Default.DirectionsWalk)
+        "photo" -> CategoryInfo("Chụp hình", Icons.Default.CameraAlt)
+        else -> null
     }
 }
 
@@ -767,8 +850,9 @@ private fun extractMapDestinations(planDays: List<PlanDayData>, destination: com
 
 private fun openLocationInGoogleMaps(context: android.content.Context, location: String, name: String) {
     try {
-        val query = Uri.encode("$location($name)")
-        val uri = Uri.parse("geo:0,0?q=$query")
+        // Chỉ truyền địa chỉ vào thanh tìm kiếm, không kèm tên
+        val encodedLocation = Uri.encode(location)
+        val uri = Uri.parse("geo:0,0?q=$encodedLocation")
         val intent = Intent(Intent.ACTION_VIEW, uri).apply { setPackage("com.google.android.apps.maps") }
         if (intent.resolveActivity(context.packageManager) != null) {
             context.startActivity(intent)
