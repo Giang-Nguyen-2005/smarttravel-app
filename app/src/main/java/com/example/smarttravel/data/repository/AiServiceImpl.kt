@@ -957,7 +957,7 @@ Yêu cầu:
 2. Ưu tiên các điểm đến có rating cao và phù hợp với sở thích
 3. TRÁNH gợi ý lại các điểm đến mà người dùng đã tạo kế hoạch gần đây (nếu có)
 4. Ưu tiên các điểm đến MỚI, KHÁC với những gì người dùng đã khám phá
-5. Trả về tối đa 20 điểm đến phù hợp nhất
+5. Trả về tối đa 5 điểm đến phù hợp nhất
 6. Chỉ trả về danh sách ID, không cần giải thích
 
 Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ trả về JSON, không có text thêm):
@@ -969,7 +969,7 @@ Trả về DƯỚI DẠNG JSON với cấu trúc chính xác như sau (chỉ tr�
 Lưu ý:
 - Chỉ trả về JSON, không có text thêm
 - Sắp xếp theo thứ tự từ phù hợp nhất đến ít phù hợp hơn
-- Tối đa 20 ID
+- Tối đa 5 ID
 - Ưu tiên điểm đến mới, khác với những gì đã khám phá
 """.trimIndent()
     }

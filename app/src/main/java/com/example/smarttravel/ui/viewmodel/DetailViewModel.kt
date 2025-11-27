@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.smarttravel.data.repository.AuthRepository
 import com.example.smarttravel.data.repository.DestinationRepository
+import com.example.smarttravel.data.repository.PlanRepository
 import com.example.smarttravel.model.Destination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,13 +20,17 @@ data class DetailUiState(
     val destination: Destination? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
-    val isBookmarked: Boolean = false
+    val isBookmarked: Boolean = false,
+    val canRate: Boolean = false, // Có thể đánh giá (đã có plan với destination này)
+    val userRating: Double? = null, // Rating hiện tại của user (1.0 - 5.0)
+    val isRatingLoading: Boolean = false
 )
 
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val destinationRepository: DestinationRepository,
     private val authRepository: AuthRepository,
+    private val planRepository: PlanRepository,
     savedStateHandle: SavedStateHandle // Dùng để lấy tham số từ Navigation
 ) : ViewModel() {
 
@@ -38,6 +43,8 @@ class DetailViewModel @Inject constructor(
     init {
         loadDestination()
         checkBookmarkStatus()
+        checkCanRate()
+        loadUserRating()
     }
 
     fun loadDestination() {
@@ -92,6 +99,74 @@ class DetailViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 isBookmarked = !isCurrentlyBookmarked
             )
+        }
+    }
+    
+    private fun checkCanRate() {
+        if (destinationId == null) return
+        
+        viewModelScope.launch {
+            val currentUser = authRepository.getCurrentUser()
+            if (currentUser == null) {
+                _uiState.value = _uiState.value.copy(canRate = false)
+                return@launch
+            }
+            
+            val result = planRepository.hasPlanWithDestination(destinationId)
+            if (result.isSuccess) {
+                _uiState.value = _uiState.value.copy(
+                    canRate = result.getOrNull() ?: false
+                )
+            }
+        }
+    }
+    
+    private fun loadUserRating() {
+        if (destinationId == null) return
+        
+        viewModelScope.launch {
+            val currentUser = authRepository.getCurrentUser()
+            if (currentUser == null) {
+                return@launch
+            }
+            
+            val result = destinationRepository.getUserRating(destinationId, currentUser.uid)
+            if (result.isSuccess) {
+                val userRating = result.getOrNull()
+                _uiState.value = _uiState.value.copy(
+                    userRating = userRating?.rating
+                )
+            }
+        }
+    }
+    
+    fun submitRating(rating: Double) {
+        if (destinationId == null) return
+        
+        viewModelScope.launch {
+            val currentUser = authRepository.getCurrentUser()
+            if (currentUser == null) {
+                return@launch
+            }
+            
+            _uiState.value = _uiState.value.copy(isRatingLoading = true)
+            
+            val result = destinationRepository.saveUserRating(
+                destinationId = destinationId,
+                userId = currentUser.uid,
+                rating = rating
+            )
+            
+            if (result.isSuccess) {
+                // Cập nhật UI ngay lập tức
+                _uiState.value = _uiState.value.copy(
+                    userRating = rating,
+                    isRatingLoading = false
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(isRatingLoading = false)
+                android.util.Log.e("DetailViewModel", "Error submitting rating: ${result.exceptionOrNull()?.message}")
+            }
         }
     }
 }

@@ -8,17 +8,20 @@ import com.example.smarttravel.data.repository.DestinationRepository
 import com.example.smarttravel.data.repository.DestinationRepositoryImpl
 import com.example.smarttravel.data.repository.PlanRepository
 import com.example.smarttravel.data.repository.PlanRepositoryImpl
+import android.content.Context
+import com.example.smarttravel.util.NetworkUtil
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object AppModule { // <-- Dòng 19
+object AppModule {
 
     // Cung cấp FirebaseAuth
     @Provides
@@ -34,11 +37,22 @@ object AppModule { // <-- Dòng 19
         return FirebaseFirestore.getInstance()
     }
 
+    // Cung cấp NetworkUtil
+    @Provides
+    @Singleton
+    fun provideNetworkUtil(@ApplicationContext context: Context): NetworkUtil {
+        return NetworkUtil(context)
+    }
+    
     // Cung cấp DestinationRepository
     @Provides
     @Singleton
-    fun provideDestinationRepository(firestore: FirebaseFirestore): DestinationRepository {
-        return DestinationRepositoryImpl(firestore)
+    fun provideDestinationRepository(
+        firestore: FirebaseFirestore,
+        firebaseAuth: FirebaseAuth,
+        networkUtil: NetworkUtil
+    ): DestinationRepository {
+        return DestinationRepositoryImpl(firestore, firebaseAuth, networkUtil)
     }
 
     // Cung cấp AuthRepository
@@ -51,14 +65,14 @@ object AppModule { // <-- Dòng 19
         return AuthRepositoryImpl(firebaseAuth, firestore)
     }
 
-    // Cung cấp PlanRepository (mới)
+    // Cung cấp PlanRepository
     @Provides
     @Singleton
     fun providePlanRepository(
         firestore: FirebaseFirestore,
         firebaseAuth: FirebaseAuth
     ): PlanRepository {
-        return PlanRepositoryImpl(firestore, firebaseAuth) // Sửa lỗi logic: cần firestore và firebaseAuth
+        return PlanRepositoryImpl(firestore, firebaseAuth)
     }
     
     // Cung cấp AiService

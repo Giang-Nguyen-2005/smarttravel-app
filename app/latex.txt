@@ -1,0 +1,588 @@
+\documentclass[12pt,a4paper]{report}
+
+%========== GÓI LỆNH CƠ BẢN ==========
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnam]{babel}
+\usepackage{geometry}
+\geometry{a4paper, left=3cm, right=2cm, top=2.5cm, bottom=2.5cm}
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{amsmath, amssymb}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{tocloft}
+\usepackage{array}
+\usepackage{longtable}
+
+\setlength{\cftbeforechapskip}{1em}
+\setlength{\cftbeforesecskip}{0.2em}
+
+\begin{document}
+
+%========== TRANG BÌA ==========
+\begin{titlepage}
+    \begin{center}
+        % --- PHẦN HEADER ---
+        % In đậm và viết hoa tên trường
+        {\large \textbf{TRƯỜNG ĐẠI HỌC GIAO THÔNG VẬN TẢI\\ THÀNH PHỐ HỒ CHÍ MINH}}\\[0.5cm]
+        
+        % In đậm tên viện
+        {\large \textbf{VIỆN CÔNG NGHỆ THÔNG TIN VÀ ĐIỆN, ĐIỆN TỬ}}\\[1cm] 
+        % [1cm] là khoảng cách từ chữ xuống logo, bạn có thể chỉnh thành 0.5cm nếu muốn gần hơn
+
+        % --- PHẦN LOGO ---
+        \includegraphics[width=12cm]{logo_uth.png}\\[4cm] 
+        % [2cm] là khoảng cách từ logo xuống tên đề tài
+
+        % --- PHẦN TÊN ĐỀ TÀI ---
+        {\LARGE \textbf{BÁO CÁO ĐỒ ÁN MÔN HỌC}}\\[0.5cm]
+        
+        {\large \textbf{ỨNG DỤNG SMARTTRAVEL -- GỢI Ý KẾ HOẠCH DU LỊCH THÔNG MINH TRÊN NỀN TẢNG ANDROID}}\\[3cm]
+
+        % --- PHẦN THÔNG TIN SINH VIÊN ---
+        \begin{flushright}
+            \begin{tabular}{l}
+                Sinh viên thực hiện: \textbf{Nguyễn Văn A} \\
+                MSSV: 20xx123456 \\
+                Lớp: CNTTxx \\
+                Nhóm: Nhóm xx \\
+                GV hướng dẫn: ThS. ABC
+            \end{tabular}
+        \end{flushright}
+
+        \vfill
+        {\large TP. Hồ Chí Minh, 2025}
+    \end{center}
+\end{titlepage}
+
+%========== TRANG ĐẦU ==========
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\chapter*{Lời cảm ơn}
+Trong suốt quá trình thực hiện đồ án ``Ứng dụng SmartTravel -- Gợi ý kế hoạch du lịch thông minh
+trên nền tảng Android'', nhóm chúng em đã nhận được rất nhiều sự quan tâm, giúp đỡ của quý thầy cô,
+gia đình và bạn bè.
+
+Trước hết, nhóm xin gửi lời cảm ơn chân thành đến thầy\textbf{ABC}, giảng viên hướng dẫn,
+người đã tận tình định hướng đề tài, góp ý về mặt chuyên môn cũng như nhắc nhở chúng em
+trong suốt quá trình thực hiện. Những nhận xét và góp ý của thầy đã giúp nhóm hoàn thiện hơn
+về kiến thức cũng như kỹ năng làm việc nhóm, tư duy phân tích và giải quyết vấn đề.
+
+Nhóm cũng xin cảm ơn thầy đã truyền đạt những kiến thức nền tảng quý báu
+trong suốt thời gian học tập tại trường, là cơ sở để chúng em có thể tiếp cận và giải quyết
+bài toán thực tế trong đồ án này.
+
+Cuối cùng, nhóm xin cảm ơn gia đình và bạn bè đã luôn động viên, hỗ trợ về tinh thần,
+tạo điều kiện thuận lợi để chúng em có thể tập trung hoàn thành tốt đồ án.
+
+Do thời gian và kiến thức có hạn, bài báo cáo khó tránh khỏi những thiếu sót.
+Nhóm rất mong nhận được những ý kiến đóng góp thầy để đề tài được hoàn thiện hơn.
+
+\bigskip
+
+
+\addcontentsline{toc}{chapter}{Lời cảm ơn}
+
+\bigskip
+\begin{flushright}
+    TP. Hồ Chí Minh, tháng 12 năm 2025\\
+    \textit{Nhóm sinh viên thực hiện}
+\end{flushright}
+
+\chapter*{Danh mục từ viết tắt}
+\begin{longtable}{|l|l|}
+\hline
+\textbf{Từ viết tắt} & \textbf{Ý nghĩa} \\ \hline
+AI & Artificial Intelligence -- Trí tuệ nhân tạo \\ \hline
+API & Application Programming Interface \\ \hline
+MVVM & Model--View--ViewModel \\ \hline
+UI & User Interface -- Giao diện người dùng \\ \hline
+UX & User Experience -- Trải nghiệm người dùng \\ \hline
+LLM & Large Language Model -- Mô hình ngôn ngữ lớn \\ \hline
+JSON & JavaScript Object Notation \\ \hline
+REST & Representational State Transfer \\ \hline
+\end{longtable}
+
+\addcontentsline{toc}{chapter}{Danh mục từ viết tắt}
+
+\tableofcontents
+\listoffigures
+\addcontentsline{toc}{chapter}{Danh mục hình vẽ}
+\clearpage
+
+\pagenumbering{arabic}
+
+%=================================================
+%      CHƯƠNG 1: GIỚI THIỆU NHÓM VÀ ĐỀ TÀI
+%=================================================
+\chapter{Giới thiệu nhóm và đề tài}
+
+\section{Thông tin nhóm}
+
+\noindent
+\textbf{Tên nhóm}:Nhóm 2\\
+\textbf{Tên đề tài}: Ứng dụng SmartTravel -- Gợi ý kế hoạch du lịch thông minh trên nền tảng Android\\
+\textbf{Môn học}: Lập Trình Thiết Bị Di Động\\
+\textbf{Giảng viên hướng dẫn}: Trương Quang Tuấn\\
+\textbf{Số lượng thành viên}: 3 sinh viên
+
+\bigskip
+\noindent
+Bảng~\ref{tab:thanhvien} thể hiện thông tin tổng quát và vai trò chính của từng thành viên trong nhóm.
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|c|l|l|p{7.5cm}|}
+        \hline
+        \textbf{STT} & \textbf{Họ và tên} & \textbf{MSSV} & \textbf{Vai trò chính trong nhóm} \\
+        \hline
+        1 & Trần Việt Hiếu & 064205000599 &
+         \\ \hline
+        2 & Trần Tấn Thuận  & 080205001708 &
+         \\ \hline
+        3 & Nguyễn Giang  & 066205016616 &
+         \\ \hline
+    \end{tabular}
+    \caption{Thông tin và vai trò của các thành viên trong nhóm}
+    \label{tab:thanhvien}
+\end{table}
+
+Ngoài các nhiệm vụ chính nêu trên, tất cả thành viên đều tham gia đóng góp ý tưởng tính năng,
+góp ý giao diện, viết báo cáo, chuẩn bị slide và thuyết trình, đảm bảo tiến độ chung của dự án.
+
+\section{Bối cảnh và lý do chọn đề tài}
+
+Trong bối cảnh ngành du lịch đang phát triển mạnh, người dùng có xu hướng tự tìm kiếm thông tin
+và tự xây dựng kế hoạch du lịch thay vì mua tour trọn gói. Việc lựa chọn điểm đến, sắp xếp lịch trình,
+cân đối chi phí, cũng như tìm các hoạt động phù hợp với sở thích và quỹ thời gian thường tốn nhiều công sức
+và dễ gây quá tải thông tin.
+
+Song song đó, sự phát triển nhanh chóng của trí tuệ nhân tạo (AI), đặc biệt là các mô hình ngôn ngữ lớn (LLM),
+cho phép hệ thống có thể hiểu yêu cầu người dùng và sinh ra các gợi ý phù hợp trong thời gian ngắn.
+Kết hợp giữa nền tảng di động và dịch vụ AI mở ra khả năng xây dựng một ứng dụng hỗ trợ người dùng
+lập kế hoạch du lịch một cách thông minh, trực quan và cá nhân hoá cao.
+
+Từ những lý do trên, nhóm quyết định thực hiện đề tài
+\textit{``SmartTravel -- Ứng dụng gợi ý kế hoạch du lịch thông minh trên nền tảng Android''}
+nhằm khai thác sức mạnh của AI để hỗ trợ người dùng trong quá trình chuẩn bị chuyến đi.
+
+\section{Mục tiêu của đề tài}
+
+\subsection*{Mục tiêu tổng quát}
+
+Xây dựng một ứng dụng Android cho phép người dùng tạo và quản lý kế hoạch du lịch một cách thuận tiện,
+đồng thời sử dụng AI để sinh ra lịch trình chi tiết theo nhu cầu và sở thích của từng người dùng.
+
+\subsection*{Mục tiêu cụ thể}
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item Thiết kế và cài đặt ứng dụng Android sử dụng ngôn ngữ Kotlin và thư viện Jetpack Compose,
+    áp dụng kiến trúc MVVM để tách biệt rõ ràng giữa giao diện, xử lý nghiệp vụ và dữ liệu.
+    \item Xây dựng lớp dịch vụ AI (\texttt{AiService}, \texttt{AiServiceImpl}) tích hợp với API (Gemini)
+    để sinh ra lịch trình du lịch tự động dựa trên các tham số đầu vào như địa điểm, thời gian, ngân sách,
+    mục đích chuyến đi và người đồng hành.
+    \item Xây dựng các màn hình quản lý kế hoạch (\texttt{PlanScreen}, \texttt{PlanDetailScreen},
+    \texttt{PreviousTripsScreen}) cho phép người dùng xem, chỉnh sửa và theo dõi lịch trình theo dạng thời gian.
+    \item Xây dựng chức năng gợi ý điểm đến thông minh (\texttt{AiSuggestionsScreen}),
+    tận dụng hồ sơ và sở thích người dùng để đề xuất các điểm đến phù hợp.
+    \item Thực hiện kiểm thử, đánh giá mức độ đáp ứng yêu cầu và đề xuất một số hướng phát triển
+    cho hệ thống trong tương lai.
+\end{itemize}
+
+\section{Phạm vi và đối tượng nghiên cứu}
+
+\textbf{Đối tượng nghiên cứu} của đề tài là:
+\begin{itemize}[leftmargin=1.5cm]
+    \item Người dùng cá nhân có nhu cầu lập kế hoạch cho các chuyến du lịch tự túc.
+    \item Các kỹ thuật và công nghệ xây dựng ứng dụng Android hiện đại: Kotlin, Jetpack Compose, MVVM, Hilt.
+    \item Các dịch vụ AI sinh nội dung (LLM) và cách tích hợp thông qua REST API trong ứng dụng di động.
+\end{itemize}
+
+\textbf{Phạm vi} của đề tài được giới hạn như sau:
+\begin{itemize}[leftmargin=1.5cm]
+    \item Ứng dụng triển khai trên nền tảng Android, chưa mở rộng sang iOS hay Web.
+    \item Dữ liệu điểm đến và kế hoạch mang tính minh hoạ; chưa tích hợp hệ thống đặt vé, đặt phòng thực tế.
+    \item Dịch vụ AI dùng để sinh lịch trình và gợi ý điểm đến ở mức mô phỏng hoặc tích hợp với một API cụ thể
+    (Gemini) tuỳ theo điều kiện khoá API và hạ tầng.
+\end{itemize}
+
+\section{Phương pháp nghiên cứu và thực hiện}
+
+Để hoàn thành đề tài, nhóm áp dụng các phương pháp chính sau:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Nghiên cứu tài liệu}: tìm hiểu tài liệu chính thức về Android, Kotlin, Jetpack Compose,
+    kiến trúc MVVM, Hilt, Firebase cũng như tài liệu về API AI (Gemini) và các mô hình ngôn ngữ lớn.
+    \item \textbf{Phân tích yêu cầu}: thu thập và phân tích các yêu cầu chức năng và phi chức năng của hệ thống,
+    từ đó xác định rõ bài toán cần giải quyết và các tính năng cốt lõi.
+    \item \textbf{Thiết kế hệ thống}: thiết kế kiến trúc tổng thể, mô hình dữ liệu, luồng xử lý nghiệp vụ
+    cho các chức năng chính như tạo kế hoạch, gợi ý điểm đến, quản lý lịch trình.
+    \item \textbf{Cài đặt và tích hợp}: hiện thực các module dữ liệu (repository), dịch vụ AI,
+    lớp ViewModel và các màn hình giao diện bằng Jetpack Compose; tích hợp các thành phần lại thành hệ thống hoàn chỉnh.
+    \item \textbf{Kiểm thử và đánh giá}: xây dựng một số ca kiểm thử chức năng, kiểm thử giao diện,
+    đánh giá mức độ đáp ứng mục tiêu ban đầu và ghi nhận các hạn chế của hệ thống.
+\end{itemize}
+
+%=================================================
+%      CHƯƠNG 2: CƠ SỞ LÝ THUYẾT
+%=================================================
+\chapter{Cơ sở lý thuyết và công nghệ sử dụng}
+
+\section{Tổng quan về Android và Kotlin}
+
+Android là hệ điều hành di động mã nguồn mở được phát triển bởi Google,
+hiện đang chiếm thị phần lớn nhất trên thị trường điện thoại thông minh.
+Hệ sinh thái Android cung cấp đầy đủ các công cụ, thư viện và tài liệu để lập trình viên
+có thể xây dựng ứng dụng di động phục vụ nhiều nhu cầu khác nhau của người dùng.
+
+Kotlin là ngôn ngữ lập trình hiện đại do JetBrains phát triển,
+được Google công nhận là ngôn ngữ chính thức cho phát triển Android từ năm 2017.
+Kotlin có cú pháp ngắn gọn, an toàn với null, hỗ trợ lập trình hàm và tương thích hoàn toàn với Java.
+Việc lựa chọn Kotlin giúp mã nguồn ngắn gọn, dễ đọc, giảm thiểu nhiều lỗi thường gặp của Java.
+
+\section{Jetpack Compose và kiến trúc MVVM}
+
+Jetpack Compose là bộ công cụ xây dựng giao diện người dùng theo hướng khai báo (declarative UI)
+do Google phát triển. Thay vì định nghĩa giao diện bằng XML như trước,
+lập trình viên mô tả giao diện bằng các hàm \emph{Composable} trong Kotlin.
+Giao diện sẽ tự động cập nhật khi trạng thái dữ liệu thay đổi.
+
+Kiến trúc MVVM (Model--View--ViewModel) được sử dụng rộng rãi trong các ứng dụng Android hiện đại.
+Trong đó:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Model}: đại diện cho dữ liệu và logic nghiệp vụ của ứng dụng.
+    \item \textbf{View}: lớp giao diện, chịu trách nhiệm hiển thị dữ liệu và nhận tương tác từ người dùng.
+    \item \textbf{ViewModel}: đóng vai trò trung gian, quản lý trạng thái và xử lý nghiệp vụ,
+    cung cấp dữ liệu đã xử lý cho \emph{View}.
+\end{itemize}
+
+Trong dự án SmartTravel, các lớp \texttt{PlanViewModel}, \texttt{HomeViewModel},
+\texttt{AuthViewModel}, \texttt{PlanListViewModel}, \ldots được sử dụng để tách bạch rõ ràng
+giữa tầng giao diện (Compose) và tầng dữ liệu (repository).
+
+\section{Dependency Injection với Hilt}
+
+Dependency Injection (DI) là kỹ thuật giúp tách việc tạo đối tượng khỏi nơi sử dụng,
+giúp mã nguồn dễ kiểm thử và mở rộng hơn. Hilt là thư viện DI do Google phát triển,
+xây dựng trên nền tảng Dagger, tích hợp chặt chẽ với Android và Jetpack.
+
+Trong ứng dụng SmartTravel, Hilt được sử dụng thông qua module \texttt{AppModule}
+để cung cấp các phụ thuộc như \texttt{PlanRepository}, \texttt{DestinationRepository},
+\texttt{AuthRepository}, \texttt{AiService}. Các \texttt{ViewModel} chỉ cần
+\verb|@Inject| các interface cần thiết mà không cần quan tâm tới chi tiết khởi tạo.
+
+\section{Cơ sở về dịch vụ AI và API Gemini}
+
+Các mô hình ngôn ngữ lớn (LLM) như Gemini có khả năng hiểu và sinh ngôn ngữ tự nhiên,
+phù hợp cho các bài toán sinh gợi ý, tóm tắt nội dung, trả lời câu hỏi.
+Việc tích hợp LLM vào ứng dụng di động thường được thực hiện thông qua REST API:
+ứng dụng gửi nội dung yêu cầu (prompt) lên server và nhận lại kết quả ở dạng JSON hoặc văn bản.
+
+Trong SmartTravel, lớp \texttt{AiServiceImpl} chịu trách nhiệm xây dựng prompt từ các thông tin
+chuyến đi (điểm đến, thời gian, ngân sách, mục đích, người đồng hành), gửi yêu cầu HTTP
+tới API Gemini và nhận về nội dung lịch trình được sinh tự động. Kết quả sau đó được phân tích
+và lưu vào cơ sở dữ liệu để hiển thị ở màn hình chi tiết kế hoạch.
+
+\section{Các thư viện và công cụ sử dụng}
+
+Ngoài các công nghệ chính kể trên, hệ thống còn sử dụng:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Navigation Compose}: điều hướng giữa các màn hình như Splash, Onboarding, Login, Home,
+    Detail, Plan, Profile, \ldots
+    \item \textbf{Coil}: thư viện tải và hiển thị hình ảnh điểm đến từ Internet.
+    \item \textbf{Firebase}: cung cấp các dịch vụ xác thực người dùng, lưu trữ dữ liệu,
+    đồng bộ giữa nhiều thiết bị (tuỳ cấu hình của đề tài).
+    \item \textbf{Lottie}: hiển thị các hiệu ứng animation JSON ở một số màn hình như splash hoặc loading.
+\end{itemize}
+
+%=================================================
+%      CHƯƠNG 3: PHÂN TÍCH HỆ THỐNG
+%=================================================
+\chapter{Phân tích hệ thống SmartTravel}
+
+\section{Mô tả bài toán}
+
+Người dùng ngày càng có nhu cầu tự tổ chức các chuyến du lịch cá nhân, nhóm bạn hoặc gia đình.
+Tuy nhiên, việc lựa chọn điểm đến, thời gian phù hợp, lên lịch trình chi tiết, ước lượng chi phí
+và sắp xếp các hoạt động trong ngày thường gây tốn thời gian và công sức,
+đặc biệt đối với những người ít kinh nghiệm du lịch.
+
+Bài toán đặt ra là xây dựng một ứng dụng di động có khả năng hỗ trợ người dùng:
+(1) khám phá và lựa chọn điểm đến; (2) nhập các thông số cơ bản của chuyến đi;
+(3) sử dụng AI để sinh ra lịch trình chi tiết; (4) quản lý và theo dõi các chuyến đi trong quá khứ và tương lai.
+
+\section{Yêu cầu chức năng}
+
+Các yêu cầu chức năng chính của hệ thống gồm:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Đăng ký/đăng nhập người dùng}: người dùng tạo tài khoản, đăng nhập,
+    quên mật khẩu, cập nhật thông tin hồ sơ.
+    \item \textbf{Khám phá điểm đến}: xem danh sách điểm đến nổi bật, xem chi tiết từng địa điểm,
+    tìm kiếm theo từ khoá, lưu lại địa điểm yêu thích.
+    \item \textbf{Tạo kế hoạch du lịch}: người dùng chọn điểm đến, chọn thời gian, nhập ngân sách,
+    mục đích chuyến đi, người đồng hành và gửi yêu cầu cho AI sinh lịch trình.
+    \item \textbf{Quản lý kế hoạch}: xem kế hoạch theo dạng danh sách và dạng lịch,
+    xem chi tiết từng kế hoạch, xem lịch sử các chuyến đi đã hoàn thành.
+    \item \textbf{Gợi ý thông minh}: hệ thống dựa trên sở thích và lịch sử sử dụng để đề xuất
+    một số điểm đến phù hợp cho người dùng.
+\end{itemize}
+
+\section{Yêu cầu phi chức năng}
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Hiệu năng}: thao tác trên ứng dụng phải mượt mà, thời gian phản hồi ngắn.
+    \item \textbf{Trải nghiệm người dùng}: giao diện trực quan, dễ sử dụng, thân thiện
+    với người dùng phổ thông.
+    \item \textbf{Bảo mật}: đảm bảo an toàn thông tin tài khoản người dùng,
+    không lộ dữ liệu nhạy cảm.
+    \item \textbf{Khả năng mở rộng}: kiến trúc hệ thống cho phép dễ dàng mở rộng thêm tính năng mới
+    trong tương lai như đặt vé máy bay, đặt phòng khách sạn.
+\end{itemize}
+
+\section{Các trường hợp sử dụng (Use case)}
+
+Một số use case chính của hệ thống gồm:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{UC01 - Đăng nhập}: người dùng nhập email và mật khẩu để vào ứng dụng.
+    \item \textbf{UC02 - Tạo kế hoạch mới}: từ màn hình chi tiết điểm đến,
+    người dùng chọn ``Lập kế hoạch'', nhập thông tin chuyến đi và gửi yêu cầu cho AI.
+    \item \textbf{UC03 - Xem kế hoạch theo lịch}: tại \texttt{PlanScreen}, người dùng chọn một ngày
+    và xem các kế hoạch diễn ra trong ngày đó.
+    \item \textbf{UC04 - Xem gợi ý thông minh}: từ màn hình Home, người dùng truy cập
+    \texttt{AiSuggestionsScreen} để xem danh sách điểm đến được hệ thống đề xuất.
+\end{itemize}
+
+\section{Mô hình dữ liệu logic}
+
+Dựa trên phân tích, hệ thống sử dụng một số thực thể chính:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{User}: lưu thông tin tài khoản, hồ sơ và sở thích của người dùng.
+    \item \textbf{Destination}: lưu thông tin điểm đến (tên, vị trí, mô tả, hình ảnh, loại hình du lịch).
+    \item \textbf{TravelPlan}: lưu thông tin kế hoạch du lịch, bao gồm điểm đến, thời gian, ngân sách,
+    mục đích, người đồng hành và lịch trình chi tiết.
+\end{itemize}
+
+%=================================================
+%      CHƯƠNG 4: THIẾT KẾ HỆ THỐNG
+%=================================================
+\chapter{Thiết kế hệ thống}
+
+\section{Kiến trúc tổng thể ứng dụng}
+
+Ứng dụng SmartTravel được thiết kế theo kiến trúc nhiều tầng:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Tầng giao diện (UI)}: các màn hình Compose như HomeScreen,
+    SearchScreen, DetailScreen, PlanScreen, PlanDetailScreen, AiSuggestionsScreen, \ldots
+    \item \textbf{Tầng ViewModel}: các lớp \texttt{HomeViewModel}, \texttt{PlanViewModel},
+    \texttt{PlanListViewModel}, \ldots chịu trách nhiệm quản lý trạng thái, xử lý nghiệp vụ
+    và gọi các repository tương ứng.
+    \item \textbf{Tầng dữ liệu (Data)}: gồm các repository (\texttt{PlanRepository},
+    \texttt{DestinationRepository}, \texttt{AuthRepository}, \texttt{AiService}) và
+    các lớp entity, DAO, mapper.
+\end{itemize}
+
+\section{Thiết kế dữ liệu}
+
+Mô hình dữ liệu được thiết kế để dễ dàng mở rộng, mỗi thực thể được ánh xạ thành một collection
+trong cơ sở dữ liệu. Trong trường hợp sử dụng Firebase Firestore, mỗi document \texttt{TravelPlan}
+chứa các trường như mã người dùng, mã điểm đến, tiêu đề, thời gian bắt đầu/kết thúc,
+ngân sách, mục đích, người đồng hành và nội dung lịch trình chi tiết do AI sinh ra.
+
+\section{Thiết kế chức năng tạo kế hoạch bằng AI}
+
+Luồng xử lý chính:
+\begin{enumerate}[leftmargin=1.5cm]
+    \item Người dùng chọn điểm đến và nhập thông tin chuyến đi (ngày bắt đầu, ngày kết thúc,
+    ngân sách, mục đích, người đồng hành) tại màn hình lập kế hoạch.
+    \item \texttt{PlanViewModel} kiểm tra tính hợp lệ của dữ liệu,
+    lưu kế hoạch cơ bản vào \texttt{PlanRepository}.
+    \item Sau khi lưu thành công, \texttt{PlanViewModel} chuyển sang trạng thái
+    ``đang tạo gợi ý AI'' và gọi \texttt{AiService.generateTravelPlan}.
+    \item Lớp \texttt{AiServiceImpl} xây dựng prompt và gửi yêu cầu HTTP tới API Gemini.
+    \item Kết quả trả về được phân tích, chuyển thành cấu trúc JSON và lưu lại vào trường
+    lịch trình chi tiết của \texttt{TravelPlan}.
+    \item Người dùng được điều hướng tới màn hình chi tiết kế hoạch để xem lịch trình đã được sinh.
+\end{enumerate}
+
+\section{Thiết kế chức năng gợi ý điểm đến thông minh}
+
+Chức năng gợi ý điểm đến dựa trên thông tin hồ sơ người dùng (sở thích, lịch sử tìm kiếm,
+các điểm đến đã lưu). \texttt{HomeViewModel} chịu trách nhiệm tải dữ liệu này
+và kết hợp với các quy tắc gợi ý đơn giản (ví dụ ưu tiên loại hình du lịch mà
+người dùng quan tâm, ưu tiên điểm đến chưa từng đi) để tạo danh sách đề xuất
+hiển thị tại \texttt{AiSuggestionsScreen}.
+
+\section{Thiết kế giao diện và điều hướng}
+
+Điều hướng giữa các màn hình được cài đặt bằng Navigation Compose.
+Mỗi màn hình tương ứng với một \emph{route} trong \texttt{AppNavigation}.
+Thanh điều hướng dưới (\texttt{BottomNavBar}) cho phép chuyển nhanh giữa các nhóm chức năng
+chính như Home, Tìm kiếm, Kế hoạch và Hồ sơ.
+
+Giao diện sử dụng tông màu xanh chủ đạo, kết hợp hình ảnh điểm đến toàn màn hình
+và các thành phần card để tạo cảm giác hiện đại, phù hợp với lĩnh vực du lịch.
+
+%=================================================
+%      CHƯƠNG 5: CÀI ĐẶT VÀ TRIỂN KHAI
+%=================================================
+\chapter{Cài đặt và triển khai}
+
+\section{Cấu trúc thư mục mã nguồn}
+
+Dự án được tổ chức với cấu trúc chính:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{data/}: chứa các lớp model, entity, dao, repository, service AI.
+    \item \texttt{ui/}: chứa các màn hình Compose, component dùng chung, phần theme.
+    \item \texttt{viewmodel/}: các lớp ViewModel quản lý trạng thái.
+    \item \texttt{navigation/}: định nghĩa tuyến đường và luồng điều hướng.
+    \item \texttt{di/}: chứa \texttt{AppModule} cấu hình Hilt.
+\end{itemize}
+
+\section{Cài đặt lớp dữ liệu và Repository}
+
+Mỗi repository cung cấp một tập hợp các hàm xử lý dữ liệu ở dạng \verb|Result|
+hoặc \verb|Flow| để ViewModel có thể dễ dàng đăng ký lắng nghe và cập nhật giao diện.
+Ví dụ, \texttt{PlanRepository} cung cấp các hàm lưu kế hoạch mới,
+tải danh sách kế hoạch theo người dùng, kiểm tra trùng lịch, \ldots
+
+\section{Cài đặt dịch vụ AI}
+
+Lớp \texttt{AiServiceImpl} hiện thực interface \texttt{AiService}. Bên trong,
+hệ thống xây dựng chuỗi prompt tiếng Việt mô tả yêu cầu chuyến đi,
+gửi lên API Gemini bằng HTTP POST với khoá API cấu hình sẵn.
+Trong trường hợp không có khoá hợp lệ hoặc API lỗi, lớp này trả về dữ liệu mẫu
+để ứng dụng vẫn hoạt động bình thường.
+
+\section{Cài đặt ViewModel và giao diện}
+
+Các ViewModel sử dụng \verb|MutableStateFlow| để quản lý trạng thái,
+kết hợp với hàm \verb|collectAsState| tại tầng Compose để tự động cập nhật giao diện.
+Ví dụ, \texttt{PlanListViewModel} tải danh sách kế hoạch từ \texttt{PlanRepository}
+và lọc kế hoạch theo ngày được chọn trong \texttt{PlanScreen}.
+
+Giao diện được chia thành nhiều component nhỏ như thanh tiêu đề, thẻ địa điểm,
+nút bấm chính, trường nhập liệu, giúp tái sử dụng và thống nhất phong cách.
+
+\section{Triển khai và chạy thử}
+
+Ứng dụng được phát triển và kiểm thử trên Android Studio phiên bản mới,
+sử dụng trình giả lập và thiết bị thật chạy Android 10 trở lên.
+Việc tích hợp Firebase yêu cầu thêm tệp cấu hình \texttt{google-services.json}.
+Sau khi cấu hình đầy đủ, dự án có thể build và chạy trực tiếp từ Android Studio.
+
+%=================================================
+%      CHƯƠNG 6: KIỂM THỬ VÀ ĐÁNH GIÁ
+%=================================================
+\chapter{Kiểm thử và đánh giá}
+
+\section{Chiến lược kiểm thử}
+
+Nhóm áp dụng các hình thức kiểm thử:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Kiểm thử chức năng}: kiểm tra từng chức năng theo các use case đã phân tích.
+    \item \textbf{Kiểm thử giao diện}: xem xét khả năng hiển thị trên nhiều kích thước màn hình,
+    tính dễ sử dụng, bố cục rõ ràng.
+    \item \textbf{Kiểm thử tích hợp}: kiểm tra luồng dữ liệu giữa giao diện, ViewModel, repository
+    và dịch vụ AI.
+\end{itemize}
+
+\section{Các ca kiểm thử tiêu biểu}
+
+Ví dụ một số ca kiểm thử:
+\begin{itemize}[leftmargin=1.5cm]
+    \item Đăng nhập với tài khoản hợp lệ / không hợp lệ.
+    \item Tạo kế hoạch với ngày bắt đầu lớn hơn ngày kết thúc (hệ thống phải báo lỗi).
+    \item Tạo kế hoạch hợp lệ và kiểm tra xem lịch trình AI có được sinh ra hay không.
+    \item Xem danh sách kế hoạch theo ngày tại \texttt{PlanScreen} và kiểm tra kết quả lọc.
+    \item Xem màn hình gợi ý thông minh khi dữ liệu gợi ý rỗng, lỗi hoặc thành công.
+\end{itemize}
+
+\section{Kết quả kiểm thử}
+
+Kết quả kiểm thử cho thấy các chức năng chính hoạt động ổn định
+trong điều kiện mạng bình thường. Trong trường hợp API AI gặp lỗi,
+ứng dụng vẫn hiển thị dữ liệu mẫu giúp người dùng hiểu được cách thức hoạt động
+của hệ thống. Một số lỗi giao diện nhỏ được phát hiện và sửa trong quá trình kiểm thử nội bộ.
+
+\section{Đánh giá hệ thống}
+
+Về tổng thể, ứng dụng đáp ứng được các mục tiêu đặt ra ban đầu:
+hỗ trợ người dùng lập kế hoạch du lịch, sinh lịch trình bằng AI
+và quản lý các chuyến đi một cách trực quan. Giao diện hiện đại,
+tận dụng tốt Jetpack Compose, kiến trúc MVVM rõ ràng
+giúp mã nguồn dễ dàng mở rộng trong tương lai.
+
+Tuy nhiên, hệ thống vẫn còn một số hạn chế như:
+dữ liệu điểm đến còn ít, chưa tích hợp được dịch vụ đặt vé/đặt phòng thực tế,
+tính cá nhân hoá gợi ý còn đơn giản, phụ thuộc nhiều vào dữ liệu demo.
+
+%=================================================
+%      CHƯƠNG 7: KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
+%=================================================
+\chapter{Kết luận và hướng phát triển}
+
+\section{Kết luận}
+
+Đề tài đã xây dựng được một ứng dụng Android mang tên SmartTravel
+cho phép người dùng tạo và quản lý kế hoạch du lịch,
+đồng thời sử dụng AI để sinh ra lịch trình chi tiết.
+Trong quá trình thực hiện, nhóm đã áp dụng các kiến thức về phát triển Android hiện đại
+(Kotlin, Jetpack Compose, MVVM, Hilt) cũng như tìm hiểu và tích hợp dịch vụ AI thông qua REST API.
+
+\section{Hạn chế của đề tài}
+
+Một số hạn chế chính:
+\begin{itemize}[leftmargin=1.5cm]
+    \item Dữ liệu điểm đến và lịch trình chủ yếu mang tính minh hoạ, chưa phong phú.
+    \item Chưa tích hợp các dịch vụ bên ngoài như hệ thống đặt vé máy bay, khách sạn, phương tiện di chuyển.
+    \item Chức năng gợi ý thông minh mới dừng lại ở mức đơn giản,
+    chưa khai thác sâu dữ liệu lịch sử và hành vi người dùng.
+\end{itemize}
+
+\section{Hướng phát triển}
+
+Trong tương lai, nhóm đề xuất một số hướng phát triển:
+\begin{itemize}[leftmargin=1.5cm]
+    \item Mở rộng dữ liệu điểm đến, tích hợp các nguồn dữ liệu thực tế
+    từ các API du lịch hoặc hệ thống đối tác.
+    \item Bổ sung chức năng đặt vé và đặt phòng trực tiếp từ ứng dụng,
+    kết nối với các cổng thanh toán an toàn.
+    \item Nâng cấp mô hình gợi ý, áp dụng các kỹ thuật học máy
+    để cá nhân hoá sâu hơn theo sở thích và hành vi người dùng.
+    \item Phát triển ứng dụng trên các nền tảng khác như iOS hoặc Web
+    để tiếp cận nhiều nhóm người dùng hơn.
+\end{itemize}
+
+%=================================================
+%      TÀI LIỆU THAM KHẢO VÀ PHỤ LỤC
+%=================================================
+\addcontentsline{toc}{chapter}{Tài liệu tham khảo}
+\begin{thebibliography}{99}
+    \bibitem{} Google Developers, ``Android Developers Documentation'', \url{https://developer.android.com}.
+    \bibitem{} JetBrains, ``Kotlin Programming Language'', \url{https://kotlinlang.org}.
+    \bibitem{} Google, ``Jetpack Compose'', \url{https://developer.android.com/jetpack/compose}.
+    \bibitem{} Google, ``Hilt for Android'', \url{https://developer.android.com/training/dependency-injection/hilt-android}.
+    \bibitem{} Firebase, ``Firebase Documentation'', \url{https://firebase.google.com/docs}.
+    \bibitem{} Tài liệu API Gemini và các bài viết về ứng dụng AI trong du lịch.
+\end{thebibliography}
+
+\appendix
+\chapter{Một số giao diện và đoạn mã minh hoạ}
+Phần phụ lục có thể bao gồm:
+\begin{itemize}[leftmargin=1.5cm]
+    \item Hình chụp màn hình các giao diện chính: màn hình đăng nhập, Home, Detail, Plan, PlanDetail, AiSuggestions.
+    \item Một số đoạn mã nguồn tiêu biểu như định nghĩa \texttt{PlanViewModel},
+    \texttt{AiServiceImpl}, cấu hình \texttt{AppModule}.
+\end{itemize}
+
+\end{document}
