@@ -1,6 +1,9 @@
 package com.example.smarttravel.ui.screens.auth
 
+import android.app.Activity
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -23,17 +27,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel // <-- Cần cho hiltViewModel()
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.smarttravel.R // Đảm bảo import R.drawable nếu dùng
-import com.example.smarttravel.navigation.Screen // Đảm bảo đường dẫn này đúng
+import com.example.smarttravel.R
+import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.AppTextField
 import com.example.smarttravel.ui.components.AppTopBar
 import com.example.smarttravel.ui.components.PrimaryButton
-import com.example.smarttravel.ui.components.SocialButton
+import com.example.smarttravel.ui.components.GoogleButton
 import com.example.smarttravel.ui.theme.SmarttravelTheme
 import com.example.smarttravel.ui.viewmodel.AuthViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(navController: NavController) {
@@ -42,14 +50,58 @@ fun RegisterScreen(navController: NavController) {
     val authViewModel: AuthViewModel = hiltViewModel() // Sử dụng HiltViewModel
     val authState by authViewModel.authState.collectAsState()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // --- Google Sign-In config ---
+    val webClientId = stringResource(R.string.default_web_client_id)
+    val googleSignInClient = remember {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(webClientId)
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)!!
+                val idToken = account.idToken
+                val email = account.email
+                if (idToken != null && email != null) {
+                    authViewModel.signInWithGoogle(idToken, email)
+                } else {
+                    Toast.makeText(context, "Không thể lấy thông tin Google.", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: ApiException) {
+                Toast.makeText(context, "Đăng ký Google thất bại: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     // Cần LaunchedEffect để xử lý các sự kiện từ ViewModel
     LaunchedEffect(authState) {
         val currentState = authState // Lưu vào biến local để smart cast
         when (currentState) {
             is AuthViewModel.AuthState.Success -> {
-                // Thay vì tự động đi Home, hiển thị dialog hỏi link Google
-                showLinkDialog = true
+                val currentUser = authViewModel.getCurrentUser()
+                if (currentUser != null) {
+                    val providers = currentUser.providerData.map { it.providerId }
+                    // Nếu đăng ký bằng Google, chuyển thẳng đến Home
+                    if ("google.com" in providers) {
+                        Toast.makeText(context, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Register.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    } else {
+                        // Đăng ký bằng email, hiển thị dialog hỏi link Google
+                        showLinkDialog = true
+                    }
+                }
                 authViewModel.resetAuthState()
             }
             is AuthViewModel.AuthState.Error -> {
@@ -188,18 +240,19 @@ fun RegisterScreen(navController: NavController) {
             Text("Hoặc đăng ký với", color = colorScheme.onSurfaceVariant, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(30.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 40.dp), // Điều chỉnh padding dưới cùng
-                horizontalArrangement = Arrangement.Center
-            ) {
-                SocialButton(iconRes = R.drawable.icon_google, onClick = {})
-                Spacer(modifier = Modifier.width(16.dp))
-                SocialButton(iconRes = R.drawable.icon_instagram, onClick = {})
-                Spacer(modifier = Modifier.width(16.dp))
-                SocialButton(iconRes = R.drawable.icon_facebook, onClick = {})
-            }
+            GoogleButton(
+                onClick = {
+                    if (authState is AuthViewModel.AuthState.Loading) return@GoogleButton
+                    coroutineScope.launch {
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                        }
+                    }
+                },
+                enabled = authState !is AuthViewModel.AuthState.Loading,
+                text = "Đăng ký với Google",
+                modifier = Modifier.padding(bottom = 40.dp)
+            )
         }
     }
     if (showLinkDialog) {

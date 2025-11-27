@@ -207,7 +207,7 @@ fun SettingsScreen(
                             @Suppress("DEPRECATION")
                             packageInfo.versionCode.toString()
                         }
-                        "${packageInfo.versionName} (Build $versionCode)"
+                        "${packageInfo.versionName}"
                     } catch (e: Exception) {
                         "1.0"
                     }

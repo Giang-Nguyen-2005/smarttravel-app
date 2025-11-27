@@ -276,4 +276,25 @@ class PlanRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+    
+    override suspend fun hasPlanWithDestination(destinationId: String): Result<Boolean> {
+        return try {
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser == null) {
+                return Result.failure(Exception("Người dùng chưa đăng nhập"))
+            }
+            
+            val snapshot = firestore.collection("travel_plans")
+                .whereEqualTo("userId", currentUser.uid)
+                .whereEqualTo("destinationId", destinationId)
+                .limit(1)
+                .get()
+                .await()
+            
+            Result.success(!snapshot.isEmpty)
+        } catch (e: Exception) {
+            android.util.Log.e("PlanRepositoryImpl", "Error checking plan with destination: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
 }

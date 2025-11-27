@@ -4,6 +4,7 @@ import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -34,7 +35,7 @@ import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.AppTextField
 import com.example.smarttravel.ui.components.AppTopBar
 import com.example.smarttravel.ui.components.PrimaryButton
-import com.example.smarttravel.ui.components.SocialButton
+import com.example.smarttravel.ui.components.GoogleButton
 import com.example.smarttravel.ui.theme.SmarttravelTheme
 import com.example.smarttravel.ui.viewmodel.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -144,6 +145,7 @@ fun LoginScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.White)
             .padding(horizontal = 24.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -226,31 +228,59 @@ fun LoginScreen(navController: NavController) {
             Text("Hoặc đăng nhập với", color = colorScheme.onSurfaceVariant, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(30.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                SocialButton(
-                    iconRes = R.drawable.icon_google,
-                    onClick = {
-                        if (authState is AuthViewModel.AuthState.Loading) return@SocialButton
-                        coroutineScope.launch {
-                            googleSignInClient.signOut().addOnCompleteListener {
-                                googleSignInLauncher.launch(googleSignInClient.signInIntent)
-                            }
+            GoogleButton(
+                onClick = {
+                    if (authState is AuthViewModel.AuthState.Loading) return@GoogleButton
+                    coroutineScope.launch {
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            googleSignInLauncher.launch(googleSignInClient.signInIntent)
                         }
                     }
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                SocialButton(iconRes = R.drawable.icon_instagram, onClick = {})
-                Spacer(modifier = Modifier.width(16.dp))
-                SocialButton(iconRes = R.drawable.icon_facebook, onClick = {})
-            }
+                },
+                enabled = authState !is AuthViewModel.AuthState.Loading,
+                modifier = Modifier.padding(top = 20.dp)
+            )
         }
     }
 
     // 🔹 Luồng A: Nhập mật khẩu để liên kết tài khoản Email ↔ Google
-
+    if (showLinkDialog) {
+        AlertDialog(
+            onDismissRequest = { showLinkDialog = false },
+            title = { Text("Liên kết tài khoản") },
+            text = {
+                Column {
+                    Text("Email này đã được đăng ký bằng mật khẩu. Vui lòng nhập mật khẩu để liên kết với Google.")
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = linkPassword,
+                        onValueChange = { linkPassword = it },
+                        placeholder = { Text("Nhập mật khẩu") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLinkDialog = false
+                    authViewModel.linkGoogleWithPassword(linkIdToken, linkEmail, linkPassword)
+                    linkPassword = ""
+                }) {
+                    Text("Liên kết")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showLinkDialog = false
+                    linkPassword = ""
+                }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
 
     // 🔹 Luồng B: Thêm mật khẩu cho tài khoản Google-only
     if (showAddPasswordDialog) {

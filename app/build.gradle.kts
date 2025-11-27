@@ -74,6 +74,9 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.51.1")
     ksp("com.google.dagger:hilt-android-compiler:2.51.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    
+    // Gson for JSON parsing
+    implementation("com.google.code.gson:gson:2.10.1")
 
     // Others
     implementation("io.coil-kt:coil-compose:2.5.0")

@@ -48,6 +48,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
@@ -87,6 +88,7 @@ import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.PrimaryButton
 import com.example.smarttravel.ui.components.OpenStreetMapView
 import com.example.smarttravel.ui.viewmodel.DetailViewModel
+import com.example.smarttravel.ui.viewmodel.DetailUiState
 import java.net.URLEncoder
 // --- THÊM IMPORT NÀY ---
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -127,6 +129,8 @@ fun DetailScreen(
                     ContentSheet(
                         destination = uiState.destination!!,
                         navController = navController,
+                        viewModel = viewModel,
+                        uiState = uiState,
                         // Khi click ảnh trong list, lưu lại vị trí (index)
                         onImageClick = { index -> selectedImageIndex = index }
                     )
@@ -365,6 +369,8 @@ fun TopControls(onBackClick: () -> Unit, onBookmarkClick: () -> Unit, isBookmark
 fun ContentSheet(
     destination: Destination,
     navController: NavController,
+    viewModel: DetailViewModel,
+    uiState: DetailUiState,
     onImageClick: (Int) -> Unit = {}
 ) {
     val configuration = LocalConfiguration.current
@@ -412,6 +418,15 @@ fun ContentSheet(
             }
             Spacer(modifier = Modifier.height(24.dp))
             InfoRow(destination = destination)
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Rating Section
+            RatingSection(
+                canRate = uiState.canRate,
+                userRating = uiState.userRating,
+                isLoading = uiState.isRatingLoading,
+                onRatingClick = { rating -> viewModel.submitRating(rating) }
+            )
             Spacer(modifier = Modifier.height(24.dp))
             
             // Bản đồ địa điểm
@@ -546,6 +561,102 @@ fun GalleryRow(galleryUrls: List<String>, onImageClick: (Int) -> Unit = {}) {
                 val resId = context.resources.getIdentifier(imageUrl, "drawable", context.packageName)
                 val painter = if (resId != 0) painterResource(id = resId) else painterResource(id = R.drawable.ic_launcher_foreground)
                 Image(painter = painter, contentDescription = null, contentScale = ContentScale.Crop, modifier = imageModifier)
+            }
+        }
+    }
+}
+
+@Composable
+fun RatingSection(
+    canRate: Boolean,
+    userRating: Double?,
+    isLoading: Boolean,
+    onRatingClick: (Double) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+    ) {
+        Text(
+            text = "Đánh giá của bạn",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        if (!canRate) {
+            // Chưa có kế hoạch với destination này
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFF5F5F5)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Tạo kế hoạch để đánh giá địa điểm này",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+                }
+            }
+        } else {
+            // Có thể đánh giá
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Hiển thị 5 sao
+                (1..5).forEach { starValue ->
+                    val ratingValue = starValue.toDouble()
+                    val isSelected = userRating != null && ratingValue <= userRating
+                    
+                    IconButton(
+                        onClick = { 
+                            if (!isLoading) {
+                                onRatingClick(ratingValue)
+                            }
+                        },
+                        modifier = Modifier.size(48.dp),
+                        enabled = !isLoading
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "${starValue} sao",
+                            tint = if (isSelected) Color(0xFFFFC107) else Color(0xFFE0E0E0),
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
+                
+                if (isLoading) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else if (userRating != null) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "${userRating.toInt()} sao",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Gray
+                    )
+                }
             }
         }
     }

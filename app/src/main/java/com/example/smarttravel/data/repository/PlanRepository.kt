@@ -31,4 +31,7 @@ interface PlanRepository {
     
     // Xóa một kế hoạch theo ID
     suspend fun deletePlan(planId: String): Result<Unit>
+    
+    // Kiểm tra xem user đã có kế hoạch với destination này chưa
+    suspend fun hasPlanWithDestination(destinationId: String): Result<Boolean>
 }

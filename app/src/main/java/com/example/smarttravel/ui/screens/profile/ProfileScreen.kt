@@ -16,6 +16,9 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,7 +93,7 @@ fun ProfileScreen(
 ) {
     val context = LocalContext.current
     val userProfile by viewModel.userProfile.collectAsState()
-    
+
     // Lấy version từ PackageManager
     val appVersion = remember {
         try {
@@ -106,12 +109,12 @@ fun ProfileScreen(
                 @Suppress("DEPRECATION")
                 packageInfo.versionCode.toString()
             }
-            "${packageInfo.versionName} (Build $versionCode)"
+            "${packageInfo.versionName}"
         } catch (e: Exception) {
             "1.0"
         }
     }
-    
+
     // Cập nhật menu items với version
     val menuItemsWithVersion = remember(appVersion) {
         menuItems.map { item ->
@@ -148,7 +151,7 @@ fun ProfileScreen(
                         contentDescription = "Quay lại",
                         modifier = Modifier.align(Alignment.CenterStart)
                     )
-                    
+
                     // Title căn giữa
                     Text(
                         text = "Profile",
@@ -156,7 +159,7 @@ fun ProfileScreen(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.align(Alignment.Center)
                     )
-                    
+
                     // Nút edit (căn phải)
                     RoundIconButton(
                         onClick = { navController.navigate(Screen.EditProfile.route) },
@@ -464,6 +467,76 @@ fun DetailMenuItem(item: ProfileMenuItem) {
                 maxLines = 3
             )
         }
+    }
+}
+
+// --- VERSION DIALOG ---
+@Composable
+fun VersionDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+                Text(
+                    text = "Thông tin phiên bản",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.padding(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                VersionInfoRow(label = "Tên ứng dụng", value = "Smart Travel")
+                VersionInfoRow(label = "Phiên bản", value = "1.0")
+                VersionInfoRow(label = "Version Code", value = "1")
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                Text(
+                    text = "© 2024 Smart Travel. All rights reserved.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Đóng", fontWeight = FontWeight.Medium)
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(20.dp)
+    )
+}
+
+@Composable
+fun VersionInfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
