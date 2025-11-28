@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
@@ -92,6 +93,9 @@ fun SavedDestinationsScreen(
                                 destination = destination,
                                 onClick = {
                                     navController.navigate(Screen.Detail.createRoute(destination.id))
+                                },
+                                onDeleteClick = {
+                                    viewModel.unsaveDestination(destination.id)
                                 }
                             )
                         }
@@ -159,7 +163,8 @@ fun ModernTopBar(
 @Composable
 fun SavedDestinationItem(
     destination: Destination,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
     
@@ -172,8 +177,7 @@ fun SavedDestinationItem(
                 elevation = 10.dp,
                 shape = RoundedCornerShape(20.dp),
                 spotColor = colorScheme.scrim.copy(alpha = 0.1f) // Bóng mềm
-            )
-            .clickable(onClick = onClick),
+            ),
         shape = RoundedCornerShape(20.dp),
         color = colorScheme.surface
     ) {
@@ -212,22 +216,46 @@ fun SavedDestinationItem(
                     )
                 }
 
-                // Nút Bookmark (Góc trên phải) - Nhỏ gọn, tinh tế
-                Box(
+                // Nút Bookmark và Xóa (Góc trên phải) - Nhỏ gọn, tinh tế
+                Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(12.dp)
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(colorScheme.surface.copy(alpha = 0.9f)),
-                    contentAlignment = Alignment.Center
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Bookmark,
-                        contentDescription = "Đã lưu",
-                        tint = colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    // Nút Xóa
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(colorScheme.errorContainer.copy(alpha = 0.9f))
+                            .clickable { onDeleteClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Xóa",
+                            tint = colorScheme.onErrorContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    
+                    // Nút Bookmark
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(colorScheme.surface.copy(alpha = 0.9f))
+                            .clickable { onClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Bookmark,
+                            contentDescription = "Đã lưu",
+                            tint = colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
 
                 // Rating Badge (Góc dưới trái của ảnh)
@@ -264,7 +292,8 @@ fun SavedDestinationItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(0.35f)
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .clickable(onClick = onClick),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 // Tên địa điểm

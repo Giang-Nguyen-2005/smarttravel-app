@@ -146,12 +146,16 @@ class DestinationRepositoryImpl @Inject constructor(
     // Rating methods
     override suspend fun saveUserRating(destinationId: String, userId: String, rating: Double): Result<Unit> {
         return try {
+            android.util.Log.d("DestinationRepositoryImpl", "saveUserRating: destinationId=$destinationId, userId=$userId, rating=$rating")
+            
             // Validate rating
             if (rating < 1.0 || rating > 5.0) {
+                android.util.Log.e("DestinationRepositoryImpl", "Invalid rating: $rating")
                 return Result.failure(Exception("Rating phải từ 1.0 đến 5.0"))
             }
             
             // Kiểm tra xem đã có rating chưa
+            android.util.Log.d("DestinationRepositoryImpl", "Checking for existing rating...")
             val existingRatingQuery = firestore.collection("user_ratings")
                 .whereEqualTo("destination_id", destinationId)
                 .whereEqualTo("user_id", userId)
@@ -163,6 +167,7 @@ class DestinationRepositoryImpl @Inject constructor(
             
             if (existingRatingQuery.isEmpty) {
                 // Tạo rating mới
+                android.util.Log.d("DestinationRepositoryImpl", "Creating new rating...")
                 val ratingData = hashMapOf(
                     "destination_id" to destinationId,
                     "user_id" to userId,
@@ -170,22 +175,28 @@ class DestinationRepositoryImpl @Inject constructor(
                     "created_at" to now,
                     "updated_at" to now
                 )
-                firestore.collection("user_ratings").add(ratingData).await()
+                val docRef = firestore.collection("user_ratings").add(ratingData).await()
+                android.util.Log.d("DestinationRepositoryImpl", "Rating created with ID: ${docRef.id}")
             } else {
                 // Cập nhật rating hiện có
                 val docId = existingRatingQuery.documents[0].id
+                android.util.Log.d("DestinationRepositoryImpl", "Updating existing rating with ID: $docId")
                 firestore.collection("user_ratings").document(docId).update(
                     "rating", rating,
                     "updated_at", now
                 ).await()
+                android.util.Log.d("DestinationRepositoryImpl", "Rating updated successfully")
             }
             
             // Cập nhật rating trung bình của destination
+            android.util.Log.d("DestinationRepositoryImpl", "Updating destination average rating...")
             updateDestinationRating(destinationId)
             
+            android.util.Log.d("DestinationRepositoryImpl", "saveUserRating: Success")
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("DestinationRepositoryImpl", "Error saving user rating: ${e.message}", e)
+            android.util.Log.e("DestinationRepositoryImpl", "Error type: ${e.javaClass.simpleName}")
             Result.failure(e)
         }
     }

@@ -8,6 +8,8 @@ import com.example.smarttravel.data.repository.DestinationRepository
 import com.example.smarttravel.data.repository.DestinationRepositoryImpl
 import com.example.smarttravel.data.repository.PlanRepository
 import com.example.smarttravel.data.repository.PlanRepositoryImpl
+import com.example.smarttravel.data.repository.CommentRepository
+import com.example.smarttravel.data.repository.CommentRepositoryImpl
 import android.content.Context
 import com.example.smarttravel.util.NetworkUtil
 import com.google.firebase.auth.FirebaseAuth
@@ -80,6 +82,16 @@ object AppModule {
     @Singleton
     fun provideAiService(): AiService {
         return AiServiceImpl()
+    }
+
+    // Cung cấp CommentRepository
+    @Provides
+    @Singleton
+    fun provideCommentRepository(
+        firebaseAuth: FirebaseAuth,
+        firestore: FirebaseFirestore
+    ): CommentRepository {
+        return CommentRepositoryImpl(firebaseAuth, firestore)
     }
 
 }

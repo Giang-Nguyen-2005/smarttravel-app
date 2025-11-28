@@ -103,20 +103,31 @@ class DetailViewModel @Inject constructor(
     }
     
     private fun checkCanRate() {
-        if (destinationId == null) return
+        if (destinationId == null) {
+            android.util.Log.e("DetailViewModel", "checkCanRate: destinationId is null")
+            return
+        }
         
         viewModelScope.launch {
             val currentUser = authRepository.getCurrentUser()
             if (currentUser == null) {
+                android.util.Log.d("DetailViewModel", "checkCanRate: No current user, canRate = false")
                 _uiState.value = _uiState.value.copy(canRate = false)
                 return@launch
             }
             
+            android.util.Log.d("DetailViewModel", "checkCanRate: Checking plan for destinationId: $destinationId")
             val result = planRepository.hasPlanWithDestination(destinationId)
             if (result.isSuccess) {
+                val hasPlan = result.getOrNull() ?: false
+                android.util.Log.d("DetailViewModel", "checkCanRate: hasPlan = $hasPlan")
                 _uiState.value = _uiState.value.copy(
-                    canRate = result.getOrNull() ?: false
+                    canRate = hasPlan
                 )
+            } else {
+                android.util.Log.e("DetailViewModel", "checkCanRate: Error checking plan: ${result.exceptionOrNull()?.message}")
+                // Nếu có lỗi, vẫn cho phép đánh giá (fallback)
+                _uiState.value = _uiState.value.copy(canRate = true)
             }
         }
     }
@@ -141,15 +152,23 @@ class DetailViewModel @Inject constructor(
     }
     
     fun submitRating(rating: Double) {
-        if (destinationId == null) return
+        if (destinationId == null) {
+            android.util.Log.e("DetailViewModel", "submitRating: destinationId is null")
+            return
+        }
         
         viewModelScope.launch {
             val currentUser = authRepository.getCurrentUser()
             if (currentUser == null) {
+                android.util.Log.e("DetailViewModel", "submitRating: No current user")
+                _uiState.value = _uiState.value.copy(
+                    error = "Vui lòng đăng nhập để đánh giá"
+                )
                 return@launch
             }
             
-            _uiState.value = _uiState.value.copy(isRatingLoading = true)
+            android.util.Log.d("DetailViewModel", "submitRating: Submitting rating $rating for destinationId: $destinationId")
+            _uiState.value = _uiState.value.copy(isRatingLoading = true, error = null)
             
             val result = destinationRepository.saveUserRating(
                 destinationId = destinationId,
@@ -158,15 +177,25 @@ class DetailViewModel @Inject constructor(
             )
             
             if (result.isSuccess) {
+                android.util.Log.d("DetailViewModel", "submitRating: Success")
                 // Cập nhật UI ngay lập tức
                 _uiState.value = _uiState.value.copy(
                     userRating = rating,
-                    isRatingLoading = false
+                    isRatingLoading = false,
+                    error = null
                 )
             } else {
-                _uiState.value = _uiState.value.copy(isRatingLoading = false)
-                android.util.Log.e("DetailViewModel", "Error submitting rating: ${result.exceptionOrNull()?.message}")
+                val errorMessage = result.exceptionOrNull()?.message ?: "Lỗi không xác định"
+                android.util.Log.e("DetailViewModel", "submitRating: Error - $errorMessage")
+                _uiState.value = _uiState.value.copy(
+                    isRatingLoading = false,
+                    error = "Lỗi khi đánh giá: $errorMessage"
+                )
             }
         }
+    }
+    
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
     }
 }

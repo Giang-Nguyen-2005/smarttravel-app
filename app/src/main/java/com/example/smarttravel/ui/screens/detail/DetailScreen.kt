@@ -87,8 +87,10 @@ import com.example.smarttravel.model.Destination
 import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.PrimaryButton
 import com.example.smarttravel.ui.components.OpenStreetMapView
+import com.example.smarttravel.ui.components.CommentSection
 import com.example.smarttravel.ui.viewmodel.DetailViewModel
 import com.example.smarttravel.ui.viewmodel.DetailUiState
+import com.example.smarttravel.ui.viewmodel.CommentViewModel
 import java.net.URLEncoder
 // --- THÊM IMPORT NÀY ---
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -99,7 +101,8 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 fun DetailScreen(
     navController: NavController,
     destinationId: String,
-    viewModel: DetailViewModel = hiltViewModel()
+    viewModel: DetailViewModel = hiltViewModel(),
+    commentViewModel: CommentViewModel = hiltViewModel()
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
@@ -131,6 +134,7 @@ fun DetailScreen(
                         navController = navController,
                         viewModel = viewModel,
                         uiState = uiState,
+                        commentViewModel = commentViewModel,
                         // Khi click ảnh trong list, lưu lại vị trí (index)
                         onImageClick = { index -> selectedImageIndex = index }
                     )
@@ -371,6 +375,7 @@ fun ContentSheet(
     navController: NavController,
     viewModel: DetailViewModel,
     uiState: DetailUiState,
+    commentViewModel: CommentViewModel,
     onImageClick: (Int) -> Unit = {}
 ) {
     val configuration = LocalConfiguration.current
@@ -425,7 +430,9 @@ fun ContentSheet(
                 canRate = uiState.canRate,
                 userRating = uiState.userRating,
                 isLoading = uiState.isRatingLoading,
-                onRatingClick = { rating -> viewModel.submitRating(rating) }
+                error = uiState.error,
+                onRatingClick = { rating -> viewModel.submitRating(rating) },
+                onErrorDismiss = { viewModel.clearError() }
             )
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -472,6 +479,12 @@ fun ContentSheet(
                     text = destination.description
                 )
             }
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Phần bình luận
+            CommentSection(
+                viewModel = commentViewModel
+            )
             Spacer(modifier = Modifier.height(24.dp))
         }
         Box(
@@ -571,7 +584,9 @@ fun RatingSection(
     canRate: Boolean,
     userRating: Double?,
     isLoading: Boolean,
-    onRatingClick: (Double) -> Unit
+    error: String? = null,
+    onRatingClick: (Double) -> Unit,
+    onErrorDismiss: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -584,6 +599,41 @@ fun RatingSection(
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(12.dp))
+        
+        // Hiển thị lỗi nếu có
+        error?.let { errorMessage ->
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFFFEBEE)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFC62828),
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = onErrorDismiss,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Đóng",
+                            tint = Color(0xFFC62828),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
         
         if (!canRate) {
             // Chưa có kế hoạch với destination này

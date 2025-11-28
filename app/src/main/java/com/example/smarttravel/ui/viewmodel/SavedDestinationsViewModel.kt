@@ -64,5 +64,18 @@ class SavedDestinationsViewModel @Inject constructor(
             }
         }
     }
+    
+    fun unsaveDestination(destinationId: String) {
+        viewModelScope.launch {
+            val result = authRepository.unsaveDestination(destinationId)
+            if (result.isFailure) {
+                android.util.Log.e("SavedDestinationsViewModel", "Error unsaving destination: ${result.exceptionOrNull()?.message}")
+                _uiState.value = _uiState.value.copy(
+                    error = result.exceptionOrNull()?.message ?: "Lỗi khi xóa địa điểm"
+                )
+            }
+            // Không cần reload vì getSavedDestinationIds() sẽ tự động cập nhật real-time
+        }
+    }
 }
 
