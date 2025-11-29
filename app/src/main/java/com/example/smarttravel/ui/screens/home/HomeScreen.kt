@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -199,13 +200,29 @@ fun HomeScreen(
 
             // 8. Danh sách thịnh hành (Card Lớn)
             item {
-                // Tạm thời hiển thị top 5 địa điểm đầu tiên
-                if (!destinationState.isLoading && destinationState.destinations.isNotEmpty()) {
+                val trendingState by homeViewModel.trendingDestinationsState.collectAsState()
+                
+                if (trendingState.isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else if (trendingState.error != null) {
+                    Text(
+                        "Lỗi: ${trendingState.error}",
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else if (trendingState.destinations.isNotEmpty()) {
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    )                     {
-                        items(destinationState.destinations.take(5)) { destination ->
+                    ) {
+                        items(trendingState.destinations) { destination ->
                             val savedIds by homeViewModel.savedDestinationIds.collectAsState()
                             val isBookmarked = savedIds.contains(destination.id)
                             
@@ -225,6 +242,13 @@ fun HomeScreen(
                             )
                         }
                     }
+                } else {
+                    // Không có địa điểm thịnh hành
+                    Text(
+                        "Chưa có địa điểm thịnh hành.",
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -395,101 +419,123 @@ fun AiSuggestionCard(
     isLoading: Boolean,
     onClick: () -> Unit
 ) {
-    val colorScheme = MaterialTheme.colorScheme
     val aiLoadingComposition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.robot))
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            // SỬA Ở ĐÂY: Thay height() bằng heightIn(min = ...)
-            // Giúp thẻ tự động giãn chiều cao nếu chữ dài, nhưng không thấp hơn 150dp
             .heightIn(min = 150.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = colorScheme.primaryContainer.copy(alpha = 0.3f)
-        )
+            containerColor = Color.Transparent // Để hiển thị Box bên trong
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp) // Thêm bóng nhẹ cho nổi bật trên nền trắng
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth() // Đổi fillMaxSize thành fillMaxWidth để tránh lỗi layout khi chiều cao auto
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    // Thêm dòng này để đảm bảo Column luôn fill chiều cao của Row
-                    // giúp Spacer(weight = 1f) hoạt động đúng khi nội dung ngắn
-                    .height(IntrinsicSize.Min)
-            ) {
-                Text(
-                    text = "Gợi ý hôm nay ✨",
-                    color = colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFFE3F2FD), // Xanh dương rất nhạt (Material Blue 50) - Điểm bắt đầu
+                            Color(0xFFF1F8FF), // Trung gian
+                            Color(0xFFFFFFFF)  // Trắng tinh - Điểm kết thúc
+                        ),
+                        start = Offset.Zero,
+                        end = Offset.Infinite
+                    ),
+                    shape = RoundedCornerShape(20.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp), // Tăng padding một chút cho thoáng
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(IntrinsicSize.Min)
+                ) {
+                    // --- TIÊU ĐỀ: Đổi sang màu Xanh Đậm ---
+                    Text(
+                        text = "Gợi ý hôm nay ✨",
+                        color = Color(0xFF0D47A1), // Blue 900 (Xanh Navy đậm)
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                if (isLoading) {
-                    LottieAnimation(
-                        composition = aiLoadingComposition,
-                        iterations = LottieConstants.IterateForever,
-                        modifier = Modifier.size(48.dp)
-                    )
-                } else if (topDestination != null) {
+                    if (isLoading) {
+                        LottieAnimation(
+                            composition = aiLoadingComposition,
+                            iterations = LottieConstants.IterateForever,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    } else if (topDestination != null) {
+                        // --- NỘI DUNG CHÍNH: Màu đen hoặc xám đậm ---
+                        Text(
+                            text = "Dựa trên sở thích của bạn: ${topDestination.name}!",
+                            color = Color(0xFF1E1E1E), // Màu gần đen để dễ đọc nhất
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = topDestination.location_name,
+                            color = Color(0xFF546E7A), // Blue Grey 600 (Xám xanh)
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    } else {
+                        Text(
+                            text = "Cập nhật sở thích để nhận gợi ý cá nhân hóa",
+                            color = Color(0xFF1E1E1E),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // --- NÚT ACTION: Màu Primary ---
                     Text(
-                        text = "Dựa trên sở thích của bạn: ${topDestination.name}!",
-                        color = colorScheme.onSurface,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = topDestination.location_name,
-                        color = colorScheme.onSurfaceVariant,
-                        fontSize = 14.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                } else {
-                    Text(
-                        text = "Cập nhật sở thích để nhận gợi ý cá nhân hóa",
-                        color = colorScheme.onSurface,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        text = "Xem chi tiết →",
+                        color = Color(0xFF1976D2), // Blue 700 (Màu xanh thương hiệu)
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
                     )
                 }
+                Spacer(modifier = Modifier.width(12.dp))
 
-                // Spacer này sẽ đẩy dòng "Xem chi tiết" xuống đáy
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Thêm một chút khoảng cách an toàn nếu cần
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Xem chi tiết →",
-                    color = colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
-                )
+                // --- ICON BÊN PHẢI ---
+                // Vì nền sáng, ta làm nền icon đậm lên để tương phản
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .background(
+                            color = Color(0xFFE1F5FE), // Nền icon xanh nhạt
+                            shape = CircleShape
+                        )
+                        .border(1.dp, Color(0xFFB3E5FC), CircleShape), // Viền nhẹ
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.icon_chat),
+                        contentDescription = "AI Suggestion",
+                        tint = Color(0xFF0288D1), // Icon màu xanh đậm
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
             }
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Icon bên phải
-            Icon(
-                painter = painterResource(id = R.drawable.icon_chat),
-                contentDescription = "AI Suggestion",
-                tint = colorScheme.primary.copy(alpha = 0.8f),
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(Color.White, CircleShape)
-                    .padding(16.dp)
-            )
         }
     }
 }

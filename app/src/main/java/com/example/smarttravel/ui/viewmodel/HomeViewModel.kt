@@ -48,6 +48,12 @@ data class AiSuggestionsUiState(
     val cachedDate: String? = null // Ngày của cache hiện tại
 )
 
+data class TrendingDestinationsUiState(
+    val destinations: List<Destination> = emptyList(),
+    val isLoading: Boolean = true,
+    val error: String? = null
+)
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val destinationRepository: DestinationRepository,
@@ -81,6 +87,10 @@ class HomeViewModel @Inject constructor(
     // State cho gợi ý AI
     private val _aiSuggestionsState = MutableStateFlow(AiSuggestionsUiState())
     val aiSuggestionsState: StateFlow<AiSuggestionsUiState> = _aiSuggestionsState.asStateFlow()
+    
+    // State cho địa điểm thịnh hành (trending)
+    private val _trendingDestinationsState = MutableStateFlow(TrendingDestinationsUiState())
+    val trendingDestinationsState: StateFlow<TrendingDestinationsUiState> = _trendingDestinationsState.asStateFlow()
     
     // State cho bookmark destinations
     private val _savedDestinationIds = MutableStateFlow<Set<String>>(emptySet())
@@ -138,14 +148,21 @@ class HomeViewModel @Inject constructor(
     private fun loadDestinations() {
         viewModelScope.launch {
             _destinationUiState.value = DestinationUiState(isLoading = true)
+            _trendingDestinationsState.value = TrendingDestinationsUiState(isLoading = true)
             destinationRepository.getDestinations().collect { result ->
                 if (result.isSuccess) {
                     // Lưu danh sách gốc
                     allDestinations = result.getOrNull() ?: emptyList()
                     // Lọc lần đầu (mặc định là "all" nên sẽ hiện hết)
                     filterDestinations(_selectedCategory.value)
+                    // Tính toán trending destinations
+                    calculateTrendingDestinations()
                 } else {
                     _destinationUiState.value = DestinationUiState(
+                        isLoading = false,
+                        error = result.exceptionOrNull()?.message
+                    )
+                    _trendingDestinationsState.value = TrendingDestinationsUiState(
                         isLoading = false,
                         error = result.exceptionOrNull()?.message
                     )
@@ -172,6 +189,32 @@ class HomeViewModel @Inject constructor(
             destinations = filteredList,
             isLoading = false
         )
+    }
+    
+    /**
+     * Tính toán địa điểm thịnh hành dựa trên rating cao nhất
+     * Logic: Sort theo rating giảm dần, lấy top 5-10 destinations
+     */
+    private fun calculateTrendingDestinations() {
+        if (allDestinations.isEmpty()) {
+            _trendingDestinationsState.value = TrendingDestinationsUiState(
+                destinations = emptyList(),
+                isLoading = false
+            )
+            return
+        }
+        
+        // Sort theo rating giảm dần, sau đó lấy top 5
+        val trending = allDestinations
+            .sortedByDescending { it.rating } // Sort theo rating cao nhất
+            .take(5) // Lấy top 5
+        
+        _trendingDestinationsState.value = TrendingDestinationsUiState(
+            destinations = trending,
+            isLoading = false
+        )
+        
+        android.util.Log.d("HomeViewModel", "Calculated ${trending.size} trending destinations")
     }
 
     private fun loadUserProfile() {
