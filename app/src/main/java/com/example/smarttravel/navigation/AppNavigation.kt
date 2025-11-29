@@ -47,6 +47,8 @@ import com.example.smarttravel.ui.screens.schedule.PlanScreen
 import com.example.smarttravel.ui.screens.plan_detail.PlanDetailScreen
 import com.example.smarttravel.ui.screens.ai_generating.AiGeneratingScreen
 import com.example.smarttravel.ui.screens.settings.SettingsScreen
+import com.example.smarttravel.ui.screens.add_destination.AddDestinationScreen
+import com.example.smarttravel.ui.screens.manage_destinations.ManageDestinationsScreen
 
 // Helper function cho animation transitions hiện đại
 fun <T> AnimatedContentTransitionScope<T>.modernSlideIn() = 
@@ -261,6 +263,42 @@ fun AppNavigation(navController: NavHostController) {
             popExitTransition = { modernPopSlideOut() }
         ) {
             SettingsScreen(navController = navController)
+        }
+        
+        // Màn hình Thêm địa điểm (Admin)
+        composable(
+            route = Screen.AddDestination.route,
+            enterTransition = { modernSlideIn() },
+            exitTransition = { modernSlideOut() },
+            popEnterTransition = { modernPopSlideIn() },
+            popExitTransition = { modernPopSlideOut() }
+        ) {
+            AddDestinationScreen(navController = navController)
+        }
+        
+        composable(
+            route = Screen.ManageDestinations.route,
+            enterTransition = { modernSlideIn() },
+            exitTransition = { modernSlideOut() },
+            popEnterTransition = { modernPopSlideIn() },
+            popExitTransition = { modernPopSlideOut() }
+        ) {
+            ManageDestinationsScreen(navController = navController)
+        }
+        
+        composable(
+            route = Screen.EditDestination.route,
+            arguments = listOf(navArgument("destinationId") { type = NavType.StringType }),
+            enterTransition = { modernSlideIn() },
+            exitTransition = { modernSlideOut() },
+            popEnterTransition = { modernPopSlideIn() },
+            popExitTransition = { modernPopSlideOut() }
+        ) { backStackEntry ->
+            val destinationId = backStackEntry.arguments?.getString("destinationId") ?: ""
+            AddDestinationScreen(
+                navController = navController,
+                destinationId = destinationId
+            )
         }
 
         // Màn hình Search

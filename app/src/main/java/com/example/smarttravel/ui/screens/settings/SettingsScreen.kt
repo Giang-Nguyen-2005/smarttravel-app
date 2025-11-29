@@ -30,6 +30,7 @@ import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.AppTopBar
 import com.example.smarttravel.ui.viewmodel.AuthViewModel
 import com.example.smarttravel.ui.viewmodel.SettingsViewModel
+import com.example.smarttravel.ui.viewmodel.ProfileViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
@@ -46,13 +47,16 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 fun SettingsScreen(
     navController: NavController,
     authViewModel: AuthViewModel = hiltViewModel(),
-    settingsViewModel: SettingsViewModel = hiltViewModel()
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
+    profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
     val permissionsState by settingsViewModel.permissionsState.collectAsState()
     val themeMode by settingsViewModel.themeMode.collectAsState()
     val currentUser = authViewModel.getCurrentUser()
+    val userProfile by profileViewModel.userProfile.collectAsState()
+    val isAdmin = userProfile?.isAdmin ?: false
     
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
@@ -165,6 +169,33 @@ fun SettingsScreen(
                         settingsViewModel.checkPermissions()
                     }
                 )
+            }
+            
+            // Section: Admin (chỉ hiển thị khi là admin)
+            if (isAdmin) {
+                item {
+                    SectionHeader("Quản trị viên")
+                }
+                
+                item {
+                    SettingsItem(
+                        title = "Thêm địa điểm du lịch",
+                        icon = Icons.Default.AddLocation,
+                        onClick = {
+                            navController.navigate(Screen.AddDestination.route)
+                        }
+                    )
+                }
+                
+                item {
+                    SettingsItem(
+                        title = "Quản lý địa điểm",
+                        icon = Icons.Default.List,
+                        onClick = {
+                            navController.navigate(Screen.ManageDestinations.route)
+                        }
+                    )
+                }
             }
             
             // Section: Giao diện

@@ -14,6 +14,8 @@ import android.content.Context
 import com.example.smarttravel.util.NetworkUtil
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
+import com.example.smarttravel.data.repository.ImageUploadService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -37,6 +39,20 @@ object AppModule {
     @Singleton
     fun provideFirebaseFirestore(): FirebaseFirestore {
         return FirebaseFirestore.getInstance()
+    }
+    
+    // Cung cấp FirebaseStorage
+    @Provides
+    @Singleton
+    fun provideFirebaseStorage(): FirebaseStorage {
+        return FirebaseStorage.getInstance()
+    }
+    
+    // Cung cấp ImageUploadService
+    @Provides
+    @Singleton
+    fun provideImageUploadService(storage: FirebaseStorage): ImageUploadService {
+        return ImageUploadService(storage)
     }
 
     // Cung cấp NetworkUtil

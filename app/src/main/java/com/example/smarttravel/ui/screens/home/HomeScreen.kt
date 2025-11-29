@@ -49,8 +49,12 @@ import com.example.smarttravel.model.Destination
 import com.example.smarttravel.navigation.Screen
 import com.example.smarttravel.ui.components.AppBottomBar
 import com.example.smarttravel.ui.components.DestinationCard
+import com.example.smarttravel.ui.components.SkeletonDestinationCard
+import com.example.smarttravel.ui.components.SkeletonList
 import com.example.smarttravel.ui.theme.SmarttravelTheme
 import com.example.smarttravel.ui.viewmodel.HomeViewModel
+import com.example.smarttravel.util.NetworkUtil
+import com.example.smarttravel.util.NetworkQuality
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -64,6 +68,24 @@ fun HomeScreen(
     val categoryState by homeViewModel.categoryUiState.collectAsState()
     val selectedCategory by homeViewModel.selectedCategory.collectAsState()
     val userProfile by homeViewModel.userProfile.collectAsState()
+    
+    val context = LocalContext.current
+    val networkUtil = remember { NetworkUtil(context) }
+    val networkQuality = remember { 
+        mutableStateOf(networkUtil.getNetworkQuality()) 
+    }
+    
+    // Update network quality periodically
+    LaunchedEffect(Unit) {
+        while (true) {
+            networkQuality.value = networkUtil.getNetworkQuality()
+            kotlinx.coroutines.delay(2000) // Check every 2 seconds
+        }
+    }
+    
+    val shouldShowSkeleton = destinationState.isLoading || 
+        networkQuality.value == NetworkQuality.NONE || 
+        networkQuality.value == NetworkQuality.POOR
 
     val colorScheme = MaterialTheme.colorScheme
     
@@ -139,9 +161,15 @@ fun HomeScreen(
 
             // 5. Danh sách địa điểm (LazyRow - đã được lọc bởi ViewModel)
             item {
-                if (destinationState.isLoading) {
-                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                if (shouldShowSkeleton) {
+                    // Hiển thị skeleton khi loading hoặc mạng yếu
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(5) {
+                            SkeletonDestinationCard()
+                        }
                     }
                 } else if (destinationState.error != null) {
                     Text(

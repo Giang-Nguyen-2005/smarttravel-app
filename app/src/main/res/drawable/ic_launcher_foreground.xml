@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
     android:drawable="@drawable/smart_travel_icon"
-    android:insetLeft="20%"
-    android:insetTop="20%"
-    android:insetRight="20%"
-    android:insetBottom="20%">
+    android:insetLeft="0%"
+    android:insetTop="0%"
+    android:insetRight="0%"
+    android:insetBottom="0%">
 </inset>

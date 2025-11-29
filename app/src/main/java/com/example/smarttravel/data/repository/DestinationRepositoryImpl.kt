@@ -277,4 +277,105 @@ class DestinationRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+    
+    override suspend fun addDestination(destination: Destination): Result<String> {
+        return try {
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser == null) {
+                return Result.failure(Exception("Người dùng chưa đăng nhập"))
+            }
+            
+            android.util.Log.d("DestinationRepositoryImpl", "Adding destination: ${destination.name}")
+            
+            // Tạo document mới
+            val docRef = firestore.collection("destinations").document()
+            val destinationToSave = destination.copy(
+                id = docRef.id,
+                created_by = currentUser.uid // Lưu ID của user tạo
+            )
+            
+            // Lưu vào Firestore
+            docRef.set(destinationToSave).await()
+            
+            android.util.Log.d("DestinationRepositoryImpl", "Destination added successfully with ID: ${docRef.id}")
+            Result.success(docRef.id)
+        } catch (e: Exception) {
+            android.util.Log.e("DestinationRepositoryImpl", "Error adding destination: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun updateDestination(destinationId: String, destination: Destination): Result<Unit> {
+        return try {
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser == null) {
+                return Result.failure(Exception("Người dùng chưa đăng nhập"))
+            }
+            
+            android.util.Log.d("DestinationRepositoryImpl", "Updating destination: $destinationId - ${destination.name}")
+            
+            // Lấy destination hiện tại để giữ lại created_by
+            val currentDoc = firestore.collection("destinations").document(destinationId).get().await()
+            val existingCreatedBy = if (currentDoc.exists()) {
+                currentDoc.getString("created_by") ?: ""
+            } else {
+                currentUser.uid // Nếu không tìm thấy, dùng user hiện tại
+            }
+            
+            // Cập nhật destination (không cập nhật id và giữ lại created_by)
+            val destinationToUpdate = destination.copy(
+                id = destinationId,
+                created_by = existingCreatedBy
+            )
+            firestore.collection("destinations").document(destinationId)
+                .set(destinationToUpdate)
+                .await()
+            
+            android.util.Log.d("DestinationRepositoryImpl", "Destination updated successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("DestinationRepositoryImpl", "Error updating destination: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun deleteDestination(destinationId: String): Result<Unit> {
+        return try {
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser == null) {
+                return Result.failure(Exception("Người dùng chưa đăng nhập"))
+            }
+            
+            android.util.Log.d("DestinationRepositoryImpl", "Deleting destination: $destinationId")
+            
+            firestore.collection("destinations").document(destinationId)
+                .delete()
+                .await()
+            
+            android.util.Log.d("DestinationRepositoryImpl", "Destination deleted successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("DestinationRepositoryImpl", "Error deleting destination: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
+    override fun getDestinationsByCreator(userId: String): Flow<Result<List<Destination>>> = callbackFlow {
+        val snapshotListener = firestore.collection("destinations")
+            .whereEqualTo("created_by", userId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    trySend(Result.failure(e))
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val destinations = snapshot.toObjects(Destination::class.java)
+                    val destinationsWithIds = destinations.mapIndexed { index, dest ->
+                        dest.copy(id = snapshot.documents[index].id)
+                    }
+                    trySend(Result.success(destinationsWithIds))
+                }
+            }
+        awaitClose { snapshotListener.remove() }
+    }
 }

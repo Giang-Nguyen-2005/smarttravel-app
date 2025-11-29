@@ -29,5 +29,9 @@ data class UserProfile(
     // 💡 TRƯỜNG MỚI ĐÃ ĐƯỢC THÊM VÀO 💡
     @get:PropertyName("interests")
     @set:PropertyName("interests")
-    var interests: List<String> = emptyList() // Hoặc List<Any> nếu kiểu dữ liệu đa dạng hơn
+    var interests: List<String> = emptyList(), // Hoặc List<Any> nếu kiểu dữ liệu đa dạng hơn
+    
+    @get:PropertyName("is_admin")
+    @set:PropertyName("is_admin")
+    var isAdmin: Boolean = false
 )

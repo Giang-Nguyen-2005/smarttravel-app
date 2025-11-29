@@ -26,5 +26,9 @@ data class Destination(
     @set:PropertyName("rating")
     var rating: Double = 0.0,
 
-    val images: List<String> = emptyList()
+    val images: List<String> = emptyList(),
+    
+    @get:PropertyName("created_by")
+    @set:PropertyName("created_by")
+    var created_by: String = "" // ID của admin tạo địa điểm này
 )

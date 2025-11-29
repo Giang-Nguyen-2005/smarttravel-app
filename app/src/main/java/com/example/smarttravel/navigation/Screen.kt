@@ -57,5 +57,13 @@ sealed class Screen(val route: String) {
     }
 
     object Settings : Screen("settings_screen")
+    
+    object AddDestination : Screen("add_destination_screen")
+    
+    object ManageDestinations : Screen("manage_destinations_screen")
+    
+    object EditDestination : Screen("edit_destination_screen/{destinationId}") {
+        fun createRoute(destinationId: String) = "edit_destination_screen/$destinationId"
+    }
 
 }

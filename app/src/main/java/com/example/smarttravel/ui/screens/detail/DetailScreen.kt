@@ -73,7 +73,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -231,10 +233,19 @@ fun GalleryImageViewer(
                 contentAlignment = Alignment.Center
             ) {
                 if (isNetworkImage) {
+                    val context = LocalContext.current
+                    val configuration = LocalConfiguration.current
+                    val density = LocalDensity.current
+                    val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx().toInt() }
+                    val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx().toInt() }
+                    
                     AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
+                        model = ImageRequest.Builder(context)
                             .data(imageUrl)
                             .crossfade(true)
+                            // Load ảnh với kích thước lớn hơn để tránh bị nhòe
+                            .size(kotlin.math.max(screenWidth, screenHeight) * 2) // Kích thước tối đa
+                            .allowHardware(false)
                             .build(),
                         contentDescription = null,
                         modifier = Modifier
@@ -295,17 +306,29 @@ fun GalleryImageViewer(
 @Composable
 fun ImageHeader(imageUrl: String, modifier: Modifier = Modifier, onImageClick: () -> Unit = {}) {
     val isNetworkImage = imageUrl.startsWith("http") || imageUrl.startsWith("https://")
+    val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    
+    // Tính toán kích thước màn hình để load ảnh chất lượng cao
+    val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx().toInt() }
+    val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx().toInt() }
+    
     Box(modifier = modifier.clickable { onImageClick() }) {
         if (isNetworkImage) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(imageUrl).crossfade(true).build(),
+                model = ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .crossfade(true)
+                    // Load ảnh với kích thước lớn hơn để tránh bị nhòe khi scale
+                    .size(screenWidth * 2) // Kích thước tối đa (chiều rộng hoặc chiều cao, lấy giá trị lớn hơn)
+                    .allowHardware(false) // Tắt hardware acceleration để render tốt hơn
+                    .build(),
                 contentDescription = "Background",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            val context = LocalContext.current
             val resId = context.resources.getIdentifier(imageUrl, "drawable", context.packageName)
             val painter = if (resId != 0) painterResource(id = resId) else painterResource(id = R.drawable.ic_launcher_foreground)
             Image(
@@ -315,11 +338,7 @@ fun ImageHeader(imageUrl: String, modifier: Modifier = Modifier, onImageClick: (
                 modifier = Modifier.fillMaxSize()
             )
         }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.2f))
-        )
+        // Bỏ overlay mờ để background hiển thị rõ ràng
     }
 }
 
